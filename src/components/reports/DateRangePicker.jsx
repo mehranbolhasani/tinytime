@@ -54,7 +54,7 @@ export default function DateRangePicker({
 
       {range === 'custom' ? (
         <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
+          <div className="w-full space-y-1 sm:w-auto">
             <label htmlFor="custom-from" className="text-xs font-medium text-muted-foreground/70">
               From
             </label>
@@ -63,10 +63,10 @@ export default function DateRangePicker({
               type="date"
               value={draftFrom}
               onChange={(event) => setDraftFrom(event.target.value)}
-              className="w-[180px] rounded-lg border-border bg-secondary focus:bg-white focus:ring-1 focus:ring-ring/40"
+              className="w-full rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
             />
           </div>
-          <div className="space-y-1">
+          <div className="w-full space-y-1 sm:w-auto">
             <label htmlFor="custom-to" className="text-xs font-medium text-muted-foreground/70">
               To
             </label>
@@ -75,7 +75,7 @@ export default function DateRangePicker({
               type="date"
               value={draftTo}
               onChange={(event) => setDraftTo(event.target.value)}
-              className="w-[180px] rounded-lg border-border bg-secondary focus:bg-white focus:ring-1 focus:ring-ring/40"
+              className="w-full rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
             />
           </div>
           <Button

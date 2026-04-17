@@ -23,8 +23,14 @@ function getEntryFromCache(queryClient, id) {
   return null
 }
 
-export function useTimeEntries({ from, to }) {
-  const queryClient = useQueryClient()
+function toEntryIds(entries) {
+  return entries
+    .map((entry) => entry.id)
+    .filter(Boolean)
+    .sort()
+}
+
+export function useTimeEntriesList({ from, to }) {
   const supabase = assertSupabaseClient()
 
   const { data: entries = [], isLoading, error } = useQuery({
@@ -46,11 +52,16 @@ export function useTimeEntries({ from, to }) {
     enabled: Boolean(from && to),
   })
 
-  const entryIds = useMemo(() => entries.map((entry) => entry.id).sort(), [entries])
+  const entryIds = useMemo(() => toEntryIds(entries), [entries])
+  const entryIdsKey = useMemo(() => entryIds.join(','), [entryIds])
 
   const { data: entryTagRows = [] } = useQuery({
-    queryKey: ['entry_tags', entryIds],
+    queryKey: ['entry_tags', entryIdsKey],
     queryFn: async () => {
+      if (entryIds.length === 0) {
+        return []
+      }
+
       const { data, error } = await supabase
         .from('time_entry_tags')
         .select('time_entry_id, tags(id, name, color)')
@@ -92,6 +103,55 @@ export function useTimeEntries({ from, to }) {
     return map
   }, [entryTagRows])
 
+  const activeEntry = entries.find((entry) => entry.stopped_at === null) ?? null
+
+  return {
+    entries,
+    isLoading,
+    error,
+    entryTagsByEntryId,
+    activeEntry,
+  }
+}
+
+export function useActiveTimeEntry() {
+  const supabase = assertSupabaseClient()
+
+  const { data: activeEntry = null, isLoading, error } = useQuery({
+    queryKey: [...TIME_ENTRIES_QUERY_KEY, 'active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select(ENTRY_SELECT)
+        .is('stopped_at', null)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error) {
+        throw new Error(getFriendlySupabaseError(error, 'Unable to load active timer entry.'))
+      }
+
+      return data ?? null
+    },
+  })
+
+  return {
+    activeEntry,
+    isLoading,
+    error,
+  }
+}
+
+export function useTimeEntryMutations({ entries = [] } = {}) {
+  const queryClient = useQueryClient()
+  const supabase = assertSupabaseClient()
+
+  const invalidateEntryQueries = () => {
+    queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
+    queryClient.invalidateQueries({ queryKey: ['entry_tags'] })
+  }
+
   const createEntryMutation = useMutation({
     mutationFn: async ({ project_id, description, started_at }) => {
       const payload = {
@@ -112,9 +172,7 @@ export function useTimeEntries({ from, to }) {
 
       return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
-    },
+    onSuccess: invalidateEntryQueries,
   })
 
   const stopEntryMutation = useMutation({
@@ -141,9 +199,7 @@ export function useTimeEntries({ from, to }) {
 
       return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
-    },
+    onSuccess: invalidateEntryQueries,
   })
 
   const updateEntryMutation = useMutation({
@@ -167,9 +223,7 @@ export function useTimeEntries({ from, to }) {
 
       return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
-    },
+    onSuccess: invalidateEntryQueries,
   })
 
   const deleteEntryMutation = useMutation({
@@ -182,12 +236,8 @@ export function useTimeEntries({ from, to }) {
 
       return id
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
-    },
+    onSuccess: invalidateEntryQueries,
   })
-
-  const activeEntry = entries.find((entry) => entry.stopped_at === null) ?? null
 
   const createEntry = async ({ project_id, description, started_at }) =>
     createEntryMutation.mutateAsync({ project_id, description, started_at })
@@ -199,14 +249,19 @@ export function useTimeEntries({ from, to }) {
   const deleteEntry = async (id) => deleteEntryMutation.mutateAsync(id)
 
   return {
-    entries,
-    isLoading,
-    error,
-    entryTagsByEntryId,
     createEntry,
     stopEntry,
     updateEntry,
     deleteEntry,
-    activeEntry,
+  }
+}
+
+export function useTimeEntries({ from, to }) {
+  const list = useTimeEntriesList({ from, to })
+  const mutations = useTimeEntryMutations({ entries: list.entries })
+
+  return {
+    ...list,
+    ...mutations,
   }
 }

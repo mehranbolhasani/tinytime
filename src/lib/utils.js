@@ -17,6 +17,26 @@ export function formatDuration(seconds) {
   return `${hours}h ${minutes}m`
 }
 
+export function formatDurationOrDash(seconds) {
+  const totalSeconds = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0
+  if (totalSeconds <= 0) {
+    return '—'
+  }
+
+  return formatDuration(totalSeconds)
+}
+
+export function formatDurationHMS(seconds) {
+  const totalSeconds = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const remainingSeconds = totalSeconds % 60
+
+  return [hours, minutes, remainingSeconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':')
+}
+
 export function formatTime(dateString) {
   const date = new Date(dateString)
 
@@ -115,6 +135,25 @@ function toCsvValue(value) {
     return `"${escaped}"`
   }
   return escaped
+}
+
+export function localDayRange(dateInput) {
+  const dayStart = new Date(dateInput)
+  if (Number.isNaN(dayStart.getTime())) {
+    return {
+      from: null,
+      to: null,
+    }
+  }
+
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(dayStart)
+  dayEnd.setDate(dayEnd.getDate() + 1)
+
+  return {
+    from: dayStart.toISOString(),
+    to: dayEnd.toISOString(),
+  }
 }
 
 export function exportToCSV(entries, entryTagsMap, from, to) {

@@ -1,16 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
-import { Clock, CalendarDays, BarChart2, Folder } from 'lucide-react'
+import { BrowserRouter, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Clock, CalendarDays, BarChart2, Folder, Menu, PlayCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import { TimerProvider } from '@/contexts/TimerContext'
+import { useTimerContext } from '@/contexts/TimerContext'
+import { useViewport } from '@/hooks/useMediaQuery'
+import { useTheme } from '@/hooks/useTheme'
+import { formatDurationHMS } from '@/lib/utils'
 import { assertSupabaseClient, getFriendlySupabaseError, supabaseConfigError } from '@/lib/supabase'
-import Calendar from './pages/Calendar'
-import Projects from './pages/Projects'
-import Reports from './pages/Reports'
-import Today from './pages/Today'
-
-const queryClient = new QueryClient()
+const Today = lazy(() => import('./pages/Today'))
+const Calendar = lazy(() => import('./pages/Calendar'))
+const loadReportsPage = () => import('./pages/Reports')
+const Reports = lazy(loadReportsPage)
+const Projects = lazy(() => import('./pages/Projects'))
 
 const NAV_ITEMS = [
   { to: '/', label: 'Today', icon: Clock },
@@ -46,8 +58,8 @@ function AuthView({
   error,
 }) {
   return (
-    <main className="flex max-w-xl mx-auto min-h-screen items-center justify-center bg-background p-6">
-      <section className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <main className="mx-auto flex min-h-screen max-w-md items-center justify-center bg-background px-4 py-10 sm:p-6">
+      <section className="w-full rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <h1 className="text-lg font-semibold text-foreground">Sign in to tinytime</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Use a magic link so your session can pass Supabase row-level security checks.
@@ -61,7 +73,7 @@ function AuthView({
             onChange={(event) => onEmailChange(event.target.value)}
             placeholder="you@example.com"
             required
-            className="rounded-lg border-border bg-secondary focus:bg-white"
+            className="rounded-lg border-border bg-secondary focus:bg-background"
           />
           <Button
             type="submit"
@@ -95,65 +107,229 @@ function AuthView({
   )
 }
 
-function AppLayout({ userEmail, onSignOut, isSigningOut }) {
+function ThemePreferenceToggle({ preference, options, onChange }) {
   return (
-    <div className="flex min-h-screen gap-8 px-8">
-      <div className="relative w-[250px]">
-        <aside className="relative h-fit z-40 flex flex-col bg-card top-8 rounded-xl">
-          <div className="flex items-center gap-1 px-4 py-4">
-            <span className="h-1.5 w-6 rounded-md bg-primary relative" />
-            <span className="text-base font-normal text-foreground">tiny<span className="text-primary font-bold">time</span></span>
-          </div>
-  
-          <nav className="px-4 py-4">
-            <ul className="space-y-0.5">
-              {NAV_ITEMS.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.to === '/'}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 ${
-                        isActive
-                          ? 'bg-secondary text-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      }`
-                    }
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
-  
-          <div className="space-y-2 border-t border-border px-4 py-4">
-            <p className="truncate text-xs text-muted-foreground/70">{userEmail}</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onSignOut}
-              disabled={isSigningOut}
-              className="w-full rounded-lg border-border bg-secondary"
-            >
-              {isSigningOut ? 'Signing out...' : 'Sign out'}
-            </Button>
-          </div>
-        </aside>
+    <div className="rounded-lg border border-border bg-secondary p-1">
+      <div className="grid grid-cols-3 gap-1">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onChange(option)}
+            className={`rounded-md px-2 py-2 text-xs font-medium capitalize transition-colors ${
+              preference === option
+                ? 'bg-card text-foreground'
+                : 'text-muted-foreground hover:bg-card/60'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
       </div>
+    </div>
+  )
+}
 
-      <main className="flex-1 py-4">
-        <div className="">
-          <Routes>
-            <Route path="/" element={<Today />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/projects" element={<Projects />} />
-          </Routes>
+function AppLayout({ userEmail, onSignOut, isSigningOut }) {
+  const { isDesktop } = useViewport()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { preference, setThemePreference, options } = useTheme()
+  const timer = useTimerContext()
+  const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false)
+  const hasPrefetchedReports = useRef(false)
+
+  const handlePrefetchReports = () => {
+    if (hasPrefetchedReports.current) {
+      return
+    }
+
+    if (typeof window !== 'undefined' && !window.matchMedia('(hover: hover)').matches) {
+      return
+    }
+
+    hasPrefetchedReports.current = true
+    loadReportsPage()
+  }
+
+  const handleMiniTimerClick = () => {
+    if (pathname !== '/') {
+      navigate('/')
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  }
+
+  const content = (
+    <Suspense
+      fallback={(
+        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
+          Loading view...
         </div>
+      )}
+    >
+      <Routes>
+        <Route path="/" element={<Today />} />
+        <Route path="/calendar" element={<Calendar />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/projects" element={<Projects />} />
+      </Routes>
+    </Suspense>
+  )
+
+  const navLinks = NAV_ITEMS.map((item) => (
+    <li key={item.to}>
+      <NavLink
+        to={item.to}
+        end={item.to === '/'}
+        onPointerEnter={item.to === '/reports' ? handlePrefetchReports : undefined}
+        className={({ isActive }) =>
+          `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-100 ${
+            isActive
+              ? 'bg-secondary text-foreground'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+          }`
+        }
+      >
+        <item.icon className="h-4 w-4" />
+        {item.label}
+      </NavLink>
+    </li>
+  ))
+
+  if (isDesktop) {
+    return (
+      <div className="flex min-h-screen gap-6 px-4 sm:px-6 lg:gap-8 lg:px-8">
+        <div className="relative hidden w-[250px] lg:block">
+          <aside className="relative top-8 z-40 flex h-fit flex-col rounded-xl bg-card">
+            <div className="flex items-center gap-1 px-4 py-4">
+              <span className="relative h-1.5 w-6 rounded-md bg-primary" />
+              <span className="text-base font-normal text-foreground">tiny<span className="font-bold text-primary">time</span></span>
+            </div>
+
+            <nav className="px-4 py-4">
+              <ul className="space-y-0.5">{navLinks}</ul>
+            </nav>
+
+            <div className="space-y-2 border-t border-border px-4 py-4">
+              <ThemePreferenceToggle
+                preference={preference}
+                options={options}
+                onChange={setThemePreference}
+              />
+              <p className="truncate text-xs text-muted-foreground/70">{userEmail}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onSignOut}
+                disabled={isSigningOut}
+                className="w-full rounded-lg border-border bg-secondary"
+              >
+                {isSigningOut ? 'Signing out...' : 'Sign out'}
+              </Button>
+            </div>
+          </aside>
+        </div>
+
+        <main className="flex-1 py-4">
+          {content}
+        </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-1">
+            <span className="relative h-1.5 w-6 rounded-md bg-primary" />
+            <span className="text-base font-normal text-foreground">tiny<span className="font-bold text-primary">time</span></span>
+          </div>
+
+          <Sheet open={isAccountSheetOpen} onOpenChange={setIsAccountSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Open account options"
+                className="h-11 w-11 rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="border-border px-5">
+              <SheetHeader>
+                <SheetTitle>Preferences</SheetTitle>
+                <SheetDescription>Theme and account actions.</SheetDescription>
+              </SheetHeader>
+              <div className="space-y-4">
+                <ThemePreferenceToggle
+                  preference={preference}
+                  options={options}
+                  onChange={setThemePreference}
+                />
+                <p className="truncate text-sm text-muted-foreground">{userEmail}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onSignOut}
+                  disabled={isSigningOut}
+                  className="w-full rounded-lg border-border bg-secondary"
+                >
+                  {isSigningOut ? 'Signing out...' : 'Sign out'}
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </header>
+
+      <main className="px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-16 sm:px-6">
+        {content}
       </main>
+
+      {timer.isRunning ? (
+        <button
+          type="button"
+          onClick={handleMiniTimerClick}
+          className="fixed inset-x-4 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-md sm:inset-x-6"
+        >
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+            <PlayCircle className="h-4 w-4 text-primary" />
+            Running timer
+          </span>
+          <span className="font-mono text-sm text-muted-foreground">{formatDurationHMS(timer.elapsed)}</span>
+        </button>
+      ) : null}
+
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+        <ul className="mx-auto grid max-w-xl grid-cols-4 px-2">
+          {NAV_ITEMS.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                end={item.to === '/'}
+                onPointerEnter={item.to === '/reports' ? handlePrefetchReports : undefined}
+                className={({ isActive }) =>
+                  `flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors ${
+                    isActive
+                      ? 'text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`
+                }
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   )
 }
@@ -165,6 +341,19 @@ export default function App() {
     }
 
     return assertSupabaseClient()
+  }, [])
+  const queryClient = useMemo(() => {
+    const isMobileViewport =
+      typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches
+
+    return new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 30_000,
+          refetchOnWindowFocus: !isMobileViewport,
+        },
+      },
+    })
   }, [])
   const [session, setSession] = useState(null)
   const [isAuthLoading, setIsAuthLoading] = useState(!supabaseConfigError)
@@ -307,13 +496,15 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppLayout
-          userEmail={session.user?.email ?? 'signed-in user'}
-          onSignOut={handleSignOut}
-          isSigningOut={isSigningOut}
-        />
-      </BrowserRouter>
+      <TimerProvider>
+        <BrowserRouter>
+          <AppLayout
+            userEmail={session.user?.email ?? 'signed-in user'}
+            onSignOut={handleSignOut}
+            isSigningOut={isSigningOut}
+          />
+        </BrowserRouter>
+      </TimerProvider>
     </QueryClientProvider>
   )
 }

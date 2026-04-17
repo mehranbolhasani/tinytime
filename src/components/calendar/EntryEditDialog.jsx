@@ -19,59 +19,52 @@ import {
 } from '@/components/ui/select'
 import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
-import { useTimeEntries } from '@/hooks/useTimeEntries'
-import { cn, computeDuration } from '@/lib/utils'
+import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
+import { toSafeHexColor } from '@/lib/color'
+import { computeDuration } from '@/lib/utils'
 
 const NO_PROJECT_VALUE = '__no_project__'
 
-const COLOR_CLASSES = {
-  '#6366f1': 'bg-[#6366f1]',
-  '#f59e0b': 'bg-[#f59e0b]',
-  '#10b981': 'bg-[#10b981]',
-  '#ef4444': 'bg-[#ef4444]',
-  '#3b82f6': 'bg-[#3b82f6]',
-  '#ec4899': 'bg-[#ec4899]',
-  '#8b5cf6': 'bg-[#8b5cf6]',
-  '#14b8a6': 'bg-[#14b8a6]',
-}
-
-function getColorClass(color) {
-  return COLOR_CLASSES[color] ?? 'bg-muted'
-}
-
-function toTimeInputValue(dateString) {
+function toDateTimeInputValue(dateString) {
   const date = new Date(dateString)
   if (Number.isNaN(date.getTime())) {
-    return '00:00'
+    return ''
   }
 
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${hours}:${minutes}`
+  return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
-function mergeDateAndTime(baseDateString, timeValue) {
-  const date = new Date(baseDateString)
-  const [hours, minutes] = timeValue.split(':').map((value) => Number.parseInt(value, 10))
+function fromDateTimeInputValue(value) {
+  if (!value) {
+    return null
+  }
 
-  date.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0)
+  const parsedDate = new Date(value)
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null
+  }
 
-  return date.toISOString()
+  return parsedDate.toISOString()
 }
 
 function createInitialFormState(entry) {
   return {
     description: entry?.description ?? '',
     projectId: entry?.project_id ?? NO_PROJECT_VALUE,
-    startedAtTime: entry?.started_at ? toTimeInputValue(entry.started_at) : '00:00',
-    stoppedAtTime: entry?.stopped_at ? toTimeInputValue(entry.stopped_at) : '00:00',
+    startedAt: entry?.started_at ? toDateTimeInputValue(entry.started_at) : '',
+    stoppedAt: entry?.stopped_at ? toDateTimeInputValue(entry.stopped_at) : '',
   }
 }
 
 export default function EntryEditDialog({ entry, open, onOpenChange }) {
   const { projects } = useProjects()
   const { tags, getEntryTags, setEntryTags } = useTags()
-  const { updateEntry } = useTimeEntries({})
+  const { updateEntry } = useTimeEntryMutations()
   const [formData, setFormData] = useState(createInitialFormState(entry))
   const [selectedTagIds, setSelectedTagIds] = useState([])
   const [isSaving, setIsSaving] = useState(false)
@@ -128,13 +121,19 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
     setError('')
 
     try {
-      const started_at = mergeDateAndTime(entry.started_at, formData.startedAtTime)
-      let stopped_at = mergeDateAndTime(entry.stopped_at ?? started_at, formData.stoppedAtTime)
+      const started_at = fromDateTimeInputValue(formData.startedAt)
+      const stopped_at = fromDateTimeInputValue(formData.stoppedAt)
 
-      if (new Date(stopped_at).getTime() < new Date(started_at).getTime()) {
-        const nextDayStop = new Date(stopped_at)
-        nextDayStop.setDate(nextDayStop.getDate() + 1)
-        stopped_at = nextDayStop.toISOString()
+      if (!started_at || !stopped_at) {
+        setError('Please provide valid start and stop datetimes.')
+        setIsSaving(false)
+        return
+      }
+
+      if (new Date(stopped_at).getTime() <= new Date(started_at).getTime()) {
+        setError('Stop datetime must be after start datetime.')
+        setIsSaving(false)
+        return
       }
 
       const duration_seconds = computeDuration(started_at, stopped_at)
@@ -157,7 +156,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="rounded-2xl border-border shadow-md">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border-border shadow-md sm:max-w-lg [@media(max-width:639px)]:left-0 [@media(max-width:639px)]:top-0 [@media(max-width:639px)]:h-[100dvh] [@media(max-width:639px)]:w-screen [@media(max-width:639px)]:translate-x-0 [@media(max-width:639px)]:translate-y-0 [@media(max-width:639px)]:rounded-none">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Edit entry</DialogTitle>
           <DialogDescription>Update details and times for this entry.</DialogDescription>
@@ -173,7 +172,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
               value={formData.description}
               onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
               placeholder="What are you working on?"
-              className="rounded-lg border-border bg-secondary focus:bg-white focus:ring-1 focus:ring-ring/40"
+              className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
             />
           </div>
 
@@ -193,7 +192,10 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     <span className="inline-flex items-center gap-2">
-                      <span className={cn('h-2.5 w-2.5 rounded-full', getColorClass(project.color))} />
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: toSafeHexColor(project.color) }}
+                      />
                       <span>{project.name}</span>
                     </span>
                   </SelectItem>
@@ -202,31 +204,31 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label htmlFor="entry-started-at" className="text-sm font-medium text-muted-foreground">
-                Start time
+                Start datetime
               </label>
               <Input
                 id="entry-started-at"
-                type="time"
-                value={formData.startedAtTime}
-                onChange={(event) => setFormData((prev) => ({ ...prev, startedAtTime: event.target.value }))}
+                type="datetime-local"
+                value={formData.startedAt}
+                onChange={(event) => setFormData((prev) => ({ ...prev, startedAt: event.target.value }))}
                 required
-                className="rounded-lg border-border bg-secondary focus:bg-white focus:ring-1 focus:ring-ring/40"
+                className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
               />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="entry-stopped-at" className="text-sm font-medium text-muted-foreground">
-                Stop time
+                Stop datetime
               </label>
               <Input
                 id="entry-stopped-at"
-                type="time"
-                value={formData.stoppedAtTime}
-                onChange={(event) => setFormData((prev) => ({ ...prev, stoppedAtTime: event.target.value }))}
+                type="datetime-local"
+                value={formData.stoppedAt}
+                onChange={(event) => setFormData((prev) => ({ ...prev, stoppedAt: event.target.value }))}
                 required
-                className="rounded-lg border-border bg-secondary focus:bg-white focus:ring-1 focus:ring-ring/40"
+                className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
               />
             </div>
           </div>

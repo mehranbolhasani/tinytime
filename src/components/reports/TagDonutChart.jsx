@@ -1,4 +1,8 @@
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { PieChart } from 'recharts/es6/chart/PieChart'
+import { Cell } from 'recharts/es6/component/Cell'
+import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
+import { Tooltip } from 'recharts/es6/component/Tooltip'
+import { Pie } from 'recharts/es6/polar/Pie'
 import { formatDuration } from '@/lib/utils'
 
 const UNTAGGED_COLOR = '#94a3b8'

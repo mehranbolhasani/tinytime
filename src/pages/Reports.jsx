@@ -10,7 +10,7 @@ import TagDonutChart from '@/components/reports/TagDonutChart'
 import { Button } from '@/components/ui/button'
 import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
-import { useTimeEntries } from '@/hooks/useTimeEntries'
+import { useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { exportToCSV } from '@/lib/utils'
 
 function startOfDay(date) {
@@ -75,7 +75,7 @@ export default function Reports() {
   const [selectedTagIds, setSelectedTagIds] = useState([])
 
   const { from, to } = useMemo(() => buildRange(range, customFrom, customTo), [range, customFrom, customTo])
-  const { entries, isLoading, error: entriesError, entryTagsByEntryId } = useTimeEntries({ from, to })
+  const { entries, isLoading, error: entriesError, entryTagsByEntryId } = useTimeEntriesList({ from, to })
   const { projects, error: projectsError } = useProjects()
   const { tags, error: tagsError } = useTags()
 
@@ -160,7 +160,7 @@ export default function Reports() {
         </div>
       ) : (
         <>
-          <SummaryBar entries={entries} />
+          <SummaryBar entries={filteredEntries} />
 
           <FilterBar
             projects={projects}
@@ -173,15 +173,15 @@ export default function Reports() {
             onResetTags={() => setSelectedTagIds([])}
           />
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <section className="rounded-2xl border border-border bg-card p-6">
+          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+            <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
               <h2 className="mb-4 text-sm font-medium text-muted-foreground">
                 Hours by project
               </h2>
               <ProjectBarChart entries={filteredEntries} />
             </section>
 
-            <section className="rounded-2xl border border-border bg-card p-6">
+            <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
               <h2 className="mb-4 text-sm font-medium text-muted-foreground">
                 Hours by tag
               </h2>
@@ -189,7 +189,7 @@ export default function Reports() {
             </section>
           </div>
 
-          <section className="rounded-2xl border border-border bg-card p-6">
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
             <h2 className="mb-4 text-sm font-medium text-muted-foreground">
               Hours by day
             </h2>

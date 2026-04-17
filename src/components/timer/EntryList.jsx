@@ -8,29 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { cn, formatDuration, formatTime } from '@/lib/utils'
-
-const COLOR_CLASSES = {
-  '#6366f1': 'bg-[#6366f1]',
-  '#f59e0b': 'bg-[#f59e0b]',
-  '#10b981': 'bg-[#10b981]',
-  '#ef4444': 'bg-[#ef4444]',
-  '#3b82f6': 'bg-[#3b82f6]',
-  '#ec4899': 'bg-[#ec4899]',
-  '#8b5cf6': 'bg-[#8b5cf6]',
-  '#14b8a6': 'bg-[#14b8a6]',
-}
-
-function getColorClass(color) {
-  return COLOR_CLASSES[color] ?? 'bg-muted'
-}
-
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
+import { hexToRgba, toSafeHexColor } from '@/lib/color'
+import { formatDuration, formatDurationOrDash, formatTime } from '@/lib/utils'
 
 export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {} }) {
   const [editingEntry, setEditingEntry] = useState(null)
@@ -73,14 +52,17 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
         <ul className="space-y-2">
           {entries.map((entry) => {
             const tags = entryTagsByEntryId[entry.id] ?? []
+            const visibleTags = tags.slice(0, 2)
+            const hiddenTagCount = Math.max(0, tags.length - visibleTags.length)
             return (
               <li
                 key={entry.id}
-                className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-shadow duration-150 hover:shadow-sm"
+                className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:py-2 transition-shadow duration-150 hover:shadow-sm"
               >
                 {entry.projects ? (
                   <span
-                    className={cn('h-2.5 w-2.5 flex-shrink-0 rounded-full', getColorClass(entry.projects.color))}
+                    className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                    style={{ backgroundColor: toSafeHexColor(entry.projects.color) }}
                   />
                 ) : (
                   <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-muted-foreground/30" />
@@ -92,8 +74,8 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
                   </span>
 
                   {tags.length > 0 ? (
-                    <div className="hidden flex-wrap gap-1 sm:flex">
-                      {tags.map((tag) => (
+                    <div className="flex flex-wrap gap-1">
+                      {visibleTags.map((tag) => (
                         <span
                           key={tag.id}
                           className="rounded-full px-2 py-0.5 text-xs font-medium"
@@ -105,6 +87,11 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
                           {tag.name}
                         </span>
                       ))}
+                      {hiddenTagCount > 0 ? (
+                        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                          +{hiddenTagCount}
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -124,7 +111,7 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
                       size="icon"
                       aria-label="Entry actions"
                       disabled={isDeletingId === entry.id}
-                      className="opacity-0 transition-opacity duration-100 group-hover:opacity-100 text-muted-foreground/70 hover:text-foreground"
+                      className="text-muted-foreground/70 opacity-0 transition-opacity duration-100 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100 hover:text-foreground"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -147,7 +134,7 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
 
       {entries.length > 0 ? (
         <footer className="text-right text-sm font-medium text-muted-foreground">
-          Total: {formatDuration(totalDuration)}
+          Total: {formatDurationOrDash(totalDuration)}
         </footer>
       ) : null}
 

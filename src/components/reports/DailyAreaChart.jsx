@@ -1,12 +1,11 @@
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Area } from 'recharts/es6/cartesian/Area'
+import { CartesianGrid } from 'recharts/es6/cartesian/CartesianGrid'
+import { XAxis } from 'recharts/es6/cartesian/XAxis'
+import { YAxis } from 'recharts/es6/cartesian/YAxis'
+import { AreaChart } from 'recharts/es6/chart/AreaChart'
+import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
+import { Tooltip } from 'recharts/es6/component/Tooltip'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { formatDuration } from '@/lib/utils'
 
 const AREA_COLOR = '#e76f51'
@@ -99,13 +98,14 @@ function buildDailyData(entries, from, to) {
 }
 
 export default function DailyAreaChart({ entries, from, to }) {
+  const isMobile = useMediaQuery('(max-width: 639px)')
   const data = buildDailyData(entries, from, to)
 
   if (data.length === 0) {
     return <p className="text-sm text-muted-foreground/70">No day data for selected range.</p>
   }
 
-  const rotateTicks = data.length > 10
+  const rotateTicks = !isMobile && data.length > 10
 
   return (
     <div className="h-[320px] w-full">
@@ -114,7 +114,7 @@ export default function DailyAreaChart({ entries, from, to }) {
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="label"
-            interval={0}
+            interval={isMobile ? 'preserveStartEnd' : 0}
             angle={rotateTicks ? -45 : 0}
             textAnchor={rotateTicks ? 'end' : 'middle'}
             height={rotateTicks ? 56 : 30}

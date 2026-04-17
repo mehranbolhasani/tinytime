@@ -3,15 +3,8 @@ import { Check, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { hexToRgba } from '@/lib/color'
 import { cn } from '@/lib/utils'
-
-function hexToRgba(hex, alpha) {
-  const clean = hex.replace('#', '')
-  const r = parseInt(clean.slice(0, 2), 16)
-  const g = parseInt(clean.slice(2, 4), 16)
-  const b = parseInt(clean.slice(4, 6), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
 
 function TagPill({ tag, compact = false }) {
   return (
@@ -33,6 +26,7 @@ export default function TagSelector({
   onChange,
   disabled = false,
   triggerLabel = 'Select tags',
+  className,
 }) {
   const [open, setOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -61,7 +55,7 @@ export default function TagSelector({
   }
 
   return (
-    <div className="space-y-2 w-full">
+    <div className={cn('w-full space-y-2', className)}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -76,12 +70,15 @@ export default function TagSelector({
             <ChevronDown className="h-4 w-4 opacity-70" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-[320px] space-y-2 rounded-xl border-border p-3">
+        <PopoverContent
+          align="start"
+          className="w-[min(320px,calc(100vw-1.5rem))] space-y-2 rounded-xl border-border p-3"
+        >
           <Input
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Search tags..."
-            className="rounded-lg border-border bg-secondary focus:bg-white focus:ring-1 focus:ring-ring/40"
+            className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
           />
           <div className="max-h-56 space-y-1 overflow-auto pr-1">
             {filteredTags.length === 0 ? (
@@ -94,7 +91,7 @@ export default function TagSelector({
                     key={tag.id}
                     type="button"
                     className={cn(
-                      'flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm transition-colors duration-100 hover:bg-secondary',
+                      'flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors duration-100 hover:bg-secondary',
                       isSelected && 'bg-secondary'
                     )}
                     onClick={() => handleToggleTag(tag.id)}

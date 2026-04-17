@@ -104,6 +104,50 @@
     --sidebar-ring: #e76f51;
 }
 
+.dark {
+    --color-bg:         #1c1917;
+    --color-surface:    #292524;
+    --color-surface-2:  #3a3532;
+    --color-border-warm:#44403c;
+    --color-text-1:     #f5f3f0;
+    --color-text-2:     #d6d3d1;
+    --color-text-3:     #a8a29e;
+    --color-accent-warm:#e76f51;
+    --color-accent-2:   #f4a261;
+
+    --background: #1c1917;
+    --foreground: #f5f3f0;
+    --card: #292524;
+    --card-foreground: #f5f3f0;
+    --popover: #292524;
+    --popover-foreground: #f5f3f0;
+    --primary: #e76f51;
+    --primary-foreground: #ffffff;
+    --secondary: #3a3532;
+    --secondary-foreground: #f5f3f0;
+    --muted: #3a3532;
+    --muted-foreground: #d6d3d1;
+    --accent: #3a3532;
+    --accent-foreground: #f5f3f0;
+    --destructive: #f87171;
+    --border: #44403c;
+    --input: #44403c;
+    --ring: #e76f51;
+    --chart-1: #e76f51;
+    --chart-2: #f4a261;
+    --chart-3: #2a9d8f;
+    --chart-4: #8ab4f8;
+    --chart-5: #e9c46a;
+    --sidebar: #292524;
+    --sidebar-foreground: #f5f3f0;
+    --sidebar-primary: #e76f51;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #3a3532;
+    --sidebar-accent-foreground: #f5f3f0;
+    --sidebar-border: #44403c;
+    --sidebar-ring: #e76f51;
+}
+
 @supports (font-variation-settings: normal) {
   :root {
     font-family: InterVariable, sans-serif;

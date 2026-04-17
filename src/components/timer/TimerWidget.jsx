@@ -10,34 +10,21 @@ import {
 import { useProjects } from '@/hooks/useProjects'
 import TagSelector from '@/components/tags/TagSelector'
 import { useTags } from '@/hooks/useTags'
-import { useTimer } from '@/hooks/useTimer'
-import { cn, formatDuration } from '@/lib/utils'
+import { useTimerContext } from '@/contexts/TimerContext'
+import { toSafeHexColor } from '@/lib/color'
+import { cn, formatDurationHMS } from '@/lib/utils'
 
 const NO_PROJECT_VALUE = '__no_project__'
-
-const COLOR_CLASSES = {
-  '#6366f1': 'bg-[#6366f1]',
-  '#f59e0b': 'bg-[#f59e0b]',
-  '#10b981': 'bg-[#10b981]',
-  '#ef4444': 'bg-[#ef4444]',
-  '#3b82f6': 'bg-[#3b82f6]',
-  '#ec4899': 'bg-[#ec4899]',
-  '#8b5cf6': 'bg-[#8b5cf6]',
-  '#14b8a6': 'bg-[#14b8a6]',
-}
-
-function getColorClass(color) {
-  return COLOR_CLASSES[color] ?? 'bg-muted'
-}
 
 function normalizeProjectValue(projectId) {
   return projectId ?? NO_PROJECT_VALUE
 }
 
-export default function TimerWidget({ activeEntry, createEntry, stopEntry, isEntriesLoading = false }) {
+export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading = false }) {
   const { projects, isLoading: isLoadingProjects } = useProjects()
   const { tags, isLoading: isLoadingTags, getEntryTags, setEntryTags } = useTags()
-  const timer = useTimer(activeEntry)
+  const timer = useTimerContext()
+  const activeEntry = timer.activeEntry
   const [description, setDescription] = useState(activeEntry?.description ?? '')
   const [selectedProject, setSelectedProject] = useState(normalizeProjectValue(activeEntry?.project_id))
   const [selectedTagIds, setSelectedTagIds] = useState([])
@@ -87,7 +74,9 @@ export default function TimerWidget({ activeEntry, createEntry, stopEntry, isEnt
     try {
       if (activeEntry) {
         const forcedStoppedAt = new Date().toISOString()
-        await stopEntry(activeEntry.id, forcedStoppedAt)
+        const stoppedEntry = await stopEntry(activeEntry.id, forcedStoppedAt)
+        await setEntryTags(stoppedEntry.id, selectedTagIds)
+        setSelectedTagIds([])
         timer.reset()
       }
 
@@ -128,21 +117,21 @@ export default function TimerWidget({ activeEntry, createEntry, stopEntry, isEnt
 
   return (
     <section className="space-y-5 rounded-lg border border-border bg-card p-4">
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         <input
           type="text"
           placeholder="What are you working on?"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           disabled={isSubmitting}
-          className="w-full border-0 bg-transparent text-base text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-0"
+          className="w-full min-w-0 border-0 bg-transparent text-base text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-0"
         />
         <Select
           value={selectedProject}
           onValueChange={setSelectedProject}
           disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
         >
-          <SelectTrigger className="rounded-full border-border text-sm">
+          <SelectTrigger className="w-full rounded-full border-border text-sm sm:w-56">
             <SelectValue placeholder="No project" />
           </SelectTrigger>
           <SelectContent>
@@ -150,7 +139,10 @@ export default function TimerWidget({ activeEntry, createEntry, stopEntry, isEnt
             {projects.map((project) => (
               <SelectItem key={project.id} value={project.id}>
                 <span className="inline-flex items-center gap-2">
-                  <span className={cn('h-2.5 w-2.5 rounded-full', getColorClass(project.color))} />
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: toSafeHexColor(project.color) }}
+                  />
                   <span>{project.name}</span>
                 </span>
               </SelectItem>
@@ -163,6 +155,7 @@ export default function TimerWidget({ activeEntry, createEntry, stopEntry, isEnt
           selectedTagIds={selectedTagIds}
           onChange={setSelectedTagIds}
           disabled={isSubmitting || isLoadingTags || isEntriesLoading}
+          className="w-full sm:w-auto"
         />
       </div>
 
@@ -171,18 +164,18 @@ export default function TimerWidget({ activeEntry, createEntry, stopEntry, isEnt
         <p className="text-xs text-muted-foreground/70">Loading your current timer state...</p>
       ) : null}
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <span className={cn(
-          'font-mono text-3xl font-semibold tracking-tight text-foreground transition-opacity duration-150',
+          'font-mono text-2xl font-semibold tracking-tight text-foreground transition-opacity duration-150 sm:text-3xl',
           !timer.isRunning && 'text-muted-foreground/70'
         )}>
-          {timer.isRunning ? formatDuration(timer.elapsed) : '00:00:00'}
+          {timer.isRunning ? formatDurationHMS(timer.elapsed) : '00:00:00'}
         </span>
 
         <Button
           type="button"
           className={cn(
-            'min-w-32 rounded-xl px-6 py-2.5 text-sm font-medium text-white transition-transform duration-100 active:scale-95',
+            'w-full rounded-xl px-6 py-2.5 text-sm font-medium text-white transition-transform duration-100 active:scale-95 sm:min-w-32 sm:w-auto',
             timer.isRunning
               ? 'bg-red-500 hover:bg-red-600'
               : 'bg-primary hover:bg-primary/90'

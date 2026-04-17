@@ -1,14 +1,13 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Bar } from 'recharts/es6/cartesian/Bar'
+import { CartesianGrid } from 'recharts/es6/cartesian/CartesianGrid'
+import { XAxis } from 'recharts/es6/cartesian/XAxis'
+import { YAxis } from 'recharts/es6/cartesian/YAxis'
+import { BarChart } from 'recharts/es6/chart/BarChart'
+import { Cell } from 'recharts/es6/component/Cell'
+import { LabelList } from 'recharts/es6/component/LabelList'
+import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
+import { Tooltip } from 'recharts/es6/component/Tooltip'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { formatDuration } from '@/lib/utils'
 
 function buildProjectData(entries) {
@@ -58,6 +57,7 @@ const TOOLTIP_STYLE = {
 const AXIS_TICK_STYLE = { fontSize: 12, fill: 'var(--muted-foreground)' }
 
 export default function ProjectBarChart({ entries }) {
+  const isMobile = useMediaQuery('(max-width: 639px)')
   const data = buildProjectData(entries)
 
   if (data.length === 0) {
@@ -65,30 +65,37 @@ export default function ProjectBarChart({ entries }) {
   }
 
   const chartHeight = Math.max(260, data.length * 52)
+  const effectiveHeight = isMobile ? Math.min(chartHeight, 480) : chartHeight
 
   return (
-    <div className="h-[320px] min-h-[320px] w-full md:h-[360px]" style={{ minHeight: chartHeight }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout="vertical" margin={{ left: 12, right: 96, top: 8, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis type="number" tickFormatter={(value) => `${value}h`} tick={AXIS_TICK_STYLE} />
-          <YAxis dataKey="name" type="category" width={120} tick={AXIS_TICK_STYLE} />
-          <Tooltip
-            formatter={(value, _name, payload) => [formatDuration(payload.payload.seconds), 'Duration']}
-            labelFormatter={(value) => value}
-            contentStyle={TOOLTIP_STYLE}
-          />
-          <Bar dataKey="hours" isAnimationActive={false} radius={[0, 4, 4, 0]}>
-            <LabelList
-              dataKey="hours"
-              content={(props) => <DurationLabel {...props} data={data} />}
+    <div className="h-[320px] w-full overflow-y-auto md:h-[360px]">
+      <div className="min-h-[260px]" style={{ height: effectiveHeight }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ left: 12, right: isMobile ? 56 : 96, top: 8, bottom: 8 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis type="number" tickFormatter={(value) => `${value}h`} tick={AXIS_TICK_STYLE} />
+            <YAxis dataKey="name" type="category" width={isMobile ? 96 : 120} tick={AXIS_TICK_STYLE} />
+            <Tooltip
+              formatter={(value, _name, payload) => [formatDuration(payload.payload.seconds), 'Duration']}
+              labelFormatter={(value) => value}
+              contentStyle={TOOLTIP_STYLE}
             />
-            {data.map((item) => (
-              <Cell key={item.id} fill={item.color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            <Bar dataKey="hours" isAnimationActive={false} radius={[0, 4, 4, 0]}>
+              <LabelList
+                dataKey="hours"
+                content={(props) => <DurationLabel {...props} data={data} />}
+              />
+              {data.map((item) => (
+                <Cell key={item.id} fill={item.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }

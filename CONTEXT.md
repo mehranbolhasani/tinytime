@@ -32,14 +32,17 @@ A minimal personal time tracker inspired by Toggl Track. Solo use only. Web app 
 
 ```
 src/
+  contexts/
+    TimerContext.jsx # Shared active-entry + elapsed timer state
   components/
     timer/          # Active timer widget (start/stop, current entry display)
     calendar/       # Day view and week view
-    projects/       # Project list, create/edit forms
+    projects/       # Project management sections/forms
     reports/        # Charts, summary stats, CSV export
-    tags/           # Tag management
+    tags/           # Tag management sections/forms
     ui/             # shadcn/ui components (do not modify manually)
   hooks/
+    useTheme.js         # System/light/dark theme preference
     useTimer.js         # Start, stop, persist active timer
     useTimeEntries.js   # CRUD for time entries, filtering by date range
     useProjects.js      # CRUD for projects
@@ -47,6 +50,8 @@ src/
   lib/
     supabase.js     # Supabase client init (reads from .env)
     utils.js        # formatDuration(seconds), formatDate, groupEntriesByDay, etc.
+    color.js        # Color helpers (hexToRgba, presets)
+    calendar.js     # Calendar layout helpers (blocks, overlap lanes)
   pages/
     Today.jsx       # Default view: timer + today's entries
     Calendar.jsx    # Week/day grid view of entries
@@ -62,6 +67,7 @@ src/
 -- Projects
 create table projects (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
   color text not null default '#6366f1',
   hourly_rate numeric(10,2),
@@ -71,6 +77,7 @@ create table projects (
 -- Tags
 create table tags (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
   name text not null unique,
   color text not null default '#94a3b8',
   created_at timestamptz default now()
@@ -79,6 +86,7 @@ create table tags (
 -- Time entries
 create table time_entries (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
   project_id uuid references projects(id) on delete set null,
   description text,
   started_at timestamptz not null,
@@ -105,6 +113,7 @@ A `stopped_at` of `null` means the timer is currently running. There should neve
 - The active timer's elapsed time is computed live on the client from `started_at` to `Date.now()`. Do not poll Supabase for this.
 - Deleting a project sets `project_id` to null on its entries (cascade rule above). Entries are never deleted with the project.
 - Tags are global (not per-project).
+- `projects.hourly_rate` is stored and displayed in EUR.
 
 ---
 

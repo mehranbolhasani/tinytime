@@ -29,6 +29,10 @@ export function assertSupabaseClient() {
 }
 
 export function getFriendlySupabaseError(error, fallbackMessage) {
+  if (error) {
+    console.error('[supabase]', error)
+  }
+
   const rawMessage = error?.message ?? fallbackMessage ?? 'Unexpected error.'
 
   if (
