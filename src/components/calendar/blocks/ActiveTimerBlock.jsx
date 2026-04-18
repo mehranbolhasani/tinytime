@@ -6,6 +6,7 @@ export default function ActiveTimerBlock({ block, elapsed, onClick }) {
 
   return (
     <button
+      data-entry-block
       type="button"
       onClick={onClick}
       className="absolute left-0 overflow-hidden rounded-lg border border-dashed p-2 text-left text-[11px] shadow-sm"

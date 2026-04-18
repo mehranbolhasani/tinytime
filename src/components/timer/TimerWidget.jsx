@@ -116,7 +116,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
   }
 
   return (
-    <section className="space-y-5 rounded-lg border border-border bg-card p-4">
+    <section className="space-y-5 rounded-xl border border-border bg-card p-4 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         <input
           type="text"
@@ -124,7 +124,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           disabled={isSubmitting}
-          className="w-full min-w-0 border-0 bg-transparent text-base text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-0"
+          className="w-full min-w-0 border-0 border-b border-transparent bg-transparent text-base text-foreground placeholder:text-muted-foreground/70 focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-0"
         />
         <Select
           value={selectedProject}
@@ -174,12 +174,8 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
 
         <Button
           type="button"
-          className={cn(
-            'w-full rounded-xl px-6 py-2.5 text-sm font-medium text-white transition-transform duration-100 active:scale-95 sm:min-w-32 sm:w-auto',
-            timer.isRunning
-              ? 'bg-red-500 hover:bg-red-600'
-              : 'bg-primary hover:bg-primary/90'
-          )}
+          variant={timer.isRunning ? 'destructive' : 'default'}
+          className="w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-transform duration-100 active:scale-95 sm:min-w-32 sm:w-auto"
           onClick={timer.isRunning ? handleStop : handleStart}
           disabled={isSubmitting || isEntriesLoading}
         >

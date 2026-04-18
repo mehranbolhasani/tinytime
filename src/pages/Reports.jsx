@@ -8,6 +8,7 @@ import ProjectBarChart from '@/components/reports/ProjectBarChart'
 import SummaryBar from '@/components/reports/SummaryBar'
 import TagDonutChart from '@/components/reports/TagDonutChart'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
@@ -155,8 +156,10 @@ export default function Reports() {
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
-          Loading reports...
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
         </div>
       ) : (
         <>

@@ -3,16 +3,10 @@ import { Cell } from 'recharts/es6/component/Cell'
 import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
 import { Tooltip } from 'recharts/es6/component/Tooltip'
 import { Pie } from 'recharts/es6/polar/Pie'
+import { CHART_TOOLTIP_STYLE } from '@/lib/chart'
 import { formatDuration } from '@/lib/utils'
 
-const UNTAGGED_COLOR = '#94a3b8'
-
-const TOOLTIP_STYLE = {
-  borderRadius: '10px',
-  border: '1px solid var(--border)',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-  backgroundColor: 'var(--card)',
-}
+const UNTAGGED_COLOR = 'var(--muted-foreground)'
 
 function buildTagData(entries, entryTagsMap) {
   const buckets = {}
@@ -82,7 +76,7 @@ export default function TagDonutChart({ entries, entryTagsMap, tags }) {
             </Pie>
             <Tooltip
               formatter={(value) => formatDuration(Number(value) || 0)}
-              contentStyle={TOOLTIP_STYLE}
+              contentStyle={CHART_TOOLTIP_STYLE}
             />
           </PieChart>
         </ResponsiveContainer>

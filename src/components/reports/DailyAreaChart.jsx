@@ -6,16 +6,10 @@ import { AreaChart } from 'recharts/es6/chart/AreaChart'
 import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
 import { Tooltip } from 'recharts/es6/component/Tooltip'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { CHART_TOOLTIP_STYLE } from '@/lib/chart'
 import { formatDuration } from '@/lib/utils'
 
-const AREA_COLOR = '#e76f51'
-
-const TOOLTIP_STYLE = {
-  borderRadius: '10px',
-  border: '1px solid var(--border)',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-  backgroundColor: 'var(--card)',
-}
+const AREA_COLOR = 'var(--chart-1)'
 
 const AXIS_TICK_STYLE = { fontSize: 12, fill: 'var(--muted-foreground)' }
 
@@ -123,7 +117,7 @@ export default function DailyAreaChart({ entries, from, to }) {
           <YAxis tickFormatter={(value) => `${value}h`} tick={AXIS_TICK_STYLE} />
           <Tooltip
             formatter={(value, _name, payload) => [formatDuration(payload.payload.seconds), 'Duration']}
-            contentStyle={TOOLTIP_STYLE}
+            contentStyle={CHART_TOOLTIP_STYLE}
           />
           <Area
             type="monotone"

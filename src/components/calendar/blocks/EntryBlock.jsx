@@ -1,17 +1,33 @@
 import { hexToRgba, toSafeHexColor } from '@/lib/color'
-import { formatDuration } from '@/lib/utils'
+import { cn, formatDuration } from '@/lib/utils'
 
-export default function EntryBlock({ block, onClick, tags = [] }) {
-  const width = block.hasOverlap ? 'calc(50% - 6px)' : 'calc(100% - 8px)'
-  const left = block.hasOverlap ? `${block.lane * 50}%` : '0%'
+export default function EntryBlock({
+  block,
+  onClick,
+  onContextMenu,
+  onDragStart,
+  onDragEnd,
+  isDragging = false,
+  tags = [],
+}) {
+  const width = block.hasOverlap ? 'calc(50% - 12px)' : 'calc(100% - 24px)'
+  const left = block.hasOverlap ? `${block.lane * 50}%` : '1%'
   const canShowTags = block.height > 48
   const projectColor = toSafeHexColor(block.entry?.projects?.color, '#a8a29e')
 
   return (
     <button
+      data-entry-block
       type="button"
       onClick={onClick}
-      className="absolute overflow-hidden rounded-lg border-l-2 px-2 py-1 text-left text-[11px] cursor-pointer transition-shadow duration-150 hover:shadow-sm"
+      onContextMenu={onContextMenu}
+      onDragStart={(event) => onDragStart?.(event, block.entry)}
+      onDragEnd={onDragEnd}
+      draggable
+      className={cn(
+        'absolute cursor-grab overflow-hidden rounded-r-lg border-l-2 px-2 py-2 text-left text-[11px] transition-shadow duration-150 hover:shadow-sm active:cursor-grabbing flex flex-col gap-0',
+        isDragging ? 'opacity-0 ring-0' : null
+      )}
       style={{
         top: block.top,
         height: block.height,

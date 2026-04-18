@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { COLOR_PRESETS, hexToRgba } from '@/lib/color'
 
 const DEFAULT_TAG_COLOR = '#94a3b8'
@@ -129,7 +130,7 @@ export default function TagsSection({
         <h2 className="text-sm font-medium text-muted-foreground">Tags</h2>
         <Button
           onClick={handleOpenCreateTag}
-          className="w-full rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors duration-150 sm:w-auto"
+          className="w-full rounded-lg transition-colors duration-150 sm:w-auto"
         >
           New tag
         </Button>
@@ -143,8 +144,10 @@ export default function TagsSection({
 
       <div className="space-y-2">
         {isLoading ? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
-            Loading tags...
+          <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
           </div>
         ) : tags.length === 0 ? (
           <div className="flex flex-col items-center py-12 text-center">
@@ -193,7 +196,7 @@ export default function TagsSection({
       </div>
 
       <Dialog open={isTagFormOpen} onOpenChange={handleTagFormCloseChange}>
-        <DialogContent className="rounded-2xl border-border shadow-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">{isEditingTag ? 'Edit tag' : 'Create tag'}</DialogTitle>
             <DialogDescription>
@@ -242,7 +245,7 @@ export default function TagsSection({
               <Button
                 type="submit"
                 disabled={isSavingTag}
-                className="rounded-lg bg-primary text-white hover:bg-primary/90"
+                className="rounded-lg"
               >
                 {isSavingTag ? 'Saving...' : isEditingTag ? 'Save changes' : 'Create tag'}
               </Button>
@@ -252,7 +255,7 @@ export default function TagsSection({
       </Dialog>
 
       <Dialog open={Boolean(tagToDelete)} onOpenChange={(open) => !open && setTagToDelete(null)}>
-        <DialogContent className="rounded-2xl border-border shadow-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">Delete {tagToDelete?.name}?</DialogTitle>
             <DialogDescription>
@@ -270,9 +273,10 @@ export default function TagsSection({
             </Button>
             <Button
               type="button"
+              variant="destructive"
               onClick={handleDeleteTagConfirm}
               disabled={isDeletingTag}
-              className="rounded-lg bg-red-500 text-white hover:bg-red-600"
+              className="rounded-lg"
             >
               {isDeletingTag ? 'Deleting...' : 'Delete'}
             </Button>

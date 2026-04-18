@@ -12,7 +12,7 @@ export default function ColorSwatchPicker({ value, onChange, colors = COLOR_PRES
             type="button"
             onClick={() => onChange(color)}
             className={cn(
-              'h-10 w-10 rounded-full border border-border cursor-pointer transition-transform duration-100 sm:h-7 sm:w-7',
+              'h-10 w-10 cursor-pointer rounded-full border border-border transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7',
               isSelected && 'ring-2 ring-offset-2 ring-foreground'
             )}
             style={{ backgroundColor: toSafeHexColor(color) }}

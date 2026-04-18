@@ -85,7 +85,7 @@ export default function EntryTable({ entries, entryTagsMap }) {
                       <span className="inline-flex items-center gap-2">
                         <span
                           className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: entry.projects.color ?? '#94a3b8' }}
+                          style={{ backgroundColor: entry.projects.color ?? 'var(--muted-foreground)' }}
                         />
                         <span className="text-foreground">{entry.projects.name}</span>
                       </span>

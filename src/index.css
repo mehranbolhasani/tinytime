@@ -22,6 +22,8 @@
     --color-chart-2: var(--chart-2);
     --color-chart-1: var(--chart-1);
     --color-ring: var(--ring);
+    --color-success-foreground: var(--success-foreground);
+    --color-success: var(--success);
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
@@ -85,9 +87,12 @@
     --accent: #f5f3f0;
     --accent-foreground: #1c1917;
     --destructive: #ef4444;
+    --success: #059669;
+    --success-foreground: #ffffff;
     --border: #e8e4de;
     --input: #e8e4de;
     --ring: #e76f51;
+    --overlay: rgb(0 0 0 / 0.4);
     --chart-1: #e76f51;
     --chart-2: #f4a261;
     --chart-3: #2a9d8f;
@@ -130,9 +135,12 @@
     --accent: #3a3532;
     --accent-foreground: #f5f3f0;
     --destructive: #f87171;
+    --success: #34d399;
+    --success-foreground: #1c1917;
     --border: #44403c;
     --input: #44403c;
     --ring: #e76f51;
+    --overlay: rgb(0 0 0 / 0.6);
     --chart-1: #e76f51;
     --chart-2: #f4a261;
     --chart-3: #2a9d8f;
@@ -164,5 +172,29 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--primary) 28%, transparent);
+    color: var(--foreground);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--background);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+    border: 2px solid var(--background);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
   }
 }

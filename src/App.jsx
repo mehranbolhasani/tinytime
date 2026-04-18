@@ -78,7 +78,7 @@ function AuthView({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-primary text-white hover:bg-primary/90"
+            className="w-full rounded-lg"
           >
             {isSubmitting ? 'Sending link...' : 'Send magic link'}
           </Button>
@@ -100,7 +100,7 @@ function AuthView({
           {isGithubSubmitting ? 'Redirecting to GitHub...' : 'Continue with GitHub'}
         </Button>
 
-        {notice ? <p className="mt-3 text-sm text-emerald-600">{notice}</p> : null}
+        {notice ? <p className="mt-3 text-sm text-success">{notice}</p> : null}
         {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
       </section>
     </main>
@@ -109,21 +109,19 @@ function AuthView({
 
 function ThemePreferenceToggle({ preference, options, onChange }) {
   return (
-    <div className="rounded-lg border border-border bg-secondary p-1">
+    <div className="rounded-xl border border-border bg-card p-1">
       <div className="grid grid-cols-3 gap-1">
         {options.map((option) => (
-          <button
+          <Button
             key={option}
             type="button"
+            variant={preference === option ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => onChange(option)}
-            className={`rounded-md px-2 py-2 text-xs font-medium capitalize transition-colors ${
-              preference === option
-                ? 'bg-card text-foreground'
-                : 'text-muted-foreground hover:bg-card/60'
-            }`}
+            className="h-auto rounded-lg px-2 py-2 text-xs capitalize"
           >
             {option}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -294,17 +292,18 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
       </main>
 
       {timer.isRunning ? (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={handleMiniTimerClick}
-          className="fixed inset-x-4 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-md sm:inset-x-6"
+          className="fixed inset-x-4 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 h-auto items-center justify-between rounded-xl border-border bg-card px-3 py-2 shadow-md sm:inset-x-6"
         >
           <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <PlayCircle className="h-4 w-4 text-primary" />
             Running timer
           </span>
           <span className="font-mono text-sm text-muted-foreground">{formatDurationHMS(timer.elapsed)}</span>
-        </button>
+        </Button>
       ) : null}
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">

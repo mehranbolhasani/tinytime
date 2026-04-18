@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import DayView from '@/components/calendar/DayView'
 import WeekView from '@/components/calendar/WeekView'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useViewport } from '@/hooks/useMediaQuery'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
@@ -92,24 +93,28 @@ export default function Calendar() {
 
   return (
     <section className="space-y-6">
-      <header className="flex flex-col gap-2 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 rounded-full border border-border bg-secondary p-0.5">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             aria-label="Previous period"
-            className="rounded-full p-2.5 text-muted-foreground transition-colors duration-150 hover:bg-background hover:text-foreground"
+            className="h-10 w-10 rounded-full text-muted-foreground transition-colors duration-150 hover:bg-background hover:text-foreground"
             onClick={() => setSelectedDate((prev) => addDays(prev, -shiftDays))}
           >
             <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             aria-label="Next period"
-            className="rounded-full p-2.5 text-muted-foreground transition-colors duration-150 hover:bg-background hover:text-foreground"
+            className="h-10 w-10 rounded-full text-muted-foreground transition-colors duration-150 hover:bg-background hover:text-foreground"
             onClick={() => setSelectedDate((prev) => addDays(prev, shiftDays))}
           >
             <ChevronRight className="h-5 w-5" />
-          </button>
+          </Button>
         </div>
 
         <h1 className="text-center text-xl font-semibold tracking-tight text-foreground sm:text-left">{periodLabel}</h1>
@@ -117,30 +122,34 @@ export default function Calendar() {
         <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           {!isMobile ? (
             <div className="inline-flex rounded-full border border-border p-0.5">
-              <button
+              <Button
                 type="button"
+                variant={resolvedViewMode === 'day' ? 'default' : 'ghost'}
+                size="sm"
                 className={cn(
-                  'rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
+                  'h-auto rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
                   resolvedViewMode === 'day'
-                    ? 'bg-foreground text-white'
+                    ? 'bg-foreground text-background hover:bg-foreground/90'
                     : 'text-muted-foreground hover:bg-secondary'
                 )}
                 onClick={() => setViewMode('day')}
               >
                 Day
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant={resolvedViewMode === 'week' ? 'default' : 'ghost'}
+                size="sm"
                 className={cn(
-                  'rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
+                  'h-auto rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
                   resolvedViewMode === 'week'
-                    ? 'bg-foreground text-white'
+                    ? 'bg-foreground text-background hover:bg-foreground/90'
                     : 'text-muted-foreground hover:bg-secondary'
                 )}
                 onClick={() => setViewMode('week')}
               >
                 Week
-              </button>
+              </Button>
             </div>
           ) : null}
 
@@ -161,8 +170,9 @@ export default function Calendar() {
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
-          Loading calendar entries...
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-56 w-full" />
         </div>
       ) : resolvedViewMode === 'day' ? (
         <DayView

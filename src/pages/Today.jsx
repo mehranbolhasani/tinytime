@@ -1,5 +1,6 @@
 import EntryList from '@/components/timer/EntryList'
 import TimerWidget from '@/components/timer/TimerWidget'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { localDayRange } from '@/lib/utils'
 
@@ -23,7 +24,7 @@ export default function Today() {
   return (
     <section className="space-y-4">
       <header className="pb-0">
-        <h1 className="text-lg font-normal tracking-tight text-foreground">{getHeadingDate(today)}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{getHeadingDate(today)}</h1>
       </header>
 
       {error ? (
@@ -39,8 +40,10 @@ export default function Today() {
       />
 
       {isLoading ? (
-        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
-          Loading time entries...
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </div>
       ) : (
         <EntryList entries={completedEntries} deleteEntry={deleteEntry} entryTagsByEntryId={entryTagsByEntryId} />

@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { COLOR_PRESETS, toSafeHexColor } from '@/lib/color'
 
 const DEFAULT_COLOR = COLOR_PRESETS[0]
@@ -154,7 +155,7 @@ export default function ProjectsSection({
         <h2 className="text-sm font-medium text-muted-foreground">Projects</h2>
         <Button
           onClick={handleOpenCreate}
-          className="w-full rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors duration-150 sm:w-auto"
+          className="w-full rounded-lg transition-colors duration-150 sm:w-auto"
         >
           New project
         </Button>
@@ -168,8 +169,10 @@ export default function ProjectsSection({
 
       <div className="space-y-2">
         {isLoading ? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
-            Loading projects...
+          <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
           </div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center py-12 text-center">
@@ -219,7 +222,7 @@ export default function ProjectsSection({
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={handleFormCloseChange}>
-        <DialogContent className="rounded-2xl border-border shadow-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">{isEditing ? 'Edit project' : 'Create project'}</DialogTitle>
             <DialogDescription>
@@ -283,7 +286,7 @@ export default function ProjectsSection({
               <Button
                 type="submit"
                 disabled={isSaving}
-                className="rounded-lg bg-primary text-white hover:bg-primary/90"
+                className="rounded-lg"
               >
                 {isSaving ? 'Saving...' : isEditing ? 'Save changes' : 'Create project'}
               </Button>
@@ -293,7 +296,7 @@ export default function ProjectsSection({
       </Dialog>
 
       <Dialog open={Boolean(projectToDelete)} onOpenChange={(open) => !open && setProjectToDelete(null)}>
-        <DialogContent className="rounded-2xl border-border shadow-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">Delete {projectToDelete?.name}?</DialogTitle>
             <DialogDescription>
@@ -311,9 +314,10 @@ export default function ProjectsSection({
             </Button>
             <Button
               type="button"
+              variant="destructive"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="rounded-lg bg-red-500 text-white hover:bg-red-600"
+              className="rounded-lg"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>

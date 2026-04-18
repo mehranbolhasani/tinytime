@@ -153,11 +153,13 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
   }
 
   const createEntryMutation = useMutation({
-    mutationFn: async ({ project_id, description, started_at }) => {
+    mutationFn: async ({ project_id, description, started_at, stopped_at = null, duration_seconds = null }) => {
       const payload = {
         project_id: project_id ?? null,
         description: description?.trim() ? description.trim() : null,
         started_at,
+        stopped_at,
+        duration_seconds,
       }
 
       const { data, error } = await supabase
@@ -239,8 +241,8 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
     onSuccess: invalidateEntryQueries,
   })
 
-  const createEntry = async ({ project_id, description, started_at }) =>
-    createEntryMutation.mutateAsync({ project_id, description, started_at })
+  const createEntry = async ({ project_id, description, started_at, stopped_at, duration_seconds }) =>
+    createEntryMutation.mutateAsync({ project_id, description, started_at, stopped_at, duration_seconds })
 
   const stopEntry = async (id, stopped_at) => stopEntryMutation.mutateAsync({ id, stopped_at })
 

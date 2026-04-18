@@ -24,32 +24,34 @@ export default function DateRangePicker({
     <section className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {PRESET_RANGES.map((preset) => (
-          <button
+          <Button
             key={preset.id}
             type="button"
+            variant={range === preset.id ? 'default' : 'secondary'}
+            size="sm"
             className={cn(
-              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
-              range === preset.id
-                ? 'bg-foreground text-white'
-                : 'bg-secondary text-muted-foreground hover:bg-border'
+              'h-auto rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
+              range === preset.id ? 'bg-foreground text-background hover:bg-foreground/90' : 'text-muted-foreground hover:bg-border'
             )}
             onClick={() => onRangeChange(preset.id)}
           >
             {preset.label}
-          </button>
+          </Button>
         ))}
-        <button
+        <Button
           type="button"
+          variant={range === 'custom' ? 'default' : 'secondary'}
+          size="sm"
           className={cn(
-            'rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
+            'h-auto rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
             range === 'custom'
-              ? 'bg-foreground text-white'
-              : 'bg-secondary text-muted-foreground hover:bg-border'
+              ? 'bg-foreground text-background hover:bg-foreground/90'
+              : 'text-muted-foreground hover:bg-border'
           )}
           onClick={() => onRangeChange('custom')}
         >
           Custom
-        </button>
+        </Button>
       </div>
 
       {range === 'custom' ? (
@@ -82,7 +84,7 @@ export default function DateRangePicker({
             type="button"
             onClick={() => onApplyCustom(draftFrom || null, draftTo || null)}
             disabled={!draftFrom || !draftTo}
-            className="rounded-lg bg-primary text-white hover:bg-primary/90"
+            className="rounded-lg"
           >
             Apply
           </Button>

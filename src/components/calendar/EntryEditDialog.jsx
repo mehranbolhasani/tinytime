@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import DateTimeField from '@/components/calendar/DateTimeField'
 import TagSelector from '@/components/tags/TagSelector'
 import { Button } from '@/components/ui/button'
 import {
@@ -156,7 +157,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border-border shadow-md sm:max-w-lg [@media(max-width:639px)]:left-0 [@media(max-width:639px)]:top-0 [@media(max-width:639px)]:h-[100dvh] [@media(max-width:639px)]:w-screen [@media(max-width:639px)]:translate-x-0 [@media(max-width:639px)]:translate-y-0 [@media(max-width:639px)]:rounded-none">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-1rem)] overflow-y-auto sm:max-w-lg [@media(max-width:639px)]:left-0 [@media(max-width:639px)]:top-0 [@media(max-width:639px)]:h-[100dvh] [@media(max-width:639px)]:w-screen [@media(max-width:639px)]:translate-x-0 [@media(max-width:639px)]:translate-y-0 [@media(max-width:639px)]:rounded-none">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Edit entry</DialogTitle>
           <DialogDescription>Update details and times for this entry.</DialogDescription>
@@ -209,26 +210,22 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
               <label htmlFor="entry-started-at" className="text-sm font-medium text-muted-foreground">
                 Start datetime
               </label>
-              <Input
+              <DateTimeField
                 id="entry-started-at"
-                type="datetime-local"
                 value={formData.startedAt}
-                onChange={(event) => setFormData((prev) => ({ ...prev, startedAt: event.target.value }))}
+                onChange={(value) => setFormData((prev) => ({ ...prev, startedAt: value }))}
                 required
-                className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
               />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="entry-stopped-at" className="text-sm font-medium text-muted-foreground">
                 Stop datetime
               </label>
-              <Input
+              <DateTimeField
                 id="entry-stopped-at"
-                type="datetime-local"
                 value={formData.stoppedAt}
-                onChange={(event) => setFormData((prev) => ({ ...prev, stoppedAt: event.target.value }))}
+                onChange={(value) => setFormData((prev) => ({ ...prev, stoppedAt: value }))}
                 required
-                className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
               />
             </div>
           </div>
@@ -257,7 +254,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
             <Button
               type="submit"
               disabled={isSaving}
-              className="rounded-lg bg-primary text-white hover:bg-primary/90"
+              className="rounded-lg"
             >
               {isSaving ? 'Saving...' : 'Save changes'}
             </Button>

@@ -7,6 +7,7 @@ import { Cell } from 'recharts/es6/component/Cell'
 import { LabelList } from 'recharts/es6/component/LabelList'
 import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
 import { Tooltip } from 'recharts/es6/component/Tooltip'
+import { CHART_TOOLTIP_STYLE } from '@/lib/chart'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { formatDuration } from '@/lib/utils'
 
@@ -17,7 +18,7 @@ function buildProjectData(entries) {
       map[key] = {
         id: key,
         name: entry.projects?.name ?? 'No project',
-        color: entry.projects?.color ?? '#94a3b8',
+        color: entry.projects?.color ?? 'var(--muted-foreground)',
         seconds: 0,
       }
     }
@@ -45,13 +46,6 @@ function DurationLabel({ x = 0, y = 0, width = 0, height = 0, index, data }) {
       {formatDuration(item.seconds)}
     </text>
   )
-}
-
-const TOOLTIP_STYLE = {
-  borderRadius: '10px',
-  border: '1px solid var(--border)',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-  backgroundColor: 'var(--card)',
 }
 
 const AXIS_TICK_STYLE = { fontSize: 12, fill: 'var(--muted-foreground)' }
@@ -82,7 +76,7 @@ export default function ProjectBarChart({ entries }) {
             <Tooltip
               formatter={(value, _name, payload) => [formatDuration(payload.payload.seconds), 'Duration']}
               labelFormatter={(value) => value}
-              contentStyle={TOOLTIP_STYLE}
+              contentStyle={CHART_TOOLTIP_STYLE}
             />
             <Bar dataKey="hours" isAnimationActive={false} radius={[0, 4, 4, 0]}>
               <LabelList

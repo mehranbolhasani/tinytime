@@ -28,7 +28,7 @@ function calculateSummary(entries) {
       map[key] = {
         seconds: 0,
         name: entry.projects?.name ?? 'No project',
-        color: entry.projects?.color ?? '#94a3b8',
+        color: entry.projects?.color ?? 'var(--muted-foreground)',
       }
     }
 
@@ -48,7 +48,7 @@ function calculateSummary(entries) {
 
 function StatCard({ label, value }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
       <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">{label}</p>
       <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
     </div>
