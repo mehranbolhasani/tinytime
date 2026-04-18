@@ -31,6 +31,37 @@ const NAV_ITEMS = [
   { to: '/projects', label: 'Projects', icon: Folder },
 ]
 
+function GoogleIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M21.35 11.1h-9.18v2.9h5.3a4.55 4.55 0 0 1-1.98 2.99v2.49h3.2c1.87-1.72 2.95-4.25 2.95-7.25 0-.62-.06-1.13-.19-1.63Z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12.17 21.5c2.64 0 4.86-.87 6.48-2.37l-3.2-2.49c-.89.6-2.03.96-3.28.96-2.52 0-4.66-1.7-5.43-3.99H3.45v2.57a9.8 9.8 0 0 0 8.72 5.32Z"
+        fill="#34A853"
+      />
+      <path
+        d="M6.74 13.61a5.88 5.88 0 0 1 0-3.72V7.32H3.45a9.8 9.8 0 0 0 0 8.86l3.29-2.57Z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12.17 5.9c1.4 0 2.65.48 3.64 1.41l2.72-2.72A9.12 9.12 0 0 0 12.17 2a9.8 9.8 0 0 0-8.72 5.32l3.29 2.57c.77-2.29 2.91-3.99 5.43-3.99Z"
+        fill="#EA4335"
+      />
+    </svg>
+  )
+}
+
+function GitHubIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" {...props}>
+      <path d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.38-1.33-1.75-1.33-1.75-1.09-.75.08-.74.08-.74 1.2.08 1.83 1.22 1.83 1.22 1.07 1.82 2.8 1.3 3.49.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.32-5.47-5.88 0-1.3.47-2.36 1.23-3.19-.12-.31-.53-1.54.12-3.21 0 0 1-.32 3.3 1.22a11.6 11.6 0 0 1 6 0c2.3-1.54 3.3-1.22 3.3-1.22.65 1.67.24 2.9.12 3.21.77.83 1.23 1.89 1.23 3.19 0 4.57-2.8 5.58-5.48 5.88.43.37.82 1.09.82 2.2v3.26c0 .32.22.7.83.58A12 12 0 0 0 12 .5Z" />
+    </svg>
+  )
+}
+
 function ConfigErrorView() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
@@ -51,8 +82,10 @@ function AuthView({
   email,
   onEmailChange,
   onSubmit,
+  onSignInWithGoogle,
   onSignInWithGithub,
   isSubmitting,
+  isGoogleSubmitting,
   isGithubSubmitting,
   notice,
   error,
@@ -62,7 +95,7 @@ function AuthView({
       <section className="w-full rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <h1 className="text-lg font-semibold text-foreground">Sign in to tinytime</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Use a magic link so your session can pass Supabase row-level security checks.
+          Use a magic link!
         </p>
 
         <form onSubmit={onSubmit} className="mt-5 space-y-3">
@@ -93,11 +126,27 @@ function AuthView({
         <Button
           type="button"
           variant="outline"
-          onClick={onSignInWithGithub}
-          disabled={isGithubSubmitting}
+          onClick={onSignInWithGoogle}
+          disabled={isGoogleSubmitting}
           className="w-full rounded-lg border-border bg-secondary hover:bg-border"
         >
-          {isGithubSubmitting ? 'Redirecting to GitHub...' : 'Continue with GitHub'}
+          <span className="inline-flex items-center justify-center gap-2">
+            <GoogleIcon className="h-4 w-4" />
+            {isGoogleSubmitting ? 'Redirecting to Google...' : 'Continue with Google'}
+          </span>
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onSignInWithGithub}
+          disabled={isGithubSubmitting}
+          className="mt-3 w-full rounded-lg border-border bg-secondary hover:bg-border"
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <GitHubIcon className="h-4 w-4" />
+            {isGithubSubmitting ? 'Redirecting to GitHub...' : 'Continue with GitHub'}
+          </span>
         </Button>
 
         {notice ? <p className="mt-3 text-sm text-success">{notice}</p> : null}
@@ -358,6 +407,7 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(!supabaseConfigError)
   const [email, setEmail] = useState('')
   const [isSendingLink, setIsSendingLink] = useState(false)
+  const [isSendingGoogle, setIsSendingGoogle] = useState(false)
   const [isSendingGithub, setIsSendingGithub] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [authNotice, setAuthNotice] = useState('')
@@ -443,6 +493,29 @@ export default function App() {
     setIsSigningOut(false)
   }
 
+  const handleSignInWithGoogle = async () => {
+    if (!supabase) {
+      return
+    }
+
+    setIsSendingGoogle(true)
+    setAuthError('')
+    setAuthNotice('')
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    })
+
+    if (error) {
+      setAuthError(getFriendlySupabaseError(error, 'Unable to start Google sign-in.'))
+      setIsSendingGoogle(false)
+      return
+    }
+  }
+
   const handleSignInWithGithub = async () => {
     if (!supabase) {
       return
@@ -484,8 +557,10 @@ export default function App() {
         email={email}
         onEmailChange={setEmail}
         onSubmit={handleSendMagicLink}
+        onSignInWithGoogle={handleSignInWithGoogle}
         onSignInWithGithub={handleSignInWithGithub}
         isSubmitting={isSendingLink}
+        isGoogleSubmitting={isSendingGoogle}
         isGithubSubmitting={isSendingGithub}
         notice={authNotice}
         error={authError}
