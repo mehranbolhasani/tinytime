@@ -1,17 +1,9 @@
-import { Area } from 'recharts/es6/cartesian/Area'
-import { CartesianGrid } from 'recharts/es6/cartesian/CartesianGrid'
-import { XAxis } from 'recharts/es6/cartesian/XAxis'
-import { YAxis } from 'recharts/es6/cartesian/YAxis'
-import { AreaChart } from 'recharts/es6/chart/AreaChart'
-import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
-import { Tooltip } from 'recharts/es6/component/Tooltip'
+import { ResponsiveLine } from '@nivo/line'
+import ChartTooltip from '@/components/reports/ChartTooltip'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { CHART_TOOLTIP_STYLE } from '@/lib/chart'
 import { formatDuration } from '@/lib/utils'
 
-const AREA_COLOR = 'var(--chart-1)'
-
-const AXIS_TICK_STYLE = { fontSize: 12, fill: 'var(--muted-foreground)' }
+const LINE_COLOR = 'var(--primary)'
 
 function parseDateInput(dateInput) {
   if (!dateInput) {
@@ -93,43 +85,115 @@ function buildDailyData(entries, from, to) {
 
 export default function DailyAreaChart({ entries, from, to }) {
   const isMobile = useMediaQuery('(max-width: 639px)')
-  const data = buildDailyData(entries, from, to)
+  const rows = buildDailyData(entries, from, to)
 
-  if (data.length === 0) {
+  if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground/70">No day data for selected range.</p>
   }
 
-  const rotateTicks = !isMobile && data.length > 10
+  const chartData = [
+    {
+      id: 'Hours',
+      data: rows.map((item) => ({
+        x: item.label,
+        y: item.hours,
+        seconds: item.seconds,
+      })),
+    },
+  ]
+
+  const rotateTicks = !isMobile && rows.length > 10
 
   return (
     <div className="h-[320px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: rotateTicks ? 44 : 12 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis
-            dataKey="label"
-            interval={isMobile ? 'preserveStartEnd' : 0}
-            angle={rotateTicks ? -45 : 0}
-            textAnchor={rotateTicks ? 'end' : 'middle'}
-            height={rotateTicks ? 56 : 30}
-            tick={AXIS_TICK_STYLE}
-          />
-          <YAxis tickFormatter={(value) => `${value}h`} tick={AXIS_TICK_STYLE} />
-          <Tooltip
-            formatter={(value, _name, payload) => [formatDuration(payload.payload.seconds), 'Duration']}
-            contentStyle={CHART_TOOLTIP_STYLE}
-          />
-          <Area
-            type="monotone"
-            dataKey="hours"
-            stroke={AREA_COLOR}
-            fill={AREA_COLOR}
-            fillOpacity={0.15}
-            isAnimationActive={false}
-            dot={{ r: 3, fill: AREA_COLOR }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <ResponsiveLine
+        data={chartData}
+        margin={{ top: 8, right: 12, bottom: rotateTicks ? 56 : 28, left: 40 }}
+        xScale={{ type: 'point' }}
+        yScale={{ type: 'linear', min: 0, max: 'auto', stacked: false, reverse: false }}
+        curve="catmullRom"
+        defs={[
+          {
+            id: 'lineGradient',
+            type: 'linearGradient',
+            colors: [
+              { offset: 0, color: LINE_COLOR, opacity: 0.2 },
+              { offset: 100, color: LINE_COLOR, opacity: 0.02 },
+            ],
+          },
+        ]}
+        fill={[{ match: '*', id: 'lineGradient' }]}
+        axisTop={null}
+        axisRight={null}
+        axisBottom={{
+          tickSize: 0,
+          tickPadding: 8,
+          tickRotation: rotateTicks ? -45 : 0,
+          truncateTickAt: isMobile ? 6 : 12,
+        }}
+        axisLeft={{
+          tickSize: 0,
+          tickPadding: 8,
+          format: (value) => `${value}h`,
+          tickValues: 5,
+        }}
+        enablePoints
+        pointSize={5}
+        pointBorderWidth={1.5}
+        pointBorderColor="var(--card)"
+        pointColor={LINE_COLOR}
+        lineWidth={2}
+        enableArea
+        areaOpacity={1}
+        colors={[LINE_COLOR]}
+        enableGridX={false}
+        enableGridY
+        useMesh
+        theme={{
+          axis: {
+            ticks: {
+              text: {
+                fill: 'var(--muted-foreground)',
+                fontSize: 11,
+              },
+            },
+          },
+          grid: {
+            line: {
+              stroke: 'color-mix(in oklab, var(--border) 78%, transparent)',
+              strokeDasharray: '2 4',
+            },
+          },
+          crosshair: {
+            line: {
+              stroke: 'color-mix(in oklab, var(--border) 90%, var(--foreground) 10%)',
+              strokeWidth: 1,
+            },
+          },
+          tooltip: {
+            container: {
+              borderRadius: '12px',
+              border: '1px solid var(--border)',
+              background: 'var(--card)',
+              color: 'var(--foreground)',
+              boxShadow: '0 8px 20px color-mix(in oklab, var(--foreground) 8%, transparent)',
+            },
+          },
+        }}
+        tooltip={({ point }) => {
+          const rawSeconds =
+            point.data.seconds ??
+            point.data.data?.seconds ??
+            Math.round((Number(point.data.y) || 0) * 3600)
+
+          return (
+            <ChartTooltip title={point.data.xFormatted} lines={[formatDuration(rawSeconds)]} />
+          )
+        }}
+        role="application"
+        ariaLabel="Hours by day chart"
+        motionConfig="gentle"
+      />
     </div>
   )
 }

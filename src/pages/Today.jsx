@@ -4,14 +4,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { localDayRange } from '@/lib/utils'
 
-function getHeadingDate(date) {
-  return date.toLocaleDateString([], {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
-}
-
 export default function Today() {
   const today = new Date()
   const { from, to } = localDayRange(today)
@@ -22,10 +14,7 @@ export default function Today() {
   const completedEntries = entries.filter((entry) => entry.stopped_at !== null)
 
   return (
-    <section className="space-y-4">
-      <header className="pb-0">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{getHeadingDate(today)}</h1>
-      </header>
+    <section className="space-y-3">
 
       {error ? (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
@@ -40,7 +29,7 @@ export default function Today() {
       />
 
       {isLoading ? (
-        <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+        <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />

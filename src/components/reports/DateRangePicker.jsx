@@ -21,7 +21,7 @@ export default function DateRangePicker({
   const [draftTo, setDraftTo] = useState(customTo ?? '')
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-3 rounded-xl bg-card p-3">
       <div className="flex flex-wrap gap-2">
         {PRESET_RANGES.map((preset) => (
           <Button
@@ -30,8 +30,8 @@ export default function DateRangePicker({
             variant={range === preset.id ? 'default' : 'secondary'}
             size="sm"
             className={cn(
-              'h-auto rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
-              range === preset.id ? 'bg-foreground text-background hover:bg-foreground/90' : 'text-muted-foreground hover:bg-border'
+              'h-8 rounded-md px-3 text-sm font-normal transition-colors duration-150',
+              range === preset.id ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'text-muted-foreground hover:bg-secondary'
             )}
             onClick={() => onRangeChange(preset.id)}
           >
@@ -43,10 +43,10 @@ export default function DateRangePicker({
           variant={range === 'custom' ? 'default' : 'secondary'}
           size="sm"
           className={cn(
-            'h-auto rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
+            'h-8 rounded-md px-3 text-sm font-normal transition-colors duration-150',
             range === 'custom'
-              ? 'bg-foreground text-background hover:bg-foreground/90'
-              : 'text-muted-foreground hover:bg-border'
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+              : 'text-muted-foreground hover:bg-secondary'
           )}
           onClick={() => onRangeChange('custom')}
         >
@@ -65,7 +65,7 @@ export default function DateRangePicker({
               type="date"
               value={draftFrom}
               onChange={(event) => setDraftFrom(event.target.value)}
-              className="w-full rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
+              className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
             />
           </div>
           <div className="w-full space-y-1 sm:w-auto">
@@ -77,14 +77,14 @@ export default function DateRangePicker({
               type="date"
               value={draftTo}
               onChange={(event) => setDraftTo(event.target.value)}
-              className="w-full rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
+              className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
             />
           </div>
           <Button
             type="button"
             onClick={() => onApplyCustom(draftFrom || null, draftTo || null)}
             disabled={!draftFrom || !draftTo}
-            className="rounded-lg"
+            className="h-8 rounded-md"
           >
             Apply
           </Button>

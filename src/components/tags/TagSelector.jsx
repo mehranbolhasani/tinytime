@@ -26,6 +26,7 @@ export default function TagSelector({
   onChange,
   disabled = false,
   triggerLabel = 'Select tags',
+  showSelectedPills = true,
   className,
 }) {
   const [open, setOpen] = useState(false)
@@ -62,7 +63,7 @@ export default function TagSelector({
             variant="outline"
             type="button"
             disabled={disabled}
-            className="w-full justify-between rounded-full border-border text-sm transition-colors duration-150"
+            className="h-8 w-full justify-between rounded-md border-input bg-card px-3 text-sm font-normal transition-colors duration-150"
           >
             <span className="truncate">
               {selectedTagIds.length > 0 ? `${selectedTagIds.length} tag(s) selected` : triggerLabel}
@@ -106,7 +107,7 @@ export default function TagSelector({
         </PopoverContent>
       </Popover>
 
-      {selectedTags.length > 0 ? (
+      {showSelectedPills && selectedTags.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {selectedTags.map((tag) => (
             <TagPill key={tag.id} tag={tag} compact />

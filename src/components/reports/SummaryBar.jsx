@@ -48,7 +48,7 @@ function calculateSummary(entries) {
 
 function StatCard({ label, value }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+    <div className="rounded-xl bg-card p-4">
       <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">{label}</p>
       <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
     </div>
@@ -60,7 +60,7 @@ export default function SummaryBar({ entries }) {
 
   if (!summary) {
     return (
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
         <StatCard label="Total time" value="—" />
         <StatCard label="Tracked days" value="—" />
         <StatCard label="Daily average" value="—" />
@@ -79,7 +79,7 @@ export default function SummaryBar({ entries }) {
   )
 
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
       <StatCard label="Total time" value={formatDuration(summary.totalSeconds)} />
       <StatCard label="Tracked days" value={summary.trackedDays} />
       <StatCard label="Daily average" value={formatDuration(summary.dailyAverage)} />

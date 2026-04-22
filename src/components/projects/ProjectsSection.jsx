@@ -150,26 +150,26 @@ export default function ProjectsSection({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3 rounded-xl bg-card p-3">
       <header className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
         <h2 className="text-sm font-medium text-muted-foreground">Projects</h2>
         <Button
           onClick={handleOpenCreate}
-          className="w-full rounded-lg transition-colors duration-150 sm:w-auto"
+          className="h-8 w-full rounded-md text-sm transition-colors duration-150 sm:w-auto"
         >
           New project
         </Button>
       </header>
 
       {error ? (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error.message}
         </div>
       ) : null}
 
       <div className="space-y-2">
         {isLoading ? (
-          <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
@@ -183,7 +183,7 @@ export default function ProjectsSection({
           projects.map((project) => (
             <div
               key={project.id}
-              className="group flex flex-col items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-shadow duration-150 hover:shadow-sm sm:flex-row sm:items-center"
+              className="group flex flex-col items-start gap-3 rounded-lg border border-border bg-card px-3 py-3 transition-shadow duration-150 hover:shadow-sm sm:flex-row sm:items-center"
             >
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"

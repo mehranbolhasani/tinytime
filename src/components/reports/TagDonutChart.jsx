@@ -1,12 +1,17 @@
-import { PieChart } from 'recharts/es6/chart/PieChart'
-import { Cell } from 'recharts/es6/component/Cell'
-import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer'
-import { Tooltip } from 'recharts/es6/component/Tooltip'
-import { Pie } from 'recharts/es6/polar/Pie'
-import { CHART_TOOLTIP_STYLE } from '@/lib/chart'
+import { ResponsivePie } from '@nivo/pie'
+import ChartTooltip from '@/components/reports/ChartTooltip'
+import { hexToRgba } from '@/lib/color'
 import { formatDuration } from '@/lib/utils'
 
-const UNTAGGED_COLOR = 'var(--muted-foreground)'
+const UNTAGGED_COLOR = 'color-mix(in oklab, var(--muted-foreground) 72%, var(--card) 28%)'
+
+function getSoftTagColor(color) {
+  if (typeof color === 'string' && color.startsWith('#')) {
+    return hexToRgba(color, 0.78)
+  }
+
+  return UNTAGGED_COLOR
+}
 
 function buildTagData(entries, entryTagsMap) {
   const buckets = {}
@@ -56,35 +61,76 @@ export default function TagDonutChart({ entries, entryTagsMap, tags }) {
   if (data.length === 0) {
     return <p className="text-sm text-muted-foreground/70">No tag data for selected filters.</p>
   }
+  const totalSeconds = data.reduce((sum, item) => sum + item.seconds, 0)
 
   return (
     <div className="grid gap-4 md:grid-cols-[260px_1fr]">
       <div className="h-[260px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="seconds"
-              nameKey="name"
-              innerRadius={60}
-              outerRadius={90}
-              isAnimationActive={false}
-            >
-              {data.map((item) => (
-                <Cell key={item.id} fill={item.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value) => formatDuration(Number(value) || 0)}
-              contentStyle={CHART_TOOLTIP_STYLE}
+        <ResponsivePie
+          data={data}
+          id="name"
+          value="seconds"
+          colors={({ data: item }) => getSoftTagColor(item.color)}
+          margin={{ top: 12, right: 12, bottom: 12, left: 12 }}
+          innerRadius={0.62}
+          padAngle={1.2}
+          cornerRadius={6}
+          activeOuterRadiusOffset={4}
+          borderWidth={0}
+          enableArcLabels={false}
+          enableArcLinkLabels={false}
+          layers={[
+            'arcs',
+            'arcLabels',
+            'arcLinkLabels',
+            'legends',
+            ({ centerX, centerY }) => (
+              <g>
+                <text
+                  x={centerX}
+                  y={centerY - 4}
+                  textAnchor="middle"
+                  className="fill-muted-foreground text-[10px]"
+                >
+                  Total
+                </text>
+                <text
+                  x={centerX}
+                  y={centerY + 16}
+                  textAnchor="middle"
+                  className="fill-foreground text-[11px] font-medium"
+                >
+                  {formatDuration(totalSeconds)}
+                </text>
+              </g>
+            ),
+          ]}
+          tooltip={({ datum }) => (
+            <ChartTooltip
+              title={String(datum.id)}
+              lines={[formatDuration(Number(datum.value) || 0)]}
             />
-          </PieChart>
-        </ResponsiveContainer>
+          )}
+          theme={{
+            tooltip: {
+              container: {
+                borderRadius: '12px',
+                border: '1px solid var(--border)',
+                background: 'var(--card)',
+                color: 'var(--foreground)',
+                boxShadow: '0 8px 20px color-mix(in oklab, var(--foreground) 8%, transparent)',
+              },
+            },
+          }}
+          role="application"
+          ariaLabel="Hours by tag chart"
+          motionConfig="gentle"
+        />
       </div>
 
-      <ul className="space-y-2">
+      <ul className="space-y-1.5">
         {data.map((item) => (
-          <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
+          <li key={item.id} className="flex items-center justify-between gap-2 rounded-md px-1 py-0.5 text-sm">
             <span className="inline-flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
               <span className="text-foreground">{item.name}</span>

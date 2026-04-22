@@ -230,7 +230,10 @@ export default function DayView({ selectedDate, entries, activeEntry, entryTagsB
           {mutationError}
         </div>
       ) : null}
-      <div ref={scrollRef} className="rounded-2xl border border-border bg-card h-fit overflow-clip">
+      <div
+        ref={scrollRef}
+        className="h-full overflow-clip rounded-xl bg-card"
+      >
         <div className="grid grid-cols-[56px_1fr]">
           <div className="relative border-r border-border bg-secondary/50" style={{ height: GRID_HEIGHT }}>
             {HOURS.map((hour) => (

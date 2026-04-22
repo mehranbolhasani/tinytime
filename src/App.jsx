@@ -4,17 +4,9 @@ import { BrowserRouter, NavLink, Route, Routes, useLocation, useNavigate } from 
 import { Clock, CalendarDays, BarChart2, Folder, Menu, PlayCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
-import { useViewport } from '@/hooks/useMediaQuery'
 import { useTheme } from '@/hooks/useTheme'
 import { formatDurationHMS } from '@/lib/utils'
 import { assertSupabaseClient, getFriendlySupabaseError, supabaseConfigError } from '@/lib/supabase'
@@ -178,12 +170,10 @@ function ThemePreferenceToggle({ preference, options, onChange }) {
 }
 
 function AppLayout({ userEmail, onSignOut, isSigningOut }) {
-  const { isDesktop } = useViewport()
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { preference, setThemePreference, options } = useTheme()
   const timer = useTimerContext()
-  const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false)
   const hasPrefetchedReports = useRef(false)
 
   const handlePrefetchReports = () => {
@@ -227,116 +217,72 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
   )
 
   const navLinks = NAV_ITEMS.map((item) => (
-    <li key={item.to}>
+    <li key={item.to} className="shrink-0">
       <NavLink
         to={item.to}
         end={item.to === '/'}
         onPointerEnter={item.to === '/reports' ? handlePrefetchReports : undefined}
         className={({ isActive }) =>
-          `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-100 ${
+          `inline-flex items-center rounded-md px-4 py-3 text-sm font-normal transition-colors duration-100 ${
             isActive
-              ? 'bg-secondary text-foreground'
-              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              ? 'text-primary bg-primary/10'
+              : 'text-muted-foreground hover:text-foreground'
           }`
         }
       >
-        <item.icon className="h-4 w-4" />
-        {item.label}
+        <item.icon className="h-5 w-5" />
       </NavLink>
     </li>
   ))
 
-  if (isDesktop) {
-    return (
-      <div className="flex min-h-screen gap-6 px-4 sm:px-6 lg:gap-8 lg:px-8">
-        <div className="relative hidden w-[250px] lg:block">
-          <aside className="relative top-8 z-40 flex h-fit flex-col rounded-xl bg-card">
-            <div className="flex items-center gap-1 px-4 py-4">
-              <span className="relative h-1.5 w-6 rounded-md bg-primary" />
-              <span className="text-base font-normal text-foreground">tiny<span className="font-bold text-primary">time</span></span>
-            </div>
-
-            <nav className="px-4 py-4">
-              <ul className="space-y-0.5">{navLinks}</ul>
-            </nav>
-
-            <div className="space-y-2 border-t border-border px-4 py-4">
-              <ThemePreferenceToggle
-                preference={preference}
-                options={options}
-                onChange={setThemePreference}
-              />
-              <p className="truncate text-xs text-muted-foreground/70">{userEmail}</p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onSignOut}
-                disabled={isSigningOut}
-                className="w-full rounded-lg border-border bg-secondary"
-              >
-                {isSigningOut ? 'Signing out...' : 'Sign out'}
-              </Button>
-            </div>
-          </aside>
-        </div>
-
-        <main className="flex-1 py-4">
-          {content}
-        </main>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-1">
-            <span className="relative h-1.5 w-6 rounded-md bg-primary" />
-            <span className="text-base font-normal text-foreground">tiny<span className="font-bold text-primary">time</span></span>
+      <main className="mx-auto w-full max-w-[560px] px-4 pb-44 pt-5 sm:px-6">
+        <header className="mb-3 flex items-center justify-between">
+          <div className="inline-flex items-center gap-1">
+            <span className="relative h-1.5 w-4 rounded-sm bg-primary" />
+            <span className="text-base font-normal tracking-tight text-foreground">
+              tiny<span className="text-primary">time</span>
+            </span>
           </div>
-
-          <Sheet open={isAccountSheetOpen} onOpenChange={setIsAccountSheetOpen}>
-            <SheetTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 aria-label="Open account options"
-                className="h-11 w-11 rounded-full text-muted-foreground hover:text-foreground"
+                className="h-8 w-8 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4" />
               </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="border-border px-5">
-              <SheetHeader>
-                <SheetTitle>Preferences</SheetTitle>
-                <SheetDescription>Theme and account actions.</SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4">
+            </PopoverTrigger>
+            <PopoverContent align="end" className="z-50 w-[280px] space-y-3 rounded-lg border-border p-3 shadow-sm">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">Preferences</p>
+                <p className="text-xs text-muted-foreground">Theme and account actions.</p>
+              </div>
+              <div className="space-y-3">
                 <ThemePreferenceToggle
                   preference={preference}
                   options={options}
                   onChange={setThemePreference}
                 />
-                <p className="truncate text-sm text-muted-foreground">{userEmail}</p>
+                <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onSignOut}
                   disabled={isSigningOut}
-                  className="w-full rounded-lg border-border bg-secondary"
+                  className="h-8 w-full rounded-md border-border bg-secondary text-sm"
                 >
                   {isSigningOut ? 'Signing out...' : 'Sign out'}
                 </Button>
               </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </header>
+            </PopoverContent>
+          </Popover>
+        </header>
 
-      <main className="px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-16 sm:px-6">
         {content}
       </main>
 
@@ -345,7 +291,8 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
           type="button"
           variant="outline"
           onClick={handleMiniTimerClick}
-          className="fixed inset-x-4 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 h-auto items-center justify-between rounded-xl border-border bg-card px-3 py-2 shadow-md sm:inset-x-6"
+          className="fixed left-1/2 z-40 flex h-auto w-[calc(100%-2rem)] max-w-[512px] -translate-x-1/2 items-center justify-between rounded-lg border-border bg-card px-3 py-2 shadow-sm"
+          style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
         >
           <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
             <PlayCircle className="h-4 w-4 text-primary" />
@@ -355,27 +302,9 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
         </Button>
       ) : null}
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-        <ul className="mx-auto grid max-w-xl grid-cols-4 px-2">
-          {NAV_ITEMS.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.to === '/'}
-                onPointerEnter={item.to === '/reports' ? handlePrefetchReports : undefined}
-                className={({ isActive }) =>
-                  `flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors ${
-                    isActive
-                      ? 'text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`
-                }
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
+      <nav className="fixed bottom-4 left-1/2 z-50 w-fit -translate-x-1/2 rounded-xl bg-card/95 px-2 py-2 backdrop-blur shadow-xl shadow-primary/10">
+        <ul className="flex items-center justify-between gap-1">
+          {navLinks}
         </ul>
       </nav>
     </div>

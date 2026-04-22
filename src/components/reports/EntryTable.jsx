@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import EntryDetailsDialog from '@/components/reports/EntryDetailsDialog'
 import { hexToRgba } from '@/lib/color'
 import { formatDate, formatDuration } from '@/lib/utils'
 
@@ -14,6 +16,11 @@ function truncateDescription(text, maxLength = 60) {
 }
 
 export default function EntryTable({ entries, entryTagsMap }) {
+  const [selectedEntryId, setSelectedEntryId] = useState(null)
+
+  const selectedEntry = entries.find((entry) => entry.id === selectedEntryId) ?? null
+  const selectedEntryTags = selectedEntry ? (entryTagsMap[selectedEntry.id] ?? []) : []
+
   if (entries.length === 0) {
     return <p className="text-sm text-muted-foreground/70">No entries in this period.</p>
   }
@@ -60,27 +67,33 @@ export default function EntryTable({ entries, entryTagsMap }) {
         })}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-card sm:block">
-        <table className="w-full min-w-[860px] text-sm">
+      <div className="hidden rounded-2xl border border-border bg-card sm:block">
+        <table className="w-full table-fixed text-sm">
           <thead>
             <tr className="bg-secondary">
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Project</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Description</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Tags</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Project</th>
               <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Duration</th>
             </tr>
           </thead>
           <tbody>
             {entries.map((entry) => {
-              const tags = entryTagsMap[entry.id] ?? []
-              const visibleTags = tags.slice(0, 3)
-              const hiddenCount = Math.max(0, tags.length - visibleTags.length)
-
               return (
-                <tr key={entry.id} className="border-t border-border transition-colors duration-150 hover:bg-secondary">
-                  <td className="px-4 py-3 text-muted-foreground">{formatDate(entry.started_at)}</td>
-                  <td className="px-4 py-3">
+                <tr
+                  key={entry.id}
+                  tabIndex={0}
+                  role="button"
+                  onClick={() => setSelectedEntryId(entry.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      setSelectedEntryId(entry.id)
+                    }
+                  }}
+                  className="cursor-pointer border-t border-border transition-colors duration-150 hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
+                >
+                  <td className="px-4 py-3 text-foreground">{truncateDescription(entry.description)}</td>
+                  <td className="px-4 py-3 truncate">
                     {entry.projects ? (
                       <span className="inline-flex items-center gap-2">
                         <span
@@ -93,31 +106,7 @@ export default function EntryTable({ entries, entryTagsMap }) {
                       <span className="text-muted-foreground/70">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-foreground">{truncateDescription(entry.description)}</td>
-                  <td className="px-4 py-3">
-                    {tags.length === 0 ? (
-                      <span className="text-muted-foreground/70">—</span>
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-1">
-                        {visibleTags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="rounded-full px-2 py-0.5 text-xs font-medium"
-                            style={{
-                              backgroundColor: hexToRgba(tag.color, 0.15),
-                              color: tag.color,
-                            }}
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
-                        {hiddenCount > 0 ? (
-                          <span className="text-xs text-muted-foreground/70">+{hiddenCount} more</span>
-                        ) : null}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono font-medium tabular-nums text-foreground">
+                  <td className="w-28 px-4 py-3 text-right font-mono font-medium tabular-nums text-foreground">
                     {formatDuration(entry.duration_seconds ?? 0)}
                   </td>
                 </tr>
@@ -126,6 +115,17 @@ export default function EntryTable({ entries, entryTagsMap }) {
           </tbody>
         </table>
       </div>
+
+      <EntryDetailsDialog
+        entry={selectedEntry}
+        tags={selectedEntryTags}
+        open={Boolean(selectedEntry)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setSelectedEntryId(null)
+          }
+        }}
+      />
     </>
   )
 }

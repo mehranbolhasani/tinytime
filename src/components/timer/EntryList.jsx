@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { hexToRgba, toSafeHexColor } from '@/lib/color'
-import { formatDuration, formatDurationOrDash, formatTime } from '@/lib/utils'
+import { formatDurationHMS, formatTime } from '@/lib/utils'
 
 export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {} }) {
   const [editingEntry, setEditingEntry] = useState(null)
@@ -37,14 +37,19 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
     }
   }
 
+  const formatTimeWithSeconds = (dateString) => {
+    const formatted = formatTime(dateString)
+    if (!formatted) {
+      return '00:00:00'
+    }
+
+    return `${formatted}:00`
+  }
+
   return (
     <section className="space-y-3">
-      <header>
-        <h2 className="text-sm font-medium text-muted-foreground">Today&apos;s entries</h2>
-      </header>
-
       {entries.length === 0 ? (
-        <div className="flex flex-col items-center py-12 text-center">
+        <div className="flex flex-col items-center rounded-xl bg-card py-12 text-center">
           <Clock className="mb-2 h-8 w-8 text-muted-foreground/70" />
           <p className="text-sm text-muted-foreground/70">No entries yet today. Start the timer above.</p>
         </div>
@@ -57,22 +62,23 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
             return (
               <li
                 key={entry.id}
-                className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:py-2 transition-shadow duration-150 hover:shadow-sm"
+                className="group flex items-center gap-2 rounded-xl bg-card px-3 py-2 transition-shadow duration-150 hover:shadow-sm"
               >
-                {entry.projects ? (
-                  <span
-                    className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                    style={{ backgroundColor: toSafeHexColor(entry.projects.color) }}
-                  />
-                ) : (
-                  <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-muted-foreground/30" />
-                )}
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: entry.projects ? toSafeHexColor(entry.projects.color) : '#d4d4d4' }}
+                />
 
-                <div className="flex flex-1 items-center gap-3 overflow-hidden">
-                  <span className="flex-1 truncate text-sm font-medium text-foreground">
-                    {entry.description || 'No description'}
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
+                  <span className="truncate font-mono text-sm text-foreground">
+                    {formatTimeWithSeconds(entry.started_at)}
                   </span>
+                  <span className="shrink-0 font-mono text-sm text-[#9ca3af]">
+                    {formatDurationHMS(entry.duration_seconds ?? 0)}
+                  </span>
+                </div>
 
+                <div className="hidden items-center gap-1 sm:flex">
                   {tags.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {visibleTags.map((tag) => (
@@ -96,14 +102,6 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
                   ) : null}
                 </div>
 
-                <span className="whitespace-nowrap font-mono text-xs text-muted-foreground/70">
-                  {formatTime(entry.started_at)} – {formatTime(entry.stopped_at)}
-                </span>
-
-                <span className="ml-2 whitespace-nowrap font-mono text-sm font-medium text-muted-foreground">
-                  {formatDuration(entry.duration_seconds ?? 0)}
-                </span>
-
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -111,7 +109,7 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
                       size="icon"
                       aria-label="Entry actions"
                       disabled={isDeletingId === entry.id}
-                      className="text-muted-foreground/70 opacity-0 transition-opacity duration-100 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100 hover:text-foreground"
+                      className="text-muted-foreground/70 transition-opacity duration-100 hover:text-foreground"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -134,7 +132,7 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
 
       {entries.length > 0 ? (
         <footer className="text-right text-sm font-medium text-muted-foreground">
-          Total: {formatDurationOrDash(totalDuration)}
+          Total: {formatDurationHMS(totalDuration)}
         </footer>
       ) : null}
 

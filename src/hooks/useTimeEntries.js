@@ -180,11 +180,27 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
   const stopEntryMutation = useMutation({
     mutationFn: async ({ id, stopped_at }) => {
       const entry = entries.find((item) => item.id === id) ?? getEntryFromCache(queryClient, id)
-      if (!entry?.started_at) {
+      let startedAt = entry?.started_at ?? null
+
+      if (!startedAt) {
+        const { data: entryById, error: entryByIdError } = await supabase
+          .from('time_entries')
+          .select('id, started_at')
+          .eq('id', id)
+          .single()
+
+        if (entryByIdError) {
+          throw new Error(getFriendlySupabaseError(entryByIdError, 'Unable to load timer entry details.'))
+        }
+
+        startedAt = entryById?.started_at ?? null
+      }
+
+      if (!startedAt) {
         throw new Error('Unable to stop timer entry without a valid start time.')
       }
 
-      const duration_seconds = computeDuration(entry.started_at, stopped_at)
+      const duration_seconds = computeDuration(startedAt, stopped_at)
       const { data, error } = await supabase
         .from('time_entries')
         .update({

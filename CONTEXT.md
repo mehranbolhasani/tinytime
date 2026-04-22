@@ -21,7 +21,7 @@ A minimal personal time tracker inspired by Toggl Track. Solo use only. Web app 
 - Components never import `supabase` directly. All Supabase calls live in hooks inside `src/hooks/`.
 - One hook per domain: `useTimer`, `useTimeEntries`, `useProjects`, `useTags`.
 - All duration math uses seconds as the base unit. Format for display in `src/lib/utils.js`.
-- Tailwind only for styling. No inline styles, no CSS modules, no extra CSS files unless absolutely necessary.
+- Tailwind only for styling. Avoid inline styles unless needed for precise dynamic positioning, and keep usage minimal.
 - shadcn/ui for all UI primitives (Button, Dialog, Popover, Input, Select, DropdownMenu, etc.). Do not build these from scratch.
 - Keep components small and single-purpose. If a component exceeds ~150 lines, split it.
 - No unnecessary dependencies. Check if something already in the stack can solve the problem first.
@@ -36,7 +36,7 @@ src/
     TimerContext.jsx # Shared active-entry + elapsed timer state
   components/
     timer/          # Active timer widget (start/stop, current entry display)
-    calendar/       # Day view and week view
+    calendar/       # Day view timeline/grid and entry editing interactions
     projects/       # Project management sections/forms
     reports/        # Charts, summary stats, CSV export
     tags/           # Tag management sections/forms
@@ -54,7 +54,7 @@ src/
     calendar.js     # Calendar layout helpers (blocks, overlap lanes)
   pages/
     Today.jsx       # Default view: timer + today's entries
-    Calendar.jsx    # Week/day grid view of entries
+    Calendar.jsx    # Day-only grid view of entries
     Reports.jsx     # Charts by project/tag, date range picker, CSV export
     Projects.jsx    # Manage projects
 ```
@@ -124,17 +124,39 @@ RLS (Row Level Security) is enabled on all tables. All rows are scoped to `auth.
 
 ---
 
+## UI layout conventions
+
+- Shared app shell in `App.jsx` uses a centered content column (`max-w-[560px]`).
+- A compact top header card is shown on all authenticated pages with:
+  - `tinytime` logo (left)
+  - hamburger trigger (right)
+- Account/settings actions are shown in a compact popover card (not a slide-in sheet).
+- Bottom navigation is persistent and focuses on section links (Today, Calendar, Reports, Projects).
+
+---
+
 ## Features in scope (MVP)
 
-- [ ] Start/stop timer with description and project
-- [ ] Assign tags to an entry
-- [ ] Edit and delete past entries
-- [ ] Day view: list of entries for the selected day, total hours
-- [ ] Week view: 7-column grid, entries as time blocks
-- [ ] Reports: hours by project (bar chart), hours by tag (pie/donut), date range filter
-- [ ] CSV export of filtered entries
-- [ ] Project management (create, edit color, set hourly rate, delete)
-- [ ] Tag management (create, edit, delete)
+- [x] Start/stop timer with description and project
+- [x] Assign tags to an entry
+- [x] Edit and delete past entries
+- [x] Day view: list of entries for the selected day, total hours
+- [x] Day-only calendar view: timeline/grid with draggable/editable entries
+- [x] Reports: hours by project (bar chart), hours by tag (pie/donut), date range filter
+- [x] CSV export of filtered entries
+- [x] Project management (create, edit color, set hourly rate, delete)
+- [x] Tag management (create, edit, delete)
+
+---
+
+## Current known gaps / next milestones
+
+- [ ] Improve responsive behavior for dense views (Calendar + Reports) on small screens.
+- [ ] Add a lightweight onboarding/empty-state flow for first-time users after auth.
+- [ ] Add a production-ready test baseline (unit tests for helpers/hooks + smoke E2E for core flows).
+- [ ] Improve auth redirect configuration ergonomics (document and/or support explicit env override).
+- [ ] Add accessibility review pass (keyboard interactions, focus states, contrast checks).
+- [ ] Add optional performance pass for chart-heavy reports (memoization + render profiling).
 
 ## Out of scope (do not build)
 

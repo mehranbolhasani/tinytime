@@ -127,15 +127,15 @@ export default function Reports() {
   const canExport = filteredEntries.length > 0 && Boolean(from && to)
 
   return (
-    <section className="space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-6">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Reports</h1>
+    <section className="space-y-3">
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card p-3">
+        <h1 className="text-sm font-medium text-foreground">Reports</h1>
         <Button
           type="button"
           variant="outline"
           onClick={() => exportToCSV(filteredEntries, entryTagsByEntryId, from, to)}
           disabled={!canExport}
-          className="rounded-lg border-border transition-colors duration-150"
+          className="h-8 rounded-md border-border text-sm transition-colors duration-150"
         >
           Export CSV
         </Button>
@@ -150,13 +150,13 @@ export default function Reports() {
       />
 
       {entriesError || projectsError || tagsError ? (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {entriesError?.message ?? projectsError?.message ?? tagsError?.message}
         </div>
       ) : null}
 
       {isLoading ? (
-        <div className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-6">
+        <div className="space-y-3 rounded-xl bg-card p-4">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-40 w-full" />
           <Skeleton className="h-40 w-full" />
@@ -176,15 +176,15 @@ export default function Reports() {
             onResetTags={() => setSelectedTagIds([])}
           />
 
-          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-            <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <div className="grid gap-4 md:grid-cols-1">
+            <section className="rounded-xl bg-card p-4">
               <h2 className="mb-4 text-sm font-medium text-muted-foreground">
                 Hours by project
               </h2>
               <ProjectBarChart entries={filteredEntries} />
             </section>
 
-            <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+            <section className="rounded-xl bg-card p-4">
               <h2 className="mb-4 text-sm font-medium text-muted-foreground">
                 Hours by tag
               </h2>
@@ -192,7 +192,7 @@ export default function Reports() {
             </section>
           </div>
 
-          <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <section className="rounded-xl bg-card p-4">
             <h2 className="mb-4 text-sm font-medium text-muted-foreground">
               Hours by day
             </h2>

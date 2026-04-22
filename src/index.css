@@ -2,12 +2,73 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@font-face {
+    font-family: 'Geist Sans';
+    src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Geist Mono';
+    src: url('../node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Geist Pixel Square';
+    src: url('../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Square.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Geist Pixel Grid';
+    src: url('../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Grid.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Geist Pixel Circle';
+    src: url('../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Circle.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Geist Pixel Triangle';
+    src: url('../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Triangle.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Geist Pixel Line';
+    src: url('../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Line.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: 'InterVariable', 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-sans: 'InterVariable', 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+    --font-heading: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+    --font-pixel: 'Geist Pixel Square', 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+    --font-pixel-grid: 'Geist Pixel Grid', 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+    --font-pixel-circle: 'Geist Pixel Circle', 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+    --font-pixel-triangle: 'Geist Pixel Triangle', 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+    --font-pixel-line: 'Geist Pixel Line', 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -51,47 +112,30 @@
 }
 
 :root {
-    font-family: Inter, sans-serif;
+    font-family: 'Geist Sans', sans-serif;
     font-feature-settings: 'liga' 1, 'calt' 1;
 
-    /* Warm design tokens */
-    --color-bg:         #faf9f7;
-    --color-surface:    #ffffff;
-    --color-surface-2:  #f5f3f0;
-    --color-border-warm:#e8e4de;
-    --color-text-1:     #1c1917;
-    --color-text-2:     #78716c;
-    --color-text-3:     #a8a29e;
-    --color-accent-warm:#e76f51;
-    --color-accent-2:   #f4a261;
-    --radius-sm-token:  6px;
-    --radius-md-token:  10px;
-    --radius-lg-token:  16px;
-    --radius-xl-token:  24px;
-    --shadow-sm:        0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md:        0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-
     /* shadcn variable overrides — warm palette */
-    --background: #faf9f7;
-    --foreground: #1c1917;
+    --background: oklch(96.8% 0.007 247.896);
+    --foreground: #0a0a0a;
     --card: #ffffff;
     --card-foreground: #1c1917;
     --popover: #ffffff;
     --popover-foreground: #1c1917;
-    --primary: #e76f51;
-    --primary-foreground: #ffffff;
-    --secondary: #f5f3f0;
-    --secondary-foreground: #1c1917;
-    --muted: #f5f3f0;
-    --muted-foreground: #78716c;
-    --accent: #f5f3f0;
-    --accent-foreground: #1c1917;
+    --primary: oklch(0.51 0.274 267.287);
+    --primary-foreground: #fafafa;
+    --secondary: #fafafa;
+    --secondary-foreground: #0a0a0a;
+    --muted: #fafafa;
+    --muted-foreground: #737373;
+    --accent: #fafafa;
+    --accent-foreground: #0a0a0a;
     --destructive: #ef4444;
     --success: #059669;
     --success-foreground: #ffffff;
-    --border: #e8e4de;
-    --input: #e8e4de;
-    --ring: #e76f51;
+    --border: #e5e5e5;
+    --input: #e5e5e5;
+    --ring: oklch(0.655 0.187 29.82);
     --overlay: rgb(0 0 0 / 0.4);
     --chart-1: #e76f51;
     --chart-2: #f4a261;
@@ -101,12 +145,12 @@
     --radius: 0.625rem;
     --sidebar: #ffffff;
     --sidebar-foreground: #1c1917;
-    --sidebar-primary: #e76f51;
+    --sidebar-primary: oklch(0.655 0.187 29.82);
     --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: #f5f3f0;
     --sidebar-accent-foreground: #1c1917;
     --sidebar-border: #e8e4de;
-    --sidebar-ring: #e76f51;
+    --sidebar-ring: oklch(0.655 0.187 29.82);
 }
 
 .dark {
@@ -126,7 +170,7 @@
     --card-foreground: #f5f3f0;
     --popover: #292524;
     --popover-foreground: #f5f3f0;
-    --primary: #e76f51;
+    --primary: oklch(0.51 0.274 267.287);
     --primary-foreground: #ffffff;
     --secondary: #3a3532;
     --secondary-foreground: #f5f3f0;
@@ -139,7 +183,7 @@
     --success-foreground: #1c1917;
     --border: #44403c;
     --input: #44403c;
-    --ring: #e76f51;
+    --ring: oklch(0.51 0.274 267.287);
     --overlay: rgb(0 0 0 / 0.6);
     --chart-1: #e76f51;
     --chart-2: #f4a261;
@@ -148,18 +192,12 @@
     --chart-5: #e9c46a;
     --sidebar: #292524;
     --sidebar-foreground: #f5f3f0;
-    --sidebar-primary: #e76f51;
+    --sidebar-primary: oklch(0.51 0.274 267.287);
     --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: #3a3532;
     --sidebar-accent-foreground: #f5f3f0;
     --sidebar-border: #44403c;
-    --sidebar-ring: #e76f51;
-}
-
-@supports (font-variation-settings: normal) {
-  :root {
-    font-family: InterVariable, sans-serif;
-  }
+    --sidebar-ring: oklch(0.51 0.274 267.287);
 }
 
 @layer base {
@@ -178,23 +216,30 @@
     background-color: color-mix(in oklab, var(--primary) 28%, transparent);
     color: var(--foreground);
   }
+}
 
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+@layer utilities {
+  .font-geist-mono {
+    font-family: var(--font-mono);
   }
 
-  ::-webkit-scrollbar-track {
-    background: var(--background);
+  .font-geist-pixel {
+    font-family: var(--font-pixel);
   }
 
-  ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 999px;
-    border: 2px solid var(--background);
+  .font-geist-pixel-grid {
+    font-family: var(--font-pixel-grid);
   }
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
+  .font-geist-pixel-circle {
+    font-family: var(--font-pixel-circle);
+  }
+
+  .font-geist-pixel-triangle {
+    font-family: var(--font-pixel-triangle);
+  }
+
+  .font-geist-pixel-line {
+    font-family: var(--font-pixel-line);
   }
 }

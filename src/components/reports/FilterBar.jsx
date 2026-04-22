@@ -29,10 +29,10 @@ export default function FilterBar({
   onResetTags,
 }) {
   return (
-    <section className="flex flex-wrap gap-2">
+    <section className="flex flex-wrap gap-2 rounded-xl bg-card p-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" className="rounded-lg border-border transition-colors duration-150">
+          <Button type="button" variant="outline" className="h-8 rounded-md border-border text-sm transition-colors duration-150">
             {getFilterLabel(selectedProjectIds, 'projects')}
           </Button>
         </DropdownMenuTrigger>
@@ -62,7 +62,7 @@ export default function FilterBar({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" className="rounded-lg border-border transition-colors duration-150">
+          <Button type="button" variant="outline" className="h-8 rounded-md border-border text-sm transition-colors duration-150">
             {getFilterLabel(selectedTagIds, 'tags')}
           </Button>
         </DropdownMenuTrigger>

@@ -116,72 +116,78 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
   }
 
   return (
-    <section className="space-y-5 rounded-xl border border-border bg-card p-4 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+    <section className="flex flex-col bg-card rounded-2xl overflow-hidden p-1">
+      <div className="space-y-6 p-4">
         <input
           type="text"
-          placeholder="What are you working on?"
+          placeholder="Describe your work"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           disabled={isSubmitting}
-          className="w-full min-w-0 border-0 border-b border-transparent bg-transparent text-base text-foreground placeholder:text-muted-foreground/70 focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-0"
+          className="h-12 w-full border-b border-input bg-card px-3 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/30"
         />
-        <Select
-          value={selectedProject}
-          onValueChange={setSelectedProject}
-          disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
-        >
-          <SelectTrigger className="w-full rounded-full border-border text-sm sm:w-56">
-            <SelectValue placeholder="No project" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                <span className="inline-flex items-center gap-2">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: toSafeHexColor(project.color) }}
-                  />
-                  <span>{project.name}</span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
-        <TagSelector
-          tags={tags}
-          selectedTagIds={selectedTagIds}
-          onChange={setSelectedTagIds}
-          disabled={isSubmitting || isLoadingTags || isEntriesLoading}
-          className="w-full sm:w-auto"
-        />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <Select
+              value={selectedProject}
+              onValueChange={setSelectedProject}
+              disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
+            >
+              <SelectTrigger className="h-8 w-[156px] rounded-md border-input bg-card text-sm">
+                <SelectValue placeholder="No project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: toSafeHexColor(project.color) }}
+                      />
+                      <span>{project.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <TagSelector
+              tags={tags}
+              selectedTagIds={selectedTagIds}
+              onChange={setSelectedTagIds}
+              disabled={isSubmitting || isLoadingTags || isEntriesLoading}
+              triggerLabel="No tags"
+              showSelectedPills={false}
+              className="w-[156px]"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant={timer.isRunning ? 'destructive' : 'default'}
+            className="h-8 rounded-md px-4 text-sm font-medium shadow-[0px_1px_2px_rgba(0,0,0,0.05)]"
+            onClick={timer.isRunning ? handleStop : handleStart}
+            disabled={isSubmitting || isEntriesLoading}
+          >
+            {isSubmitting ? 'Working...' : timer.isRunning ? 'Stop' : 'Start'}
+          </Button>
+        </div>
       </div>
 
-
-      {isEntriesLoading ? (
-        <p className="text-xs text-muted-foreground/70">Loading your current timer state...</p>
-      ) : null}
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="min-h-52 flex items-center justify-center bg-linear-to-b from-transparent via-primary/3 to-primary/5 rounded-xl">
         <span className={cn(
-          'font-mono text-2xl font-semibold tracking-tight text-foreground transition-opacity duration-150 sm:text-3xl',
-          !timer.isRunning && 'text-muted-foreground/70'
+          'block text-center font-pixel text-7xl tracking-loose text-foreground transition-opacity duration-150',
+          !timer.isRunning && 'text-foreground'
         )}>
           {timer.isRunning ? formatDurationHMS(timer.elapsed) : '00:00:00'}
         </span>
-
-        <Button
-          type="button"
-          variant={timer.isRunning ? 'destructive' : 'default'}
-          className="w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-transform duration-100 active:scale-95 sm:min-w-32 sm:w-auto"
-          onClick={timer.isRunning ? handleStop : handleStart}
-          disabled={isSubmitting || isEntriesLoading}
-        >
-          {isSubmitting ? 'Working...' : timer.isRunning ? 'Stop' : 'Start'}
-        </Button>
       </div>
+
+      {isEntriesLoading ? (
+        <p className="text-xs text-muted-foreground/80">Loading your current timer state...</p>
+      ) : null}
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </section>
