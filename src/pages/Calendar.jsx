@@ -4,14 +4,9 @@ import DayView from '@/components/calendar/DayView'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTimerContext } from '@/contexts/TimerContext'
+import { useGoogleCalendar, useGoogleEventsForRange } from '@/hooks/useGoogleCalendar'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { localDayRange } from '@/lib/utils'
-
-function startOfDay(date) {
-  const next = new Date(date)
-  next.setHours(0, 0, 0, 0)
-  return next
-}
 
 function addDays(date, days) {
   const next = new Date(date)
@@ -34,6 +29,18 @@ export default function Calendar() {
 
   const { activeEntry } = useTimerContext()
   const { entries, isLoading, error, entryTagsByEntryId } = useTimeEntriesList({ from, to })
+  const { connection, calendars, selectedCalendarIds } = useGoogleCalendar()
+  const {
+    googleEvents,
+    isLoadingGoogleEvents,
+    googleEventsError,
+  } = useGoogleEventsForRange({
+    from,
+    to,
+    selectedCalendarIds,
+    calendars,
+    enabled: connection.connected && !connection.needsReconnect,
+  })
 
   const periodLabel = useMemo(() => formatDayLabel(selectedDate), [selectedDate])
 
@@ -79,6 +86,11 @@ export default function Calendar() {
           {error.message}
         </div>
       ) : null}
+      {googleEventsError ? (
+        <div className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+          {googleEventsError.message}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
@@ -91,6 +103,8 @@ export default function Calendar() {
           entries={entries}
           activeEntry={activeEntry}
           entryTagsByEntryId={entryTagsByEntryId}
+          googleEvents={googleEvents}
+          isLoadingGoogleEvents={isLoadingGoogleEvents}
         />
       )}
     </section>

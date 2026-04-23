@@ -163,5 +163,5 @@ RLS (Row Level Security) is enabled on all tables. All rows are scoped to `auth.
 - Team / multi-user features
 - Invoicing or billing generation
 - Mobile app
-- Integrations (Jira, GitHub, etc.)
+- Integrations (Jira, GitHub, etc.), except the approved read-only Google Calendar integration for Calendar day view display
 - Offline mode

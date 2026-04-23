@@ -17,6 +17,7 @@ A small personal time tracker built with React, Vite, and Supabase.
 3. Fill in:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SUPABASE_FUNCTIONS_URL` (optional)
 4. Start the app:
    - `npm run dev`
 
@@ -57,3 +58,39 @@ If your schema does not include ownership columns/policies, writes will fail wit
 
 - `npm run lint`
 - `npm run build`
+
+## Google Calendar integration setup
+
+This app can connect a Google account and display read-only calendar events in the Calendar day view.
+
+### 1) Google Cloud Console
+
+- Create an OAuth 2.0 Web application client.
+- Add your Supabase Edge Function callback URI as an authorized redirect:
+  - `https://<your-project-ref>.supabase.co/functions/v1/google-oauth/callback`
+- Add your app origin(s) to authorized JavaScript origins.
+- Configure consent screen scopes to include:
+  - `https://www.googleapis.com/auth/calendar.readonly`
+
+### 2) Supabase secrets
+
+Set these secrets for Edge Functions:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- `OAUTH_STATE_SECRET`
+
+Example:
+
+- `supabase secrets set GOOGLE_CLIENT_ID=...`
+- `supabase secrets set GOOGLE_CLIENT_SECRET=...`
+- `supabase secrets set GOOGLE_REDIRECT_URI=https://<your-project-ref>.supabase.co/functions/v1/google-oauth/callback`
+- `supabase secrets set OAUTH_STATE_SECRET=<random-long-secret>`
+
+### 3) Deploy database + functions
+
+- Apply migrations (includes `google_integrations`, `google_calendar_selections`, and `google_integration_status`).
+- Deploy functions:
+  - `google-oauth`
+  - `google-calendar`

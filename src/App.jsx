@@ -5,6 +5,7 @@ import { Clock, CalendarDays, BarChart2, Folder, Menu, PlayCircle } from 'lucide
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useTheme } from '@/hooks/useTheme'
@@ -268,6 +269,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
                   options={options}
                   onChange={setThemePreference}
                 />
+                <GoogleCalendarSection />
                 <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
                 <Button
                   type="button"

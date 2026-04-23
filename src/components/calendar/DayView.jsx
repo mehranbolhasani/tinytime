@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ActiveTimerBlock from '@/components/calendar/blocks/ActiveTimerBlock'
+import GoogleEventBlock from '@/components/calendar/blocks/GoogleEventBlock'
 import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
 import EntryBlock from '@/components/calendar/blocks/EntryBlock'
 import EntryContextMenu from '@/components/calendar/EntryContextMenu'
@@ -40,7 +41,14 @@ function hideNativeDragImage(event) {
   })
 }
 
-export default function DayView({ selectedDate, entries, activeEntry, entryTagsByEntryId = {} }) {
+export default function DayView({
+  selectedDate,
+  entries,
+  activeEntry,
+  entryTagsByEntryId = {},
+  googleEvents = [],
+  isLoadingGoogleEvents = false,
+}) {
   const scrollRef = useRef(null)
   const [editingEntry, setEditingEntry] = useState(null)
   const [draggingMove, setDraggingMove] = useState(null)
@@ -51,7 +59,7 @@ export default function DayView({ selectedDate, entries, activeEntry, entryTagsB
   const [menuState, setMenuState] = useState({ open: false, entry: null, x: 0, y: 0 })
   const [mutationError, setMutationError] = useState('')
   const [now, setNow] = useState(() => new Date())
-  const { elapsed } = useTimerContext()
+  const { elapsed, isRunning, start: startTimer } = useTimerContext()
   const { updateEntry, createEntry, deleteEntry } = useTimeEntryMutations({ entries })
   const isTouchViewport = useMediaQuery('(hover: none)')
   const minEntryHeight = isTouchViewport ? 28 : MIN_ENTRY_HEIGHT
@@ -84,6 +92,52 @@ export default function DayView({ selectedDate, entries, activeEntry, entryTagsB
 
     return assignOverlapLanes(blocks)
   }, [entriesForRendering, dayStart, dayEnd, minEntryHeight])
+
+  const { timedGoogleEvents, allDayGoogleEvents } = useMemo(() => {
+    const timed = []
+    const allDay = []
+
+    googleEvents.forEach((event) => {
+      if (event.isAllDay) {
+        allDay.push(event)
+      } else {
+        timed.push(event)
+      }
+    })
+
+    return {
+      timedGoogleEvents: timed,
+      allDayGoogleEvents: allDay,
+    }
+  }, [googleEvents])
+
+  const googleBlocks = useMemo(() => {
+    const blocks = timedGoogleEvents
+      .map((event) => {
+        const block = toBlock(
+          {
+            started_at: event.startedAt,
+            stopped_at: event.stoppedAt,
+          },
+          dayStart,
+          dayEnd,
+          0,
+          minEntryHeight
+        )
+
+        if (!block) {
+          return null
+        }
+
+        return {
+          ...block,
+          event,
+        }
+      })
+      .filter(Boolean)
+
+    return assignOverlapLanes(blocks)
+  }, [dayEnd, dayStart, minEntryHeight, timedGoogleEvents])
 
   const activeBlock = useMemo(() => {
     if (!activeEntry?.started_at) {
@@ -223,6 +277,50 @@ export default function DayView({ selectedDate, entries, activeEntry, entryTagsB
     }
   }
 
+  const handleStartFromGoogleEvent = async (event) => {
+    if (isRunning) {
+      setMutationError('Stop the active timer before starting one from a Google event.')
+      return
+    }
+
+    const eventStart = new Date(event.startedAt)
+    const eventStop = new Date(event.stoppedAt)
+    const nowDate = new Date()
+
+    if (Number.isNaN(eventStart.getTime()) || Number.isNaN(eventStop.getTime())) {
+      setMutationError('Unable to start timer from an event with invalid dates.')
+      return
+    }
+
+    try {
+      setMutationError('')
+
+      if (eventStop.getTime() > nowDate.getTime()) {
+        const created = await createEntry({
+          project_id: null,
+          description: event.title ?? '',
+          started_at: nowDate.toISOString(),
+          stopped_at: null,
+          duration_seconds: null,
+        })
+        startTimer(created)
+        return
+      }
+
+      const durationSeconds = Math.max(60, Math.round((eventStop.getTime() - eventStart.getTime()) / 1000))
+
+      await createEntry({
+        project_id: null,
+        description: event.title ?? '',
+        started_at: eventStart.toISOString(),
+        stopped_at: eventStop.toISOString(),
+        duration_seconds: durationSeconds,
+      })
+    } catch (error) {
+      setMutationError(error?.message ?? 'Unable to create a timer entry from this event.')
+    }
+  }
+
   return (
     <>
       {mutationError ? (
@@ -234,6 +332,25 @@ export default function DayView({ selectedDate, entries, activeEntry, entryTagsB
         ref={scrollRef}
         className="h-full overflow-clip rounded-xl bg-card"
       >
+        {allDayGoogleEvents.length > 0 ? (
+          <div className="border-b border-border bg-secondary/40 px-3 py-2">
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">All-day events</p>
+            <div className="flex flex-wrap gap-1.5">
+              {allDayGoogleEvents.map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  onClick={() => handleStartFromGoogleEvent(event)}
+                  disabled={isRunning}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: event.calendarColor }} />
+                  <span className="max-w-[180px] truncate">{event.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="grid grid-cols-[56px_1fr]">
           <div className="relative border-r border-border bg-secondary/50" style={{ height: GRID_HEIGHT }}>
             {HOURS.map((hour) => (
@@ -372,6 +489,16 @@ export default function DayView({ selectedDate, entries, activeEntry, entryTagsB
               />
             ) : null}
 
+            {googleBlocks.map((block) => (
+              <GoogleEventBlock
+                key={`google-${block.event.id}-${block.startMs}`}
+                block={block}
+                event={block.event}
+                onStartTimer={handleStartFromGoogleEvent}
+                disableStart={isRunning}
+              />
+            ))}
+
             {completedBlocks.map((block) => (
               <EntryBlock
                 key={block.entry.id}
@@ -433,6 +560,9 @@ export default function DayView({ selectedDate, entries, activeEntry, entryTagsB
             ) : null}
           </div>
         </div>
+        {isLoadingGoogleEvents ? (
+          <div className="border-t border-border px-3 py-1.5 text-xs text-muted-foreground">Loading Google events...</div>
+        ) : null}
       </div>
 
       <EntryEditDialog
