@@ -1,0 +1,39 @@
+---
+interface Props {
+  title: string
+  description: string
+  path?: string
+  image?: string
+}
+
+const {
+  title,
+  description,
+  path = '/',
+  image = '/og/og-default.png',
+} = Astro.props
+
+const canonical = new URL(path, Astro.site).toString()
+const imageUrl = new URL(image, Astro.site).toString()
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content={description} />
+<meta name="generator" content={Astro.generator} />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<link rel="canonical" href={canonical} />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<title>{title}</title>
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="tinytime" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={imageUrl} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />

@@ -6,13 +6,14 @@ A minimal personal time tracker inspired by Toggl Track. Solo use only. Web app 
 
 ## Stack
 
-- **Framework**: React + Vite
+- **App framework**: React + Vite (`apps/app`)
+- **Landing framework**: Astro (`apps/landing`)
 - **Styling**: Tailwind CSS
-- **Components**: shadcn/ui (source copied into `src/components/ui/`)
+- **Components**: shadcn/ui (source copied into `apps/app/src/components/ui/`)
 - **Backend**: Supabase (auth, Postgres, real-time)
 - **Data fetching**: TanStack Query (React Query)
 - **Charts**: Recharts
-- **Language**: JavaScript (no TypeScript)
+- **Language**: JavaScript for app, Astro/TypeScript support for landing
 
 ---
 
@@ -31,32 +32,39 @@ A minimal personal time tracker inspired by Toggl Track. Solo use only. Web app 
 ## Folder structure
 
 ```
-src/
-  contexts/
-    TimerContext.jsx # Shared active-entry + elapsed timer state
-  components/
-    timer/          # Active timer widget (start/stop, current entry display)
-    calendar/       # Day view timeline/grid and entry editing interactions
-    projects/       # Project management sections/forms
-    reports/        # Charts, summary stats, CSV export
-    tags/           # Tag management sections/forms
-    ui/             # shadcn/ui components (do not modify manually)
-  hooks/
-    useTheme.js         # System/light/dark theme preference
-    useTimer.js         # Start, stop, persist active timer
-    useTimeEntries.js   # CRUD for time entries, filtering by date range
-    useProjects.js      # CRUD for projects
-    useTags.js          # CRUD for tags, attach/detach from entries
-  lib/
-    supabase.js     # Supabase client init (reads from .env)
-    utils.js        # formatDuration(seconds), formatDate, groupEntriesByDay, etc.
-    color.js        # Color helpers (hexToRgba, presets)
-    calendar.js     # Calendar layout helpers (blocks, overlap lanes)
-  pages/
-    Today.jsx       # Default view: timer + today's entries
-    Calendar.jsx    # Day-only grid view of entries
-    Reports.jsx     # Charts by project/tag, date range picker, CSV export
-    Projects.jsx    # Manage projects
+apps/
+  app/
+    src/
+      contexts/
+        TimerContext.jsx # Shared active-entry + elapsed timer state
+      components/
+        timer/          # Active timer widget (start/stop, current entry display)
+        calendar/       # Day view timeline/grid and entry editing interactions
+        projects/       # Project management sections/forms
+        reports/        # Charts, summary stats, CSV export
+        tags/           # Tag management sections/forms
+        ui/             # shadcn/ui components (do not modify manually)
+      hooks/
+        useTheme.js         # System/light/dark theme preference
+        useTimer.js         # Start, stop, persist active timer
+        useTimeEntries.js   # CRUD for time entries, filtering by date range
+        useProjects.js      # CRUD for projects
+        useTags.js          # CRUD for tags, attach/detach from entries
+      lib/
+        supabase.js     # Supabase client init (reads from .env)
+        utils.js        # formatDuration(seconds), formatDate, groupEntriesByDay, etc.
+        color.js        # Color helpers (hexToRgba, presets)
+        calendar.js     # Calendar layout helpers (blocks, overlap lanes)
+      pages/
+        Today.jsx       # Default view: timer + today's entries
+        Calendar.jsx    # Day-only grid view of entries
+        Reports.jsx     # Charts by project/tag, date range picker, CSV export
+        Projects.jsx    # Manage projects
+  landing/
+    src/pages/index.astro   # Marketing landing page
+    src/pages/privacy.astro # Google-compliant privacy policy
+    src/pages/terms.astro   # Terms of service
+    public/robots.txt       # Crawling and sitemap entrypoint
 ```
 
 ---
@@ -121,6 +129,10 @@ A `stopped_at` of `null` means the timer is currently running. There should neve
 
 Magic link (passwordless email) via Supabase Auth. No password login needed — solo use.
 RLS (Row Level Security) is enabled on all tables. All rows are scoped to `auth.uid()`.
+
+Production split:
+- Landing: `https://tinytime.work`
+- App: `https://app.tinytime.work`
 
 ---
 

@@ -1,6 +1,8 @@
 # tinytime
 
-A small personal time tracker built with React, Vite, and Supabase.
+Monorepo for tinytime:
+- `apps/app`: the authenticated time-tracker SPA (React + Vite + Supabase)
+- `apps/landing`: the public marketing and legal site (Astro static)
 
 ## Prerequisites
 
@@ -8,73 +10,65 @@ A small personal time tracker built with React, Vite, and Supabase.
 - npm
 - A Supabase project
 
-## Setup
+## Local development
 
-1. Install dependencies:
+1. Install all workspace dependencies:
    - `npm install`
-2. Create your env file:
-   - copy `.env.example` to `.env`
-3. Fill in:
+2. App env file:
+   - copy `apps/app/.env.example` to `apps/app/.env`
+3. Fill app env values:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_SUPABASE_FUNCTIONS_URL` (optional)
-4. Start the app:
-   - `npm run dev`
+4. Start app:
+   - `npm run dev:app`
+5. Start landing:
+   - `npm run dev:landing`
 
-## Auth and RLS expectations
+## Build and lint
 
-This app requires a signed-in Supabase user for mutations (create/update/delete).
+- Build app: `npm run build:app`
+- Build landing: `npm run build:landing`
+- Lint all workspaces: `npm run lint`
 
-- The app now uses magic-link sign-in on startup.
-- If no session exists, you will see a login screen and cannot access the main app yet.
-- After login, the app routes render and CRUD actions should work as long as RLS policies allow them.
+## Domain split
 
-## Suggested Supabase table ownership model
+- `https://tinytime.work` → landing site (`apps/landing`)
+- `https://www.tinytime.work` → redirect to apex
+- `https://app.tinytime.work` → app SPA (`apps/app`)
 
-Use a `user_id uuid not null default auth.uid()` column on each table and RLS policies scoped to `auth.uid()`:
+## Supabase auth URL configuration
 
-- `projects.user_id = auth.uid()`
-- `tags.user_id = auth.uid()`
-- `time_entries.user_id = auth.uid()`
-- `time_entry_tags` tied to entry ownership (via join or policy conditions)
+Set in Supabase Dashboard -> Authentication -> URL Configuration:
 
-If your schema does not include ownership columns/policies, writes will fail with row-level security errors.
+- Site URL: `https://app.tinytime.work`
+- Additional redirect URLs:
+  - `https://app.tinytime.work/**`
+  - `http://localhost:5173/**`
 
-## Troubleshooting
+## Google OAuth + Calendar verification
 
-### No Start button or app looks stuck
+The app supports read-only Google Calendar data in the calendar view.
 
-- Check for visible error banners in the UI.
-- Confirm you are signed in (magic link flow).
-- Confirm `.env` values are present and valid.
+### OAuth client (Google Cloud Console)
 
-### “row-level security policy” errors
-
-- You are authenticated incorrectly or not authenticated.
-- Or RLS policies do not allow your user to write rows.
-- Fix by signing in and updating policies to scope by `auth.uid()`.
-
-### Verify local health checks
-
-- `npm run lint`
-- `npm run build`
-
-## Google Calendar integration setup
-
-This app can connect a Google account and display read-only calendar events in the Calendar day view.
-
-### 1) Google Cloud Console
-
-- Create an OAuth 2.0 Web application client.
-- Add your Supabase Edge Function callback URI as an authorized redirect:
+- Authorized redirect URI:
   - `https://<your-project-ref>.supabase.co/functions/v1/google-oauth/callback`
-- Add your app origin(s) to authorized JavaScript origins.
-- Configure consent screen scopes to include:
+- Authorized JavaScript origins:
+  - `https://app.tinytime.work`
+  - `https://tinytime.work`
+- Required scope:
   - `https://www.googleapis.com/auth/calendar.readonly`
 
-### 2) Supabase secrets
+### OAuth consent screen
 
-Set these secrets for Edge Functions:
+- Homepage: `https://tinytime.work`
+- Privacy policy: `https://tinytime.work/privacy`
+- Terms of service: `https://tinytime.work/terms`
+
+Verify domain ownership in Google Search Console before submitting verification.
+
+### Supabase edge function secrets
 
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
@@ -88,9 +82,36 @@ Example:
 - `supabase secrets set GOOGLE_REDIRECT_URI=https://<your-project-ref>.supabase.co/functions/v1/google-oauth/callback`
 - `supabase secrets set OAUTH_STATE_SECRET=<random-long-secret>`
 
-### 3) Deploy database + functions
+### Deploy DB + functions
 
-- Apply migrations (includes `google_integrations`, `google_calendar_selections`, and `google_integration_status`).
-- Deploy functions:
+- Apply migrations (includes `google_integrations`, `google_calendar_selections`, and `google_integration_status`)
+- Deploy:
   - `google-oauth`
   - `google-calendar`
+
+## Vercel projects
+
+Create two Vercel projects from this monorepo:
+
+1. `tinytime-landing`
+   - Root directory: `apps/landing`
+   - Domain: `tinytime.work` (+ `www.tinytime.work` redirect)
+2. `tinytime-app`
+   - Root directory: `apps/app`
+   - Domain: `app.tinytime.work`
+   - Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_FUNCTIONS_URL`
+
+DNS:
+- `A @ -> 76.76.21.21`
+- `CNAME www -> cname.vercel-dns.com`
+- `CNAME app -> cname.vercel-dns.com`
+
+## Launch checklist
+
+- `npm run build:landing` and `npm run build:app` pass
+- Lighthouse on `tinytime.work` (target: 99+ across categories)
+- Security headers check on both domains
+- Rich results / JSON-LD validation for homepage
+- Verify auth flows on `app.tinytime.work` (magic link + Google + GitHub)
+- Submit sitemap: `https://tinytime.work/sitemap-index.xml`
+- Submit Google OAuth verification after policy pages are live

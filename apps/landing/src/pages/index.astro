@@ -1,0 +1,23 @@
+---
+import BuiltForOne from '../components/BuiltForOne.astro'
+import CTA from '../components/CTA.astro'
+import Faq from '../components/Faq.astro'
+import Features from '../components/Features.astro'
+import Hero from '../components/Hero.astro'
+import Layout from '../components/Layout.astro'
+import Preview from '../components/Preview.astro'
+import '../styles/global.css'
+---
+
+<Layout
+  title="tinytime — a minimal time tracker for one"
+  description="A tiny personal time tracker with magic-link sign-in, calendar day view, and useful reports."
+  includeSoftwareJsonLd
+>
+  <Hero />
+  <Preview />
+  <Features />
+  <BuiltForOne />
+  <Faq />
+  <CTA />
+</Layout>

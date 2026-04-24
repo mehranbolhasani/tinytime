@@ -1,0 +1,84 @@
+---
+import Layout from '../components/Layout.astro'
+import '../styles/global.css'
+---
+
+<Layout
+  title="Privacy Policy — tinytime"
+  description="Privacy policy for tinytime, including Google Calendar read-only integration handling."
+  path="/privacy"
+>
+  <section class="py-16">
+    <div class="tiny-container max-w-3xl">
+      <h1 class="text-3xl font-semibold">Privacy Policy</h1>
+      <p class="mt-2 text-sm text-[var(--tiny-muted)]">Last updated: April 23, 2026</p>
+
+      <div class="mt-8 space-y-6 text-sm leading-7 text-[var(--tiny-fg)]">
+        <p>
+          tinytime is operated by Mehran Bolhasani. For privacy questions or data requests, contact
+          <a class="tiny-link" href="mailto:privacy@tinytime.work">privacy@tinytime.work</a>.
+        </p>
+
+        <section>
+          <h2 class="text-lg font-semibold">Data we collect</h2>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[var(--tiny-muted)]">
+            <li>Account data: email address and auth identifiers.</li>
+            <li>App data: projects, tags, and time entries you create.</li>
+            <li>Google integration data: OAuth tokens and selected calendar IDs.</li>
+            <li>Read-only Google Calendar events for the connected account when requested by you.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold">How data is used</h2>
+          <p class="mt-2 text-[var(--tiny-muted)]">
+            Data is used only to provide core app features. Google Calendar data is used only to show
+            read-only calendar events in tinytime's calendar day view.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold">Storage and retention</h2>
+          <p class="mt-2 text-[var(--tiny-muted)]">
+            Data is stored in Supabase infrastructure. Google OAuth tokens are stored for connected
+            integrations until you disconnect your account or request deletion. Calendar events are
+            fetched on demand and are not permanently stored for unrelated processing.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold">Sharing</h2>
+          <p class="mt-2 text-[var(--tiny-muted)]">
+            tinytime does not sell personal data and does not share Google user data with third parties
+            except as necessary to provide the service and comply with legal obligations.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold">Your controls</h2>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[var(--tiny-muted)]">
+            <li>Disconnect Google access from tinytime settings.</li>
+            <li>Revoke tinytime access from your Google account security settings.</li>
+            <li>Request account and data deletion by emailing privacy@tinytime.work.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-lg font-semibold">Google API Services User Data Policy</h2>
+          <p class="mt-2 text-[var(--tiny-muted)]">
+            tinytime's use and transfer of information received from Google APIs adheres to the
+            <a class="tiny-link" href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer">
+              Google API Services User Data Policy
+            </a>
+            , including the Limited Use requirements.
+          </p>
+          <p class="mt-2 text-[var(--tiny-muted)]">
+            tinytime only uses access to read-only Google Calendar data to provide user-visible calendar
+            overlay functionality inside the app. This data is never used for advertising, sold to data
+            brokers, or used to train generalized AI or machine learning models.
+          </p>
+        </section>
+      </div>
+    </div>
+  </section>
+</Layout>

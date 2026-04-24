@@ -1,0 +1,26 @@
+---
+import Layout from '../components/Layout.astro'
+import '../styles/global.css'
+---
+
+<Layout
+  title="Page not found — tinytime"
+  description="The page you were looking for does not exist."
+  path="/404"
+>
+  <section class="py-24">
+    <div class="tiny-container text-center">
+      <p class="text-sm uppercase tracking-[0.2em] text-[var(--tiny-primary)]">404</p>
+      <h1 class="mt-4 text-4xl font-semibold">Page not found</h1>
+      <p class="mt-4 text-[var(--tiny-muted)]">
+        The link may be outdated or the page has moved.
+      </p>
+      <a
+        href="/"
+        class="mt-8 inline-flex items-center rounded-lg bg-[var(--tiny-primary)] px-5 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
+      >
+        Back to homepage
+      </a>
+    </div>
+  </section>
+</Layout>

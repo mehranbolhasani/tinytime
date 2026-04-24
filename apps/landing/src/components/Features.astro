@@ -1,0 +1,23 @@
+---
+const features = [
+  'One-click timer with project and description',
+  'Day-view calendar with draggable entry blocks',
+  'Tags that stay lightweight and optional',
+  'Reports by project and tag plus CSV export',
+  'Magic link, Google, and GitHub sign-in',
+  'Read-only Google Calendar overlay in day view',
+]
+---
+
+<section id="features" class="py-12 sm:py-16">
+  <div class="tiny-container">
+    <h2 class="text-2xl font-semibold sm:text-3xl">Everything you need, nothing else.</h2>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {features.map((feature) => (
+        <article class="tiny-card p-5">
+          <p class="text-sm text-[var(--tiny-fg)]">{feature}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

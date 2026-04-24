@@ -1,0 +1,52 @@
+---
+import Footer from './Footer.astro'
+import Header from './Header.astro'
+import Seo from './Seo.astro'
+
+interface Props {
+  title: string
+  description: string
+  path?: string
+  image?: string
+  includeSoftwareJsonLd?: boolean
+}
+
+const {
+  title,
+  description,
+  path = '/',
+  image,
+  includeSoftwareJsonLd = false,
+} = Astro.props
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'tinytime',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  url: 'https://tinytime.work',
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <Seo title={title} description={description} path={path} image={image} />
+    {includeSoftwareJsonLd ? (
+      <script type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+    ) : null}
+  </head>
+  <body>
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

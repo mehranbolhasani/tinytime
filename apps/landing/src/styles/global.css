@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Geist Sans";
+  src: url("/fonts/geist-sans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/geist-mono.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --tiny-bg: #faf9f7;
+  --tiny-fg: #1f1a17;
+  --tiny-muted: #6f6561;
+  --tiny-card: #ffffff;
+  --tiny-border: #e8e2dc;
+  --tiny-primary: #e76f51;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tiny-bg: #1c1917;
+    --tiny-fg: #f7f4f1;
+    --tiny-muted: #c7bcb5;
+    --tiny-card: #292524;
+    --tiny-border: #44403c;
+    --tiny-primary: #f08a6e;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "Geist Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background: var(--tiny-bg);
+  color: var(--tiny-fg);
+}
+
+.tiny-container {
+  width: min(1120px, calc(100vw - 2rem));
+  margin-inline: auto;
+}
+
+.tiny-card {
+  border: 1px solid var(--tiny-border);
+  background: var(--tiny-card);
+  border-radius: 1rem;
+}
+
+.tiny-link {
+  color: var(--tiny-primary);
+}
+
+.tiny-link:hover {
+  text-decoration: underline;
+}
