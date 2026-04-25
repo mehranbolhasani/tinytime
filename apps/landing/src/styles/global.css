@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Doto:wght,ROND@100..900,100&display=swap");
 
 @font-face {
   font-family: "Geist Sans";
@@ -15,26 +14,44 @@
   src: url("/fonts/geist-mono.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
+  font-display: swap; 
+}
+
+@theme inline {
+  --font-sans: "Geist Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --font-pixel: "Doto", "Geist Mono", ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
 }
 
 :root {
-  --tiny-bg: #faf9f7;
-  --tiny-fg: #1f1a17;
-  --tiny-muted: #6f6561;
-  --tiny-card: #ffffff;
-  --tiny-border: #e8e2dc;
-  --tiny-primary: #e76f51;
+  --background: oklch(96.8% 0.007 247.896);
+  --foreground: #0a0a0a;
+  --muted-foreground: #737373;
+  --card: #ffffff;
+  --border: #e5e5e5;
+  --primary: oklch(0.51 0.274 267.287);
+  /* Keep legacy tiny vars as aliases for current components. */
+  --tiny-bg: var(--background);
+  --tiny-fg: var(--foreground);
+  --tiny-muted: var(--muted-foreground);
+  --tiny-card: var(--card);
+  --tiny-border: var(--border);
+  --tiny-primary: var(--primary);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --tiny-bg: #1c1917;
-    --tiny-fg: #f7f4f1;
-    --tiny-muted: #c7bcb5;
-    --tiny-card: #292524;
-    --tiny-border: #44403c;
-    --tiny-primary: #f08a6e;
+    --background: #1c1917;
+    --foreground: #f5f3f0;
+    --muted-foreground: #d6d3d1;
+    --card: #292524;
+    --border: #44403c;
+    --primary: oklch(0.51 0.274 267.287);
   }
 }
 
@@ -44,26 +61,32 @@ html {
 
 body {
   margin: 0;
-  font-family: "Geist Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  background: var(--tiny-bg);
-  color: var(--tiny-fg);
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
 }
 
 .tiny-container {
-  width: min(1120px, calc(100vw - 2rem));
+  width: 560px;
   margin-inline: auto;
 }
 
 .tiny-card {
-  border: 1px solid var(--tiny-border);
-  background: var(--tiny-card);
+  border: 1px solid var(--border);
+  background: var(--card);
   border-radius: 1rem;
 }
 
 .tiny-link {
-  color: var(--tiny-primary);
+  color: var(--primary);
 }
 
 .tiny-link:hover {
   text-decoration: underline;
+}
+
+:where(
+  .font-pixel
+) {
+  font-variation-settings: "ROND" 100;
 }

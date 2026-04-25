@@ -31,6 +31,11 @@ Monorepo for tinytime:
 - Build landing: `npm run build:landing`
 - Lint all workspaces: `npm run lint`
 
+## Theme token sync
+
+- Landing color tokens in `apps/landing/src/styles/global.css` are aligned with app tokens in `apps/app/src/index.css`.
+- If you adjust app primary/background/neutral tokens, update landing tokens in the same commit to keep brand consistency across `tinytime.work` and `app.tinytime.work`.
+
 ## Domain split
 
 - `https://tinytime.work` → landing site (`apps/landing`)

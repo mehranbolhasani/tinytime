@@ -1,23 +1,30 @@
 ---
+import { Clock3, CalendarDays, FolderKanban, ChartColumn, LogIn, CalendarSync } from '@lucide/astro';
+
 const features = [
-  'One-click timer with project and description',
-  'Day-view calendar with draggable entry blocks',
-  'Tags that stay lightweight and optional',
-  'Reports by project and tag plus CSV export',
-  'Magic link, Google, and GitHub sign-in',
-  'Read-only Google Calendar overlay in day view',
+  { label: 'One-click timer', icon: Clock3 },
+  { label: 'Calendar view', icon: CalendarDays },
+  { label: 'Project and tags', icon: FolderKanban },
+  { label: 'Reports', icon: ChartColumn },
+  { label: 'Google and GitHub sign-in', icon: LogIn },
+  { label: 'Google Calendar integration', icon: CalendarSync },
 ]
 ---
 
-<section id="features" class="py-12 sm:py-16">
+<section id="features" class="py-24">
   <div class="tiny-container">
-    <h2 class="text-2xl font-semibold sm:text-3xl">Everything you need, nothing else.</h2>
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {features.map((feature) => (
-        <article class="tiny-card p-5">
-          <p class="text-sm text-[var(--tiny-fg)]">{feature}</p>
-        </article>
-      ))}
+    <h2 class="text-2xl text-center font-light">Everything you need, <br> nothing else.</h2>
+    <div class="mt-6 grid gap-4 grid-cols-2">
+      {features.map((feature) => {
+        const Icon = feature.icon;
+
+        return (
+          <article class="bg-card px-4 py-4 rounded-2xl flex items-center gap-2 shadow-lg shadow-primary/5">
+            <Icon size={20} stroke-width={1.5} />
+            <p class="text-sm text-[var(--tiny-fg)]">{feature.label}</p>
+          </article>
+        );
+      })}
     </div>
   </div>
 </section>

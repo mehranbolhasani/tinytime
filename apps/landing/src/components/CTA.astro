@@ -1,14 +1,70 @@
-<section class="py-16">
+<section class="py-24 relative">
   <div class="tiny-container">
-    <div class="tiny-card p-8 text-center sm:p-10">
-      <h2 class="text-2xl font-semibold sm:text-3xl">Ready to keep time simple?</h2>
-      <p class="mt-3 text-[var(--tiny-muted)]">Start with tinytime and focus on work, not process.</p>
+      
+    <div class="bg-card/80 w-fit mx-auto px-12 py-8 rounded-2xl text-center relative z-10 backdrop-blur-sm shadow-xl shadow-primary/10">
+      <div class="flex w-12 h-12 rounded-xl aspect-square items-center justify-center mx-auto bg-primary/10 mb-6">
+        <span class="h-2 w-6 rounded-sm bg-[var(--tiny-primary)]" />
+      </div>
+      <h2 class="text-2xl font-light">Ready to <br>keep time simple?</h2>
+      <p class="mt-3 text-muted-foreground max-w-sm mx-auto text-sm">Start with tinytime and focus on work,<br>not process.</p>
       <a
         href="https://app.tinytime.work"
-        class="mt-6 inline-flex items-center rounded-lg bg-[var(--tiny-primary)] px-5 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
+        class="mt-6 inline-flex items-center rounded-full bg-primary px-4 py-2 text-sm font-normal text-white no-underline hover:opacity-90"
       >
         Try tinytime
       </a>
     </div>
+
+    <div id="cta-timer"class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center gap-2 justify-center text-center text-8xl leading-none font-pixel tracking-loose tabular-nums font-bold opacity-10"
+      >
+        <span data-part="h1" class="timer-digit">0</span>
+        <span data-part="h2" class="timer-digit">2</span>
+        <span class="timer-separator -translate-y-1.5">:</span>
+        <span data-part="m1" class="timer-digit">3</span>
+        <span data-part="m2" class="timer-digit">7</span>
+        <span class="timer-separator -translate-y-1.5">:</span>
+        <span data-part="s1" class="timer-digit">1</span>
+        <span data-part="s2" class="timer-digit">4</span>
+    </div>
   </div>
 </section>
+
+
+<script>
+  const timerElement = document.getElementById("cta-timer");
+
+  if (timerElement) {
+    const h1 = timerElement.querySelector('[data-part="h1"]');
+    const h2 = timerElement.querySelector('[data-part="h2"]');
+    const m1 = timerElement.querySelector('[data-part="m1"]');
+    const m2 = timerElement.querySelector('[data-part="m2"]');
+    const s1 = timerElement.querySelector('[data-part="s1"]');
+    const s2 = timerElement.querySelector('[data-part="s2"]');
+
+    let elapsedSeconds = 2 * 60 * 60 + 37 * 60 + 14;
+
+    const renderTime = (totalSeconds: number) => {
+      if (!h1 || !h2 || !m1 || !m2 || !s1 || !s2) return;
+
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const hourString = String(hours).padStart(2, "0");
+      const minuteString = String(minutes).padStart(2, "0");
+      const secondString = String(seconds).padStart(2, "0");
+
+      h1.textContent = hourString[0];
+      h2.textContent = hourString[1];
+      m1.textContent = minuteString[0];
+      m2.textContent = minuteString[1];
+      s1.textContent = secondString[0];
+      s2.textContent = secondString[1];
+    };
+
+    renderTime(elapsedSeconds);
+    setInterval(() => {
+      elapsedSeconds += 1;
+      renderTime(elapsedSeconds);
+    }, 1000);
+  }
+</script>

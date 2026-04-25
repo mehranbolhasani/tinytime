@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
-  <rect width="1200" height="630" fill="#FAF9F7"/>
-  <rect x="88" y="78" width="1024" height="474" rx="24" fill="#FFFFFF" stroke="#E8E2DC"/>
-  <rect x="148" y="156" width="88" height="14" rx="5" fill="#E76F51"/>
-  <text x="248" y="170" fill="#241F1C" font-size="40" font-family="Inter, system-ui, sans-serif" font-weight="600">tinytime</text>
-  <text x="148" y="252" fill="#241F1C" font-size="58" font-family="Inter, system-ui, sans-serif" font-weight="700">Track time without</text>
-  <text x="148" y="320" fill="#241F1C" font-size="58" font-family="Inter, system-ui, sans-serif" font-weight="700">the overhead.</text>
-  <text x="148" y="384" fill="#6D625D" font-size="30" font-family="Inter, system-ui, sans-serif">Personal tracker for solo work.</text>
-  <text x="148" y="424" fill="#6D625D" font-size="30" font-family="Inter, system-ui, sans-serif">Calendar day view. Useful reports. No noise.</text>
-  <rect x="148" y="460" width="240" height="54" rx="16" fill="#E76F51"/>
+  <rect width="1200" height="630" fill="#F6F7FB"/>
+  <rect x="88" y="78" width="1024" height="474" rx="24" fill="#FFFFFF" stroke="#E5E5E5"/>
+  <rect x="148" y="156" width="88" height="14" rx="5" fill="#4F46E5"/>
+  <text x="248" y="170" fill="#0A0A0A" font-size="40" font-family="Inter, system-ui, sans-serif" font-weight="600">tinytime</text>
+  <text x="148" y="252" fill="#0A0A0A" font-size="58" font-family="Inter, system-ui, sans-serif" font-weight="700">Track time without</text>
+  <text x="148" y="320" fill="#0A0A0A" font-size="58" font-family="Inter, system-ui, sans-serif" font-weight="700">the overhead.</text>
+  <text x="148" y="384" fill="#737373" font-size="30" font-family="Inter, system-ui, sans-serif">Personal tracker for solo work.</text>
+  <text x="148" y="424" fill="#737373" font-size="30" font-family="Inter, system-ui, sans-serif">Calendar day view. Useful reports. No noise.</text>
+  <rect x="148" y="460" width="240" height="54" rx="16" fill="#4F46E5"/>
   <text x="208" y="495" fill="#FFFFFF" font-size="28" font-family="Inter, system-ui, sans-serif" font-weight="600">tinytime.work</text>
 </svg>

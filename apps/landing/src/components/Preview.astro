@@ -1,14 +1,110 @@
-<section class="pb-12">
+<section class="py-24">
   <div class="tiny-container">
-    <div class="tiny-card overflow-hidden p-4 sm:p-6">
-      <img
-        src="/preview/today-view.png"
-        width="1280"
-        height="720"
-        alt="tinytime today view showing active timer, entries, and compact navigation"
-        class="w-full rounded-xl border border-[var(--tiny-border)]"
-        loading="eager"
-      />
+    <div
+      class="flex items-center gap-2 justify-center text-center text-6xl leading-none font-pixel tracking-loose tabular-nums font-bold opacity-10 translate-y-8"
+    >
+      <span data-part="h1" class="timer-digit">0</span>
+      <span data-part="h2" class="timer-digit">1</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="m1" class="timer-digit">4</span>
+      <span data-part="m2" class="timer-digit">1</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="s1" class="timer-digit">0</span>
+      <span data-part="s2" class="timer-digit">7</span>
+    </div>
+
+    <div
+      class="flex items-center gap-2 justify-center text-center text-6xl leading-none font-pixel tracking-loose tabular-nums font-bold opacity-20 translate-y-8"
+    >
+      <span data-part="h1" class="timer-digit">1</span>
+      <span data-part="h2" class="timer-digit">0</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="m1" class="timer-digit">1</span>
+      <span data-part="m2" class="timer-digit">1</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="s1" class="timer-digit">5</span>
+      <span data-part="s2" class="timer-digit">2</span>
+    </div>
+
+    <div class="relative bg-card/50 w-fit mx-auto px-4 py-3 rounded-2xl backdrop-blur-xs backdrop-brightness-125 backdrop-saturate-150 z-10 shadow-md shadow-primary/10">
+      <div
+        id="preview-timer"
+        class="flex items-center gap-2 justify-center text-center text-6xl leading-none font-pixel tracking-loose tabular-nums font-bold"
+      >
+        <span data-part="h1" class="timer-digit">0</span>
+        <span data-part="h2" class="timer-digit">2</span>
+        <span class="timer-separator -translate-y-1.5 opacity-70">:</span>
+        <span data-part="m1" class="timer-digit">3</span>
+        <span data-part="m2" class="timer-digit">7</span>
+        <span class="timer-separator -translate-y-1.5 opacity-70">:</span>
+        <span data-part="s1" class="timer-digit">1</span>
+        <span data-part="s2" class="timer-digit">4</span>
+      </div>
+    </div>
+
+    <div
+      class="flex items-center gap-2 justify-center text-center text-6xl leading-none font-pixel tracking-loose tabular-nums font-bold opacity-20 -translate-y-8"
+    >
+      <span data-part="h1" class="timer-digit">0</span>
+      <span data-part="h2" class="timer-digit">4</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="m1" class="timer-digit">5</span>
+      <span data-part="m2" class="timer-digit">9</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="s1" class="timer-digit">0</span>
+      <span data-part="s2" class="timer-digit">8</span>
+    </div>
+
+    <div
+      class="flex items-center gap-2 justify-center text-center text-6xl leading-none font-pixel tracking-loose tabular-nums font-bold opacity-10 -translate-y-8"
+    >
+      <span data-part="h1" class="timer-digit">0</span>
+      <span data-part="h2" class="timer-digit">6</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="m1" class="timer-digit">1</span>
+      <span data-part="m2" class="timer-digit">2</span>
+      <span class="timer-separator -translate-y-1.5">:</span>
+      <span data-part="s1" class="timer-digit">4</span>
+      <span data-part="s2" class="timer-digit">3</span>
     </div>
   </div>
 </section>
+
+<script>
+  const timerElement = document.getElementById("preview-timer");
+
+  if (timerElement) {
+    const h1 = timerElement.querySelector('[data-part="h1"]');
+    const h2 = timerElement.querySelector('[data-part="h2"]');
+    const m1 = timerElement.querySelector('[data-part="m1"]');
+    const m2 = timerElement.querySelector('[data-part="m2"]');
+    const s1 = timerElement.querySelector('[data-part="s1"]');
+    const s2 = timerElement.querySelector('[data-part="s2"]');
+
+    let elapsedSeconds = 2 * 60 * 60 + 37 * 60 + 14;
+
+    const renderTime = (totalSeconds: number) => {
+      if (!h1 || !h2 || !m1 || !m2 || !s1 || !s2) return;
+
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const hourString = String(hours).padStart(2, "0");
+      const minuteString = String(minutes).padStart(2, "0");
+      const secondString = String(seconds).padStart(2, "0");
+
+      h1.textContent = hourString[0];
+      h2.textContent = hourString[1];
+      m1.textContent = minuteString[0];
+      m2.textContent = minuteString[1];
+      s1.textContent = secondString[0];
+      s2.textContent = secondString[1];
+    };
+
+    renderTime(elapsedSeconds);
+    setInterval(() => {
+      elapsedSeconds += 1;
+      renderTime(elapsedSeconds);
+    }, 1000);
+  }
+</script>

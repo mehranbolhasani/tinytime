@@ -10,5 +10,8 @@
     "build:app": "npm --workspace apps/app run build",
     "build:landing": "npm --workspace apps/landing run build",
     "lint": "npm --workspaces --if-present run lint"
+  },
+  "dependencies": {
+    "@lucide/astro": "^1.3.0"
   }
 }
