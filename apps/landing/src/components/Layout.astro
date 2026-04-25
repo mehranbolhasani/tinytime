@@ -18,29 +18,13 @@ const {
   image,
   includeSoftwareJsonLd = false,
 } = Astro.props
-
-const softwareJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'tinytime',
-  applicationCategory: 'BusinessApplication',
-  operatingSystem: 'Web',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
-  },
-  url: 'https://tinytime.work',
-}
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <Seo title={title} description={description} path={path} image={image} />
-    {includeSoftwareJsonLd ? (
-      <script type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
-    ) : null}
+    {includeSoftwareJsonLd ? <script is:inline type="application/ld+json" src="/software-application.jsonld"></script> : null}
   </head>
   <body>
     <Header />
