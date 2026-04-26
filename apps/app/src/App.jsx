@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Clock, CalendarDays, BarChart2, Folder, Menu, PlayCircle } from 'lucide-react'
@@ -9,6 +9,7 @@ import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useTheme } from '@/hooks/useTheme'
+import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
 import { formatDurationHMS } from '@/lib/utils'
 import { assertSupabaseClient, getFriendlySupabaseError, supabaseConfigError } from '@/lib/supabase'
 const Today = lazy(() => import('./pages/Today'))
@@ -23,29 +24,6 @@ const NAV_ITEMS = [
   { to: '/reports', label: 'Reports', icon: BarChart2 },
   { to: '/projects', label: 'Projects', icon: Folder },
 ]
-
-function GoogleIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        d="M21.35 11.1h-9.18v2.9h5.3a4.55 4.55 0 0 1-1.98 2.99v2.49h3.2c1.87-1.72 2.95-4.25 2.95-7.25 0-.62-.06-1.13-.19-1.63Z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12.17 21.5c2.64 0 4.86-.87 6.48-2.37l-3.2-2.49c-.89.6-2.03.96-3.28.96-2.52 0-4.66-1.7-5.43-3.99H3.45v2.57a9.8 9.8 0 0 0 8.72 5.32Z"
-        fill="#34A853"
-      />
-      <path
-        d="M6.74 13.61a5.88 5.88 0 0 1 0-3.72V7.32H3.45a9.8 9.8 0 0 0 0 8.86l3.29-2.57Z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12.17 5.9c1.4 0 2.65.48 3.64 1.41l2.72-2.72A9.12 9.12 0 0 0 12.17 2a9.8 9.8 0 0 0-8.72 5.32l3.29 2.57c.77-2.29 2.91-3.99 5.43-3.99Z"
-        fill="#EA4335"
-      />
-    </svg>
-  )
-}
 
 function GitHubIcon(props) {
   return (
@@ -75,11 +53,11 @@ function AuthView({
   email,
   onEmailChange,
   onSubmit,
-  onSignInWithGoogle,
   onSignInWithGithub,
   isSubmitting,
-  isGoogleSubmitting,
   isGithubSubmitting,
+  googleButtonRef,
+  googleConfigError,
   notice,
   error,
 }) {
@@ -123,18 +101,8 @@ function AuthView({
           </div>
   
           <div className="flex flex-col items-center justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onSignInWithGoogle}
-              disabled={isGoogleSubmitting}
-              className="w-[220px] rounded-full border-border bg-secondary hover:bg-border"
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <GoogleIcon className="h-4 w-4" />
-                {isGoogleSubmitting ? 'Redirecting to Google...' : 'Continue with Google'}
-              </span>
-            </Button>
+            <div className="flex min-h-10 w-[220px] items-center justify-center" ref={googleButtonRef} />
+            {googleConfigError ? <p className="mt-2 text-xs text-destructive">{googleConfigError}</p> : null}
     
             <Button
               type="button"
@@ -328,6 +296,10 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
 }
 
 export default function App() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  const googleConfigError = googleClientId
+    ? null
+    : 'Missing required environment variable: VITE_GOOGLE_CLIENT_ID.'
   const supabase = useMemo(() => {
     if (supabaseConfigError) {
       return null
@@ -352,11 +324,12 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(!supabaseConfigError)
   const [email, setEmail] = useState('')
   const [isSendingLink, setIsSendingLink] = useState(false)
-  const [isSendingGoogle, setIsSendingGoogle] = useState(false)
   const [isSendingGithub, setIsSendingGithub] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [authNotice, setAuthNotice] = useState('')
   const [authError, setAuthError] = useState('')
+  const googleButtonRef = useRef(null)
+  const googleNonceRef = useRef('')
 
   useEffect(() => {
     if (!supabase) {
@@ -438,28 +411,77 @@ export default function App() {
     setIsSigningOut(false)
   }
 
-  const handleSignInWithGoogle = async () => {
+  const handleGoogleCredential = useCallback(async (credential) => {
     if (!supabase) {
       return
     }
 
-    setIsSendingGoogle(true)
     setAuthError('')
     setAuthNotice('')
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    if (!credential) {
+      setAuthError('Google sign-in did not return a credential. Please try again.')
+      return
+    }
+
+    const { error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
+      token: credential,
+      nonce: googleNonceRef.current,
     })
 
     if (error) {
-      setAuthError(getFriendlySupabaseError(error, 'Unable to start Google sign-in.'))
-      setIsSendingGoogle(false)
-      return
+      setAuthError(getFriendlySupabaseError(error, 'Unable to complete Google sign-in.'))
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    if (session || !supabase || !googleClientId || !googleButtonRef.current) {
+      return undefined
+    }
+
+    let isCancelled = false
+
+    const setupGoogleSignIn = async () => {
+      try {
+        await loadGisScript()
+        const { nonce, hashedNonce } = await generateNonce()
+
+        if (isCancelled) {
+          return
+        }
+
+        googleNonceRef.current = nonce
+        initGoogleSignIn({
+          clientId: googleClientId,
+          hashedNonce,
+          onCredential: (credential) => {
+            if (!isCancelled) {
+              handleGoogleCredential(credential)
+            }
+          },
+        })
+
+        renderGoogleButton(googleButtonRef.current, {
+          theme: 'outline',
+          size: 'large',
+          shape: 'pill',
+          text: 'continue_with',
+          width: 220,
+        })
+      } catch (error) {
+        if (!isCancelled) {
+          setAuthError(error instanceof Error ? error.message : 'Unable to initialize Google sign-in.')
+        }
+      }
+    }
+
+    setupGoogleSignIn()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [googleClientId, handleGoogleCredential, session, supabase])
 
   const handleSignInWithGithub = async () => {
     if (!supabase) {
@@ -502,11 +524,11 @@ export default function App() {
         email={email}
         onEmailChange={setEmail}
         onSubmit={handleSendMagicLink}
-        onSignInWithGoogle={handleSignInWithGoogle}
         onSignInWithGithub={handleSignInWithGithub}
         isSubmitting={isSendingLink}
-        isGoogleSubmitting={isSendingGoogle}
         isGithubSubmitting={isSendingGithub}
+        googleButtonRef={googleButtonRef}
+        googleConfigError={googleConfigError}
         notice={authNotice}
         error={authError}
       />
