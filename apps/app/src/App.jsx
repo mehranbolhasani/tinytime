@@ -58,6 +58,7 @@ function AuthView({
   isGithubSubmitting,
   googleButtonRef,
   googleConfigError,
+  googleButtonError,
   notice,
   error,
 }) {
@@ -103,6 +104,9 @@ function AuthView({
           <div className="flex flex-col items-center justify-center">
             <div className="flex min-h-10 w-[220px] items-center justify-center" ref={googleButtonRef} />
             {googleConfigError ? <p className="mt-2 text-xs text-destructive">{googleConfigError}</p> : null}
+            {!googleConfigError && googleButtonError ? (
+              <p className="mt-2 text-xs text-destructive">{googleButtonError}</p>
+            ) : null}
     
             <Button
               type="button"
@@ -328,6 +332,7 @@ export default function App() {
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [authNotice, setAuthNotice] = useState('')
   const [authError, setAuthError] = useState('')
+  const [googleButtonError, setGoogleButtonError] = useState('')
   const googleButtonRef = useRef(null)
   const googleNonceRef = useRef('')
 
@@ -436,7 +441,7 @@ export default function App() {
   }, [supabase])
 
   useEffect(() => {
-    if (session || !supabase || !googleClientId || !googleButtonRef.current) {
+    if (isAuthLoading || session || !supabase || !googleClientId || !googleButtonRef.current) {
       return undefined
     }
 
@@ -444,6 +449,7 @@ export default function App() {
 
     const setupGoogleSignIn = async () => {
       try {
+        setGoogleButtonError('')
         await loadGisScript()
         const { nonce, hashedNonce } = await generateNonce()
 
@@ -471,6 +477,7 @@ export default function App() {
         })
       } catch (error) {
         if (!isCancelled) {
+          setGoogleButtonError('Google sign-in button failed to load. Refresh the page and try again.')
           setAuthError(error instanceof Error ? error.message : 'Unable to initialize Google sign-in.')
         }
       }
@@ -481,7 +488,7 @@ export default function App() {
     return () => {
       isCancelled = true
     }
-  }, [googleClientId, handleGoogleCredential, session, supabase])
+  }, [googleClientId, handleGoogleCredential, isAuthLoading, session, supabase])
 
   const handleSignInWithGithub = async () => {
     if (!supabase) {
@@ -529,6 +536,7 @@ export default function App() {
         isGithubSubmitting={isSendingGithub}
         googleButtonRef={googleButtonRef}
         googleConfigError={googleConfigError}
+        googleButtonError={googleButtonError}
         notice={authNotice}
         error={authError}
       />
