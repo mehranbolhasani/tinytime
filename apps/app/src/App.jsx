@@ -84,67 +84,76 @@ function AuthView({
   error,
 }) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center justify-center bg-background px-4 py-10 sm:p-6">
-      <section className="w-full rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-        <h1 className="text-lg font-semibold text-foreground">Sign in to tinytime</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Use a magic link!
-        </p>
-
-        <form onSubmit={onSubmit} className="mt-5 space-y-3">
-          <Input
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => onEmailChange(event.target.value)}
-            placeholder="you@example.com"
-            required
-            className="rounded-lg border-border bg-secondary focus:bg-background"
-          />
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-lg"
-          >
-            {isSubmitting ? 'Sending link...' : 'Send magic link'}
-          </Button>
-        </form>
-
-        <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground/70">
-          <div className="h-px flex-1 bg-border" />
-          <span>or</span>
-          <div className="h-px flex-1 bg-border" />
+    <main className="mx-auto flex min-h-screen w-full items-center justify-center bg-background px-4 py-10 sm:p-6">
+      <div className="w-full max-w-sm flex flex-col items-center justify-center">
+        <div>
+          <div class="flex w-12 h-12 rounded-xl aspect-square items-center justify-center mx-auto bg-primary/10 mb-6 anim anim-scale anim-duration-700">
+            <span class="h-2 w-6 rounded-sm bg-primary" />
+          </div>
         </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onSignInWithGoogle}
-          disabled={isGoogleSubmitting}
-          className="w-full rounded-lg border-border bg-secondary hover:bg-border"
-        >
-          <span className="inline-flex items-center justify-center gap-2">
-            <GoogleIcon className="h-4 w-4" />
-            {isGoogleSubmitting ? 'Redirecting to Google...' : 'Continue with Google'}
-          </span>
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onSignInWithGithub}
-          disabled={isGithubSubmitting}
-          className="mt-3 w-full rounded-lg border-border bg-secondary hover:bg-border"
-        >
-          <span className="inline-flex items-center justify-center gap-2">
-            <GitHubIcon className="h-4 w-4" />
-            {isGithubSubmitting ? 'Redirecting to GitHub...' : 'Continue with GitHub'}
-          </span>
-        </Button>
-
-        {notice ? <p className="mt-3 text-sm text-success">{notice}</p> : null}
-        {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-      </section>
+        <section className="w-full max-w-md text-center">
+          <h1 className="text-lg font-semibold text-foreground">Sign in to tinytime</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Use a magic link!
+          </p>
+  
+          <form onSubmit={onSubmit} className="mt-5 space-y-3">
+            <Input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => onEmailChange(event.target.value)}
+              placeholder="you@example.com"
+              required
+              className="w-full rounded-lg border-border bg-secondary focus:bg-background"
+            />
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-full w-[220px]"
+            >
+              {isSubmitting ? 'Sending link...' : 'Send magic link'}
+            </Button>
+          </form>
+  
+          <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground/70">
+            <div className="h-px flex-1 bg-border" />
+            <span>or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+  
+          <div className="flex flex-col items-center justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onSignInWithGoogle}
+              disabled={isGoogleSubmitting}
+              className="w-[220px] rounded-full border-border bg-secondary hover:bg-border"
+            >
+              <span className="inline-flex items-center justify-center gap-2">
+                <GoogleIcon className="h-4 w-4" />
+                {isGoogleSubmitting ? 'Redirecting to Google...' : 'Continue with Google'}
+              </span>
+            </Button>
+    
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onSignInWithGithub}
+              disabled={isGithubSubmitting}
+              className="mt-3 w-[220px] rounded-full border-border bg-secondary hover:bg-border"
+            >
+              <span className="inline-flex items-center justify-center gap-2">
+                <GitHubIcon className="h-4 w-4" />
+                {isGithubSubmitting ? 'Redirecting to GitHub...' : 'Continue with GitHub'}
+              </span>
+            </Button>
+          </div>
+  
+          {notice ? <p className="mt-3 text-sm text-success">{notice}</p> : null}
+          {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+        </section>
+      </div>
     </main>
   )
 }
@@ -239,13 +248,41 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto w-full max-w-[560px] px-4 pb-44 pt-5 sm:px-6">
-        <header className="mb-3 flex items-center justify-between">
+        
+
+        {content}
+      </main>
+
+      {timer.isRunning ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleMiniTimerClick}
+          className="fixed left-1/2 z-40 flex h-auto w-[calc(100%-2rem)] max-w-[512px] -translate-x-1/2 items-center justify-between rounded-lg border-border bg-card px-3 py-2 shadow-sm"
+          style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
+        >
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+            <PlayCircle className="h-4 w-4 text-primary" />
+            Running timer
+          </span>
+          <span className="font-mono text-sm text-muted-foreground">{formatDurationHMS(timer.elapsed)}</span>
+        </Button>
+      ) : null}
+
+        <header className="fixed bottom-4 left-1/2 z-50 w-full max-w-md -translate-x-1/2 flex items-center justify-between bg-card/95 px-4 py-2 backdrop-blur shadow-xl shadow-primary/10 rounded-xl">
           <div className="inline-flex items-center gap-1">
             <span className="relative h-1.5 w-4 rounded-sm bg-primary" />
             <span className="text-base font-normal tracking-tight text-foreground">
               tiny<span className="text-primary">time</span>
             </span>
           </div>
+
+          <nav className="">
+            <ul className="flex items-center justify-between gap-1">
+              {navLinks}
+            </ul>
+          </nav>
+
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -285,30 +322,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
           </Popover>
         </header>
 
-        {content}
-      </main>
-
-      {timer.isRunning ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleMiniTimerClick}
-          className="fixed left-1/2 z-40 flex h-auto w-[calc(100%-2rem)] max-w-[512px] -translate-x-1/2 items-center justify-between rounded-lg border-border bg-card px-3 py-2 shadow-sm"
-          style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
-        >
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-            <PlayCircle className="h-4 w-4 text-primary" />
-            Running timer
-          </span>
-          <span className="font-mono text-sm text-muted-foreground">{formatDurationHMS(timer.elapsed)}</span>
-        </Button>
-      ) : null}
-
-      <nav className="fixed bottom-4 left-1/2 z-50 w-fit -translate-x-1/2 rounded-xl bg-card/95 px-2 py-2 backdrop-blur shadow-xl shadow-primary/10">
-        <ul className="flex items-center justify-between gap-1">
-          {navLinks}
-        </ul>
-      </nav>
+      
     </div>
   )
 }

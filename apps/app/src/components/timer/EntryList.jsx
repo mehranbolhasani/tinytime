@@ -71,6 +71,7 @@ export default function EntryList({ entries, deleteEntry, entryTagsByEntryId = {
 
                 <div className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
                   <span className="truncate font-mono text-sm text-foreground">
+                    {entry.description ? `${entry.description} - ` : ''}
                     {formatTimeWithSeconds(entry.started_at)}
                   </span>
                   <span className="shrink-0 font-mono text-sm text-[#9ca3af]">

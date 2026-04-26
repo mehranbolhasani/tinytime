@@ -63,7 +63,7 @@ export default function TagSelector({
             variant="outline"
             type="button"
             disabled={disabled}
-            className="h-8 w-full justify-between rounded-md border-input bg-card px-3 text-sm font-normal transition-colors duration-150"
+            className="h-8 w-full justify-between rounded-2xl border-none bg-card px-3 text-sm font-normal transition-colors duration-150"
           >
             <span className="truncate">
               {selectedTagIds.length > 0 ? `${selectedTagIds.length} tag(s) selected` : triggerLabel}
@@ -73,7 +73,7 @@ export default function TagSelector({
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="w-[min(320px,calc(100vw-1.5rem))] space-y-2 rounded-xl border-border p-3"
+          className="w-full space-y-2 rounded-2xl p-3"
         >
           <Input
             value={searchTerm}

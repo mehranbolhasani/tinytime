@@ -115,26 +115,29 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
     }
   }
 
+  const displayTime = timer.isRunning ? formatDurationHMS(timer.elapsed) : '00:00:00'
+  const [hours = '00', minutes = '00', seconds = '00'] = displayTime.split(':')
+
   return (
-    <section className="flex flex-col bg-card rounded-2xl overflow-hidden p-1">
-      <div className="space-y-6 p-4">
+    <section className="flex flex-col">
+      <div className="space-y-6">
         <input
           type="text"
           placeholder="Describe your work"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           disabled={isSubmitting}
-          className="h-12 w-full border-b border-input bg-card px-3 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/30"
+          className="h-12 w-full bg-card px-3 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none rounded-2xl"
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex w-full min-w-0 flex-1 items-center gap-2">
             <Select
               value={selectedProject}
               onValueChange={setSelectedProject}
               disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
             >
-              <SelectTrigger className="h-8 w-[156px] rounded-md border-input bg-card text-sm">
+              <SelectTrigger className="h-8 w-full rounded-2xl border-none bg-card text-sm">
                 <SelectValue placeholder="No project" />
               </SelectTrigger>
               <SelectContent>
@@ -160,14 +163,14 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
               disabled={isSubmitting || isLoadingTags || isEntriesLoading}
               triggerLabel="No tags"
               showSelectedPills={false}
-              className="w-[156px]"
+              className="w-full"
             />
           </div>
 
           <Button
             type="button"
             variant={timer.isRunning ? 'destructive' : 'default'}
-            className="h-8 rounded-md px-4 text-sm font-medium shadow-[0px_1px_2px_rgba(0,0,0,0.05)]"
+            className="h-8 rounded-full px-4 text-sm font-normal"
             onClick={timer.isRunning ? handleStop : handleStart}
             disabled={isSubmitting || isEntriesLoading}
           >
@@ -176,12 +179,16 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
         </div>
       </div>
 
-      <div className="min-h-52 flex items-center justify-center bg-linear-to-b from-transparent via-primary/3 to-primary/5 rounded-xl">
+      <div className="flex items-center justify-center bg-card rounded-2xl mt-8 shadow-2xl shadow-primary/10 py-6">
         <span className={cn(
-          'block text-center font-pixel text-7xl tracking-loose text-foreground transition-opacity duration-150',
+          'block text-center font-pixel font-bold text-8xl text-foreground',
           !timer.isRunning && 'text-foreground'
         )}>
-          {timer.isRunning ? formatDurationHMS(timer.elapsed) : '00:00:00'}
+          <span>{hours}</span>
+          <span className="inline-block -translate-y-2">:</span>
+          <span>{minutes}</span>
+          <span className="inline-block -translate-y-2">:</span>
+          <span>{seconds}</span>
         </span>
       </div>
 
