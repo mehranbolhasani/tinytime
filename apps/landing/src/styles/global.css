@@ -90,3 +90,127 @@ body {
 ) {
   font-variation-settings: "ROND" 100;
 }
+
+@utility anim {
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  --anim: fade-up;
+  --anim-duration: 600ms;
+  --anim-delay: 0ms;
+  --anim-easing: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --anim-stagger: 0ms;
+}
+
+@utility anim-fade {
+  --anim: fade;
+}
+
+@utility anim-fade-up {
+  --anim: fade-up;
+}
+
+@utility anim-fade-down {
+  --anim: fade-down;
+}
+
+@utility anim-fade-left {
+  --anim: fade-left;
+}
+
+@utility anim-fade-right {
+  --anim: fade-right;
+}
+
+@utility anim-scale {
+  --anim: scale;
+}
+
+@utility anim-blur {
+  --anim: blur;
+}
+
+@utility anim-duration-300 {
+  --anim-duration: 300ms;
+}
+
+@utility anim-duration-500 {
+  --anim-duration: 500ms;
+}
+
+@utility anim-duration-700 {
+  --anim-duration: 700ms;
+}
+
+@utility anim-duration-1000 {
+  --anim-duration: 1000ms;
+}
+
+@utility anim-delay-0 {
+  --anim-delay: 0ms;
+}
+
+@utility anim-delay-100 {
+  --anim-delay: 100ms;
+}
+
+@utility anim-delay-200 {
+  --anim-delay: 200ms;
+}
+
+@utility anim-delay-300 {
+  --anim-delay: 300ms;
+}
+
+@utility anim-delay-500 {
+  --anim-delay: 500ms;
+}
+
+@utility anim-delay-700 {
+  --anim-delay: 700ms;
+}
+
+@utility anim-ease-out {
+  --anim-easing: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@utility anim-ease-soft {
+  --anim-easing: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@utility anim-ease-linear {
+  --anim-easing: linear;
+}
+
+@utility anim-stagger {
+  --anim-stagger: 80ms;
+}
+
+@utility anim-stagger-50 {
+  --anim-stagger: 50ms;
+}
+
+@utility anim-stagger-60 {
+  --anim-stagger: 60ms;
+}
+
+@utility anim-stagger-80 {
+  --anim-stagger: 80ms;
+}
+
+@utility anim-stagger-120 {
+  --anim-stagger: 120ms;
+}
+
+html:not(.js) .anim {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
