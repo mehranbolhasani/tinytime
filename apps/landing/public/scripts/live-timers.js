@@ -1,6 +1,6 @@
-const timerElement = document.getElementById("preview-timer");
+const timers = document.querySelectorAll("[data-live-timer]");
 
-if (timerElement) {
+timers.forEach((timerElement) => {
   const h1 = timerElement.querySelector('[data-part="h1"]');
   const h2 = timerElement.querySelector('[data-part="h2"]');
   const m1 = timerElement.querySelector('[data-part="m1"]');
@@ -8,11 +8,11 @@ if (timerElement) {
   const s1 = timerElement.querySelector('[data-part="s1"]');
   const s2 = timerElement.querySelector('[data-part="s2"]');
 
+  if (!h1 || !h2 || !m1 || !m2 || !s1 || !s2) return;
+
   let elapsedSeconds = 2 * 60 * 60 + 37 * 60 + 14;
 
   const renderTime = (totalSeconds) => {
-    if (!h1 || !h2 || !m1 || !m2 || !s1 || !s2) return;
-
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -33,4 +33,4 @@ if (timerElement) {
     elapsedSeconds += 1;
     renderTime(elapsedSeconds);
   }, 1000);
-}
+});

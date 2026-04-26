@@ -25,7 +25,7 @@ const {
   <head>
     <Seo title={title} description={description} path={path} image={image} />
     {includeSoftwareJsonLd ? <script is:inline type="application/ld+json" src="/software-application.jsonld"></script> : null}
-    <script is:inline>document.documentElement.classList.add('js')</script>
+    <script is:inline src="/scripts/set-js-class.js"></script>
   </head>
   <body>
     <Header />
@@ -33,6 +33,7 @@ const {
       <slot />
     </main>
     <Footer />
+    <script is:inline src="/scripts/live-timers.js"></script>
     <script>
       import '../scripts/anim.ts'
     </script>

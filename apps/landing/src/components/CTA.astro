@@ -15,7 +15,7 @@
       </a>
     </div>
 
-    <div id="cta-timer"class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center gap-2 justify-center text-center text-8xl leading-none font-pixel tracking-loose tabular-nums font-bold opacity-10 anim anim-fade anim-duration-1000 anim-delay-200"
+    <div id="cta-timer" data-live-timer class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center gap-2 justify-center text-center text-8xl leading-none font-pixel tracking-loose tabular-nums font-bold opacity-10 anim anim-fade anim-duration-1000 anim-delay-200"
       >
         <span data-part="h1" class="timer-digit">0</span>
         <span data-part="h2" class="timer-digit">2</span>
@@ -28,43 +28,3 @@
     </div>
   </div>
 </section>
-
-
-<script>
-  const timerElement = document.getElementById("cta-timer");
-
-  if (timerElement) {
-    const h1 = timerElement.querySelector('[data-part="h1"]');
-    const h2 = timerElement.querySelector('[data-part="h2"]');
-    const m1 = timerElement.querySelector('[data-part="m1"]');
-    const m2 = timerElement.querySelector('[data-part="m2"]');
-    const s1 = timerElement.querySelector('[data-part="s1"]');
-    const s2 = timerElement.querySelector('[data-part="s2"]');
-
-    let elapsedSeconds = 2 * 60 * 60 + 37 * 60 + 14;
-
-    const renderTime = (totalSeconds: number) => {
-      if (!h1 || !h2 || !m1 || !m2 || !s1 || !s2) return;
-
-      const hours = Math.floor(totalSeconds / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-      const hourString = String(hours).padStart(2, "0");
-      const minuteString = String(minutes).padStart(2, "0");
-      const secondString = String(seconds).padStart(2, "0");
-
-      h1.textContent = hourString[0];
-      h2.textContent = hourString[1];
-      m1.textContent = minuteString[0];
-      m2.textContent = minuteString[1];
-      s1.textContent = secondString[0];
-      s2.textContent = secondString[1];
-    };
-
-    renderTime(elapsedSeconds);
-    setInterval(() => {
-      elapsedSeconds += 1;
-      renderTime(elapsedSeconds);
-    }, 1000);
-  }
-</script>
