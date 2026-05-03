@@ -156,7 +156,7 @@ export function localDayRange(dateInput) {
   }
 }
 
-export function exportToCSV(entries, entryTagsMap, from, to) {
+export function exportToCSV(entries, from, to) {
   const rows = [
     [
       'Date',
@@ -166,14 +166,12 @@ export function exportToCSV(entries, entryTagsMap, from, to) {
       'Duration (formatted)',
       'Project',
       'Description',
-      'Tags',
     ],
   ]
 
   entries.forEach((entry) => {
     const startParts = toLocalDateParts(entry.started_at)
     const stopParts = toLocalDateParts(entry.stopped_at)
-    const tagNames = (entryTagsMap?.[entry.id] ?? []).map((tag) => tag.name).join(';')
 
     rows.push([
       startParts?.dateKey ?? '',
@@ -183,7 +181,6 @@ export function exportToCSV(entries, entryTagsMap, from, to) {
       formatDuration(entry.duration_seconds ?? 0),
       entry.projects?.name ?? '',
       entry.description ?? '',
-      tagNames,
     ])
   })
 

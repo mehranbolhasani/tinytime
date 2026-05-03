@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import EntryDetailsDialog from '@/components/reports/EntryDetailsDialog'
-import { hexToRgba } from '@/lib/color'
 import { formatDate, formatDuration } from '@/lib/utils'
 
 function truncateDescription(text, maxLength = 60) {
@@ -15,11 +14,10 @@ function truncateDescription(text, maxLength = 60) {
   return `${text.slice(0, maxLength - 1)}…`
 }
 
-export default function EntryTable({ entries, entryTagsMap }) {
+export default function EntryTable({ entries }) {
   const [selectedEntryId, setSelectedEntryId] = useState(null)
 
   const selectedEntry = entries.find((entry) => entry.id === selectedEntryId) ?? null
-  const selectedEntryTags = selectedEntry ? (entryTagsMap[selectedEntry.id] ?? []) : []
 
   if (entries.length === 0) {
     return <p className="text-sm text-muted-foreground/70">No entries in this period.</p>
@@ -29,10 +27,6 @@ export default function EntryTable({ entries, entryTagsMap }) {
     <>
       <div className="space-y-2 sm:hidden">
         {entries.map((entry) => {
-          const tags = entryTagsMap[entry.id] ?? []
-          const visibleTags = tags.slice(0, 2)
-          const hiddenCount = Math.max(0, tags.length - visibleTags.length)
-
           return (
             <article key={entry.id} className="rounded-xl border border-border bg-card p-3">
               <div className="flex items-center justify-between gap-2">
@@ -43,25 +37,6 @@ export default function EntryTable({ entries, entryTagsMap }) {
               <p className="mt-1 text-xs text-muted-foreground">
                 {entry.projects?.name ?? 'No project'}
               </p>
-              {tags.length > 0 ? (
-                <div className="mt-2 flex flex-wrap items-center gap-1">
-                  {visibleTags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="rounded-full px-2 py-0.5 text-xs font-medium"
-                      style={{
-                        backgroundColor: hexToRgba(tag.color, 0.15),
-                        color: tag.color,
-                      }}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                  {hiddenCount > 0 ? (
-                    <span className="text-xs text-muted-foreground/70">+{hiddenCount} more</span>
-                  ) : null}
-                </div>
-              ) : null}
             </article>
           )
         })}
@@ -118,7 +93,6 @@ export default function EntryTable({ entries, entryTagsMap }) {
 
       <EntryDetailsDialog
         entry={selectedEntry}
-        tags={selectedEntryTags}
         open={Boolean(selectedEntry)}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {

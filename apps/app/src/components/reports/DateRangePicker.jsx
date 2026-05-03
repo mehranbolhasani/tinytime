@@ -22,7 +22,7 @@ export default function DateRangePicker({
 
   return (
     <section className="space-y-3 rounded-xl bg-card p-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-1">
         {PRESET_RANGES.map((preset) => (
           <Button
             key={preset.id}
@@ -30,7 +30,7 @@ export default function DateRangePicker({
             variant={range === preset.id ? 'default' : 'secondary'}
             size="sm"
             className={cn(
-              'h-8 rounded-md px-3 text-sm font-normal transition-colors duration-150',
+              'h-8 rounded-md px-2 text-sm font-normal transition-colors duration-150',
               range === preset.id ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'text-muted-foreground hover:bg-secondary'
             )}
             onClick={() => onRangeChange(preset.id)}

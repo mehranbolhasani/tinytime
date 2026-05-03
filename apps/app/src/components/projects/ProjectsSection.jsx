@@ -151,15 +151,6 @@ export default function ProjectsSection({
 
   return (
     <section className="space-y-3 rounded-xl bg-card p-3">
-      <header className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <h2 className="text-sm font-medium text-muted-foreground">Projects</h2>
-        <Button
-          onClick={handleOpenCreate}
-          className="h-8 w-full rounded-md text-sm transition-colors duration-150 sm:w-auto"
-        >
-          New project
-        </Button>
-      </header>
 
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -167,9 +158,9 @@ export default function ProjectsSection({
         </div>
       ) : null}
 
-      <div className="space-y-2">
+      <div className="">
         {isLoading ? (
-          <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
+          <div className="rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
@@ -183,7 +174,7 @@ export default function ProjectsSection({
           projects.map((project) => (
             <div
               key={project.id}
-              className="group flex flex-col items-start gap-3 rounded-lg border border-border bg-card px-3 py-3 transition-shadow duration-150 hover:shadow-sm sm:flex-row sm:items-center"
+              className="group flex items-center gap-2 border-b border-border/80 px-2 py-1 last-of-type:border-b-0 hover:bg-secondary"
             >
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -219,6 +210,13 @@ export default function ProjectsSection({
             </div>
           ))
         )}
+
+        <Button
+          onClick={handleOpenCreate}
+          className="h-8 w-full rounded-md text-sm transition-colors duration-150 sm:w-auto mt-6"
+        >
+          New project
+        </Button>
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={handleFormCloseChange}>

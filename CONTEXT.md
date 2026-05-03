@@ -1,179 +1,198 @@
-# Project context — time tracker
+# tinytime Engineering Context (Contract)
 
-A minimal personal time tracker inspired by Toggl Track. Solo use only. Web app (browser). No mobile, no desktop.
-
----
-
-## Stack
-
-- **App framework**: React + Vite (`apps/app`)
-- **Landing framework**: Astro (`apps/landing`)
-- **Styling**: Tailwind CSS
-- **Components**: shadcn/ui (source copied into `apps/app/src/components/ui/`)
-- **Backend**: Supabase (auth, Postgres, real-time)
-- **Data fetching**: TanStack Query (React Query)
-- **Charts**: Recharts
-- **Language**: JavaScript for app, Astro/TypeScript support for landing
+This file is the source of truth for architecture and implementation constraints.
+If code and this file diverge, update this file in the same PR.
 
 ---
 
-## Rules — always follow these
+## 1) Product Scope
 
-- Components never import `supabase` directly. All Supabase calls live in hooks inside `src/hooks/`.
-- One hook per domain: `useTimer`, `useTimeEntries`, `useProjects`, `useTags`.
-- All duration math uses seconds as the base unit. Format for display in `src/lib/utils.js`.
-- Tailwind only for styling. Avoid inline styles unless needed for precise dynamic positioning, and keep usage minimal.
-- shadcn/ui for all UI primitives (Button, Dialog, Popover, Input, Select, DropdownMenu, etc.). Do not build these from scratch.
-- Keep components small and single-purpose. If a component exceeds ~150 lines, split it.
-- No unnecessary dependencies. Check if something already in the stack can solve the problem first.
+tinytime is a single-user, browser-only time tracker.
+
+### In scope
+- Personal timer + entries
+- Calendar day planning/editing
+- Reporting + CSV export
+- Project management
+- Google Calendar read-only overlay integration
+
+### Out of scope
+- Multi-user/team workspaces
+- Billing/invoicing workflows
+- Native mobile apps
+- Generic third-party integrations beyond current Google Calendar scope
+- Offline-first mode
 
 ---
 
-## Folder structure
+## 2) Technology Baseline
+
+- **App**: React 19 + Vite 8 (`apps/app`)
+- **Landing**: Astro (`apps/landing`)
+- **Styling**: Tailwind CSS v4 + `tw-animate-css`
+- **Data**: Supabase (Auth + Postgres + Edge Functions)
+- **Fetching/cache**: TanStack Query v5
+- **Animation**:
+  - App: `motion/react` (tokens in `apps/app/src/lib/motion.js`)
+  - Landing: `motion` (vanilla in-view animation script)
+
+### Dependency policy
+- Prefer existing stack over new packages.
+- Do not add alternative UI/animation stacks when current stack can solve it.
+
+---
+
+## 3) Non-negotiable Implementation Rules
+
+### Data and Supabase boundaries
+- Feature UI components **must not** perform direct table queries/mutations.
+- Supabase data operations belong in hooks and `lib` helpers (`src/hooks`, `src/lib`).
+- Auth/session shell logic in `App.jsx` is an allowed exception.
+
+### Time and duration
+- Duration base unit is **seconds** across app and DB logic.
+- Timer elapsed display is client-derived from `started_at`.
+- `duration_seconds` must be persisted when stopping an entry.
+
+### Styling and UI primitives
+- Tailwind-first styling.
+- Inline `style` is only allowed for truly dynamic values (e.g. block top/height, dynamic colors).
+- Reuse shadcn/Radix primitives for common controls.
+
+### Animation
+- Import animation APIs from `motion/react` in app code.
+- Reuse tokens from `src/lib/motion.js` for durations/easing/variants.
+- Keep `tw-animate-css` for Radix state transitions (open/close overlays).
+- Respect reduced motion (`MotionConfig reducedMotion="user"`).
+
+---
+
+## 4) Current Architecture Map
 
 ```
 apps/
   app/
     src/
       contexts/
-        TimerContext.jsx # Shared active-entry + elapsed timer state
-      components/
-        timer/          # Active timer widget (start/stop, current entry display)
-        calendar/       # Day view timeline/grid and entry editing interactions
-        projects/       # Project management sections/forms
-        reports/        # Charts, summary stats, CSV export
-        tags/           # Tag management sections/forms
-        ui/             # shadcn/ui components (do not modify manually)
+        TimerContext.jsx       # Active entry + live elapsed timer state
       hooks/
-        useTheme.js         # System/light/dark theme preference
-        useTimer.js         # Start, stop, persist active timer
-        useTimeEntries.js   # CRUD for time entries, filtering by date range
-        useProjects.js      # CRUD for projects
-        useTags.js          # CRUD for tags, attach/detach from entries
+        useTimer.js            # Client elapsed timer from started_at
+        useTimeEntries.js      # Entry queries/mutations
+        useProjects.js         # Project queries/mutations
+        useGoogleCalendar.js   # Google status, selections, events
+        useTheme.js            # Theme preference
+        useMediaQuery.js       # Media query helper
+      components/
+        timer/                 # Timer widget + today entries list
+        calendar/              # Day timeline + edit/drag/resize + context menu
+        projects/              # Project CRUD UI
+        reports/               # Summary stats, project breakdown, filters, entry table/dialog
+        settings/              # Google calendar settings
+        ui/                    # shadcn/Radix component implementations
       lib/
-        supabase.js     # Supabase client init (reads from .env)
-        utils.js        # formatDuration(seconds), formatDate, groupEntriesByDay, etc.
-        color.js        # Color helpers (hexToRgba, presets)
-        calendar.js     # Calendar layout helpers (blocks, overlap lanes)
+        supabase.js
+        utils.js
+        calendar.js
+        color.js
+        googleSignIn.js
+        googleCalendar.js
+        motion.js
       pages/
-        Today.jsx       # Default view: timer + today's entries
-        Calendar.jsx    # Day-only grid view of entries
-        Reports.jsx     # Charts by project/tag, date range picker, CSV export
-        Projects.jsx    # Manage projects
-  landing/
-    src/pages/index.astro   # Marketing landing page
-    src/pages/privacy.astro # Google-compliant privacy policy
-    src/pages/terms.astro   # Terms of service
-    public/robots.txt       # Crawling and sitemap entrypoint
+        Today.jsx
+        Calendar.jsx
+        Reports.jsx
+        Projects.jsx
 ```
 
 ---
 
-## Supabase schema
+## 5) Data Model and Migration Facts
 
-```sql
--- Projects
-create table projects (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
-  color text not null default '#6366f1',
-  hourly_rate numeric(10,2),
-  created_at timestamptz default now()
-);
+### Active tables/views used by app
+- `projects`
+- `time_entries`
+- `google_integrations`
+- `google_calendar_selections`
+- view: `google_integration_status`
 
--- Tags
-create table tags (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null unique,
-  color text not null default '#94a3b8',
-  created_at timestamptz default now()
-);
+### Important migration history
+- `20260423120000_google_calendar_integration.sql`:
+  - adds Google integration tables
+  - enables RLS and policies
+  - adds `google_integration_status` view
+- `20260501213000_remove_tags_feature.sql`:
+  - drops `tags` and `time_entry_tags`
 
--- Time entries
-create table time_entries (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  project_id uuid references projects(id) on delete set null,
-  description text,
-  started_at timestamptz not null,
-  stopped_at timestamptz,
-  duration_seconds integer,  -- stored on stop, used for fast aggregation
-  created_at timestamptz default now()
-);
-
--- Join table: entries <-> tags
-create table time_entry_tags (
-  time_entry_id uuid references time_entries(id) on delete cascade,
-  tag_id uuid references tags(id) on delete cascade,
-  primary key (time_entry_id, tag_id)
-);
-```
-
-A `stopped_at` of `null` means the timer is currently running. There should never be more than one running entry at a time.
+### Invariants
+- `time_entries.stopped_at = null` means running entry.
+- At most one running entry per user.
+- Deleting a project must not delete entries; it nulls `project_id`.
 
 ---
 
-## Data logic rules
+## 6) Auth and Integration Contract
 
-- `duration_seconds` is computed and stored when an entry is stopped: `Math.round((stopped_at - started_at) / 1000)`.
-- The active timer's elapsed time is computed live on the client from `started_at` to `Date.now()`. Do not poll Supabase for this.
-- Deleting a project sets `project_id` to null on its entries (cascade rule above). Entries are never deleted with the project.
-- Tags are global (not per-project).
-- `projects.hourly_rate` is stored and displayed in EUR.
+### Auth methods currently implemented
+- Magic link (Supabase OTP)
+- Google sign-in (ID token flow)
+- GitHub OAuth
 
----
+### Google Calendar integration contract
+- Uses edge functions `google-oauth` and `google-calendar`.
+- Selected calendars persisted in `google_calendar_selections`.
+- Calendar overlay appears in day view only when connected and selected.
 
-## Auth
-
-Magic link (passwordless email) via Supabase Auth. No password login needed — solo use.
-RLS (Row Level Security) is enabled on all tables. All rows are scoped to `auth.uid()`.
-
-Production split:
+Production domains:
 - Landing: `https://tinytime.work`
 - App: `https://app.tinytime.work`
 
 ---
 
-## UI layout conventions
+## 7) UX and Motion Contract
 
-- Shared app shell in `App.jsx` uses a centered content column (`max-w-[560px]`).
-- A compact top header card is shown on all authenticated pages with:
-  - `tinytime` logo (left)
-  - hamburger trigger (right)
-- Account/settings actions are shown in a compact popover card (not a slide-in sheet).
-- Bottom navigation is persistent and focuses on section links (Today, Calendar, Reports, Projects).
+- Authenticated app shell uses centered `max-w-md` layout.
+- Bottom navigation is persistent.
+- Motion is used for route/state/list/layout transitions.
+- Avoid decorative animation that adds noise without improving state clarity.
 
 ---
 
-## Features in scope (MVP)
+## 8) Implemented Capabilities (Current)
 
-- [x] Start/stop timer with description and project
-- [x] Assign tags to an entry
-- [x] Edit and delete past entries
-- [x] Day view: list of entries for the selected day, total hours
-- [x] Day-only calendar view: timeline/grid with draggable/editable entries
-- [x] Reports: hours by project (bar chart), hours by tag (pie/donut), date range filter
-- [x] CSV export of filtered entries
-- [x] Project management (create, edit color, set hourly rate, delete)
-- [x] Tag management (create, edit, delete)
+- Start/stop timer with description and project
+- Running-session summary state in timer widget
+- Today entry list with edit/delete + total duration
+- Calendar day timeline with drag/move/resize and edit flows
+- Google Calendar event overlay in day view
+- Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
+- Project CRUD (name/color/rate + delete behavior)
 
 ---
 
-## Current known gaps / next milestones
+## 9) Known Gaps and Cleanup Targets
 
-- [ ] Improve responsive behavior for dense views (Calendar + Reports) on small screens.
-- [ ] Add a lightweight onboarding/empty-state flow for first-time users after auth.
-- [ ] Add a production-ready test baseline (unit tests for helpers/hooks + smoke E2E for core flows).
-- [ ] Improve auth redirect configuration ergonomics (document and/or support explicit env override).
-- [ ] Add accessibility review pass (keyboard interactions, focus states, contrast checks).
-- [ ] Add optional performance pass for chart-heavy reports (memoization + render profiling).
+- Improve dense mobile responsiveness for Calendar and Reports.
+- Add test baseline (unit + smoke E2E).
+- Accessibility pass (keyboard, focus order, contrast, semantics).
+- Performance pass for heavy calendar/report states.
+- Cleanup stale leftovers after feature removals/dependency shifts (e.g. unused build chunking rules).
 
-## Out of scope (do not build)
+---
 
-- Team / multi-user features
-- Invoicing or billing generation
-- Mobile app
-- Integrations (Jira, GitHub, etc.), except the approved read-only Google Calendar integration for Calendar day view display
-- Offline mode
+## 10) Change Management Rule
+
+Any PR that changes architecture, data flow, stack choices, or domain boundaries must:
+- update this file, and
+- keep the update specific (what changed + new rule or invariant).
+
+---
+
+## 11) PR Checklist (Quick Gate)
+
+Before merging, verify:
+
+- [ ] No feature UI component performs direct table queries/mutations; data access stays in hooks/lib.
+- [ ] Duration/timer logic still uses seconds and preserves running-entry invariants.
+- [ ] New motion uses `motion/react` + shared tokens, and respects reduced motion.
+- [ ] UI changes reuse existing primitives (shadcn/Radix/Tailwind) instead of introducing parallel stacks.
+- [ ] `CONTEXT.md` was updated if architecture/data flow/stack/domain rules changed.

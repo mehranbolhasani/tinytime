@@ -20,16 +20,12 @@ function getFilterLabel(items, noun) {
 
 export default function FilterBar({
   projects,
-  tags,
   selectedProjectIds,
-  selectedTagIds,
   onToggleProject,
-  onToggleTag,
   onResetProjects,
-  onResetTags,
 }) {
   return (
-    <section className="flex flex-wrap gap-2 rounded-xl bg-card p-3">
+    <section className="flex flex-wrap gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button type="button" variant="outline" className="h-8 rounded-md border-border text-sm transition-colors duration-150">
@@ -55,36 +51,6 @@ export default function FilterBar({
               onCheckedChange={() => onToggleProject(project.id)}
             >
               {project.name}
-            </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" className="h-8 rounded-md border-border text-sm transition-colors duration-150">
-            {getFilterLabel(selectedTagIds, 'tags')}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-64">
-          <DropdownMenuLabel>Tag filter</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            checked={selectedTagIds.length === 0}
-            onSelect={(event) => event.preventDefault()}
-            onCheckedChange={onResetTags}
-          >
-            All tags
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          {tags.map((tag) => (
-            <DropdownMenuCheckboxItem
-              key={tag.id}
-              checked={selectedTagIds.includes(tag.id)}
-              onSelect={(event) => event.preventDefault()}
-              onCheckedChange={() => onToggleTag(tag.id)}
-            >
-              {tag.name}
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuContent>

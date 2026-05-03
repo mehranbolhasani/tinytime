@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import DateTimeField from '@/components/calendar/DateTimeField'
-import TagSelector from '@/components/tags/TagSelector'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,7 +18,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useProjects } from '@/hooks/useProjects'
-import { useTags } from '@/hooks/useTags'
 import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { toSafeHexColor } from '@/lib/color'
 import { computeDuration } from '@/lib/utils'
@@ -64,10 +62,8 @@ function createInitialFormState(entry) {
 
 export default function EntryEditDialog({ entry, open, onOpenChange }) {
   const { projects } = useProjects()
-  const { tags, getEntryTags, setEntryTags } = useTags()
   const { updateEntry } = useTimeEntryMutations()
   const [formData, setFormData] = useState(createInitialFormState(entry))
-  const [selectedTagIds, setSelectedTagIds] = useState([])
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -75,34 +71,6 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
     setFormData(createInitialFormState(entry))
     setError('')
   }, [entry, open])
-
-  useEffect(() => {
-    if (!open || !entry?.id) {
-      setSelectedTagIds([])
-      return
-    }
-
-    let isCurrent = true
-
-    const loadEntryTags = async () => {
-      try {
-        const entryTags = await getEntryTags(entry.id)
-        if (isCurrent) {
-          setSelectedTagIds(entryTags.map((tag) => tag.id))
-        }
-      } catch (loadError) {
-        if (isCurrent) {
-          setError(loadError?.message ?? 'Unable to load tags.')
-        }
-      }
-    }
-
-    loadEntryTags()
-
-    return () => {
-      isCurrent = false
-    }
-  }, [entry, getEntryTags, open])
 
   const handleClose = (nextOpen) => {
     if (!nextOpen) {
@@ -146,7 +114,6 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
         stopped_at,
         duration_seconds,
       })
-      await setEntryTags(entry.id, selectedTagIds)
       handleClose(false)
     } catch (saveError) {
       setError(saveError?.message ?? 'Unable to save entry.')
@@ -228,16 +195,6 @@ export default function EntryEditDialog({ entry, open, onOpenChange }) {
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <p className="text-sm font-medium text-muted-foreground">Tags</p>
-            <TagSelector
-              tags={tags}
-              selectedTagIds={selectedTagIds}
-              onChange={setSelectedTagIds}
-              disabled={isSaving}
-            />
           </div>
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}

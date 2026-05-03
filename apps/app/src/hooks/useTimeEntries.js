@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { computeDuration } from '@/lib/utils'
@@ -23,11 +22,46 @@ function getEntryFromCache(queryClient, id) {
   return null
 }
 
-function toEntryIds(entries) {
-  return entries
-    .map((entry) => entry.id)
-    .filter(Boolean)
-    .sort()
+function sortEntriesByStartedAt(entries) {
+  return [...entries].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
+}
+
+function isEntryInRange(entry, range) {
+  if (!range || typeof range !== 'object' || Array.isArray(range)) {
+    return true
+  }
+
+  const { from, to } = range
+  if (!from || !to) {
+    return true
+  }
+
+  const startedAtMs = new Date(entry.started_at).getTime()
+  const fromMs = new Date(from).getTime()
+  const toMs = new Date(to).getTime()
+
+  if (Number.isNaN(startedAtMs) || Number.isNaN(fromMs) || Number.isNaN(toMs)) {
+    return true
+  }
+
+  return startedAtMs >= fromMs && startedAtMs < toMs
+}
+
+function updateEntryListCaches(queryClient, updater) {
+  const cachedEntries = queryClient.getQueriesData({ queryKey: TIME_ENTRIES_QUERY_KEY })
+
+  cachedEntries.forEach(([queryKey, entries]) => {
+    if (!Array.isArray(entries)) {
+      return
+    }
+
+    const range = queryKey[1]
+    const nextEntries = updater(entries, range)
+
+    if (nextEntries !== entries) {
+      queryClient.setQueryData(queryKey, nextEntries)
+    }
+  })
 }
 
 export function useTimeEntriesList({ from, to }) {
@@ -50,58 +84,8 @@ export function useTimeEntriesList({ from, to }) {
       return data ?? []
     },
     enabled: Boolean(from && to),
+    placeholderData: (previousData) => previousData,
   })
-
-  const entryIds = useMemo(() => toEntryIds(entries), [entries])
-  const entryIdsKey = useMemo(() => entryIds.join(','), [entryIds])
-
-  const { data: entryTagRows = [] } = useQuery({
-    queryKey: ['entry_tags', entryIdsKey],
-    queryFn: async () => {
-      if (entryIds.length === 0) {
-        return []
-      }
-
-      const { data, error } = await supabase
-        .from('time_entry_tags')
-        .select('time_entry_id, tags(id, name, color)')
-        .in('time_entry_id', entryIds)
-
-      if (error) {
-        throw new Error(getFriendlySupabaseError(error, 'Unable to load entry tags.'))
-      }
-
-      return data ?? []
-    },
-    enabled: entryIds.length > 0,
-  })
-
-  const entryTagsByEntryId = useMemo(() => {
-    const map = {}
-
-    entryTagRows.forEach((row) => {
-      if (!row.time_entry_id) {
-        return
-      }
-
-      const tag = Array.isArray(row.tags) ? row.tags[0] : row.tags
-      if (!tag) {
-        return
-      }
-
-      if (!map[row.time_entry_id]) {
-        map[row.time_entry_id] = []
-      }
-
-      map[row.time_entry_id].push(tag)
-    })
-
-    Object.keys(map).forEach((entryId) => {
-      map[entryId] = map[entryId].sort((a, b) => a.name.localeCompare(b.name))
-    })
-
-    return map
-  }, [entryTagRows])
 
   const activeEntry = entries.find((entry) => entry.stopped_at === null) ?? null
 
@@ -109,7 +93,6 @@ export function useTimeEntriesList({ from, to }) {
     entries,
     isLoading,
     error,
-    entryTagsByEntryId,
     activeEntry,
   }
 }
@@ -147,9 +130,8 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
   const queryClient = useQueryClient()
   const supabase = assertSupabaseClient()
 
-  const invalidateEntryQueries = () => {
-    queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
-    queryClient.invalidateQueries({ queryKey: ['entry_tags'] })
+  const revalidateInactiveEntryQueries = () => {
+    queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY, refetchType: 'inactive' })
   }
 
   const createEntryMutation = useMutation({
@@ -174,7 +156,29 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
 
       return data
     },
-    onSuccess: invalidateEntryQueries,
+    onSuccess: (createdEntry) => {
+      queryClient.setQueryData(
+        [...TIME_ENTRIES_QUERY_KEY, 'active'],
+        createdEntry.stopped_at === null ? createdEntry : null
+      )
+
+      updateEntryListCaches(queryClient, (cachedEntries, range) => {
+        if (!isEntryInRange(createdEntry, range)) {
+          return cachedEntries
+        }
+
+        const existingIndex = cachedEntries.findIndex((entry) => entry.id === createdEntry.id)
+        if (existingIndex >= 0) {
+          const nextEntries = [...cachedEntries]
+          nextEntries[existingIndex] = createdEntry
+          return sortEntriesByStartedAt(nextEntries)
+        }
+
+        return sortEntriesByStartedAt([...cachedEntries, createdEntry])
+      })
+
+      revalidateInactiveEntryQueries()
+    },
   })
 
   const stopEntryMutation = useMutation({
@@ -217,7 +221,26 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
 
       return data
     },
-    onSuccess: invalidateEntryQueries,
+    onSuccess: (stoppedEntry) => {
+      queryClient.setQueryData([...TIME_ENTRIES_QUERY_KEY, 'active'], null)
+
+      updateEntryListCaches(queryClient, (cachedEntries, range) => {
+        if (!isEntryInRange(stoppedEntry, range)) {
+          return cachedEntries.filter((entry) => entry.id !== stoppedEntry.id)
+        }
+
+        const existingIndex = cachedEntries.findIndex((entry) => entry.id === stoppedEntry.id)
+        if (existingIndex === -1) {
+          return sortEntriesByStartedAt([...cachedEntries, stoppedEntry])
+        }
+
+        const nextEntries = [...cachedEntries]
+        nextEntries[existingIndex] = stoppedEntry
+        return sortEntriesByStartedAt(nextEntries)
+      })
+
+      revalidateInactiveEntryQueries()
+    },
   })
 
   const updateEntryMutation = useMutation({
@@ -241,7 +264,27 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
 
       return data
     },
-    onSuccess: invalidateEntryQueries,
+    onSuccess: (updatedEntry) => {
+      updateEntryListCaches(queryClient, (cachedEntries, range) => {
+        const withoutUpdated = cachedEntries.filter((entry) => entry.id !== updatedEntry.id)
+
+        if (!isEntryInRange(updatedEntry, range)) {
+          return withoutUpdated.length === cachedEntries.length ? cachedEntries : withoutUpdated
+        }
+
+        return sortEntriesByStartedAt([...withoutUpdated, updatedEntry])
+      })
+
+      const cachedActiveEntry = queryClient.getQueryData([...TIME_ENTRIES_QUERY_KEY, 'active'])
+      if (cachedActiveEntry?.id === updatedEntry.id) {
+        queryClient.setQueryData(
+          [...TIME_ENTRIES_QUERY_KEY, 'active'],
+          updatedEntry.stopped_at === null ? updatedEntry : null
+        )
+      }
+
+      revalidateInactiveEntryQueries()
+    },
   })
 
   const deleteEntryMutation = useMutation({
@@ -254,7 +297,19 @@ export function useTimeEntryMutations({ entries = [] } = {}) {
 
       return id
     },
-    onSuccess: invalidateEntryQueries,
+    onSuccess: (deletedId) => {
+      updateEntryListCaches(
+        queryClient,
+        (cachedEntries) => cachedEntries.filter((entry) => entry.id !== deletedId)
+      )
+
+      const cachedActiveEntry = queryClient.getQueryData([...TIME_ENTRIES_QUERY_KEY, 'active'])
+      if (cachedActiveEntry?.id === deletedId) {
+        queryClient.setQueryData([...TIME_ENTRIES_QUERY_KEY, 'active'], null)
+      }
+
+      revalidateInactiveEntryQueries()
+    },
   })
 
   const createEntry = async ({ project_id, description, started_at, stopped_at, duration_seconds }) =>

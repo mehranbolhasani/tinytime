@@ -1,11 +1,14 @@
 export const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 export const HOUR_HEIGHT = 32
-export const GRID_HEIGHT = HOUR_HEIGHT * 24
 export const TIME_COLUMN_WIDTH = 56
 export const MIN_ENTRY_HEIGHT = 20
 export const MINUTES_IN_DAY = 24 * 60
 export const DRAG_SNAP_MINUTES = 15
 export const DEFAULT_CREATE_MINUTES = 30
+
+export function getGridHeight(hourHeight = HOUR_HEIGHT) {
+  return hourHeight * 24
+}
 
 export function startOfDay(date) {
   const next = new Date(date)
@@ -27,7 +30,14 @@ export function isSameDay(a, b) {
   )
 }
 
-export function toBlock(entry, dayStart, dayEnd, durationSeconds, minHeight = MIN_ENTRY_HEIGHT) {
+export function toBlock(
+  entry,
+  dayStart,
+  dayEnd,
+  durationSeconds,
+  minHeight = MIN_ENTRY_HEIGHT,
+  hourHeight = HOUR_HEIGHT
+) {
   const start = new Date(entry.started_at)
   const end = entry.stopped_at ? new Date(entry.stopped_at) : new Date(start.getTime() + durationSeconds * 1000)
   const visibleStart = start > dayStart ? start : dayStart
@@ -42,8 +52,8 @@ export function toBlock(entry, dayStart, dayEnd, durationSeconds, minHeight = MI
 
   return {
     entry,
-    top: (topMinutes / 60) * HOUR_HEIGHT,
-    height: Math.max((durationMinutes / 60) * HOUR_HEIGHT, minHeight),
+    top: (topMinutes / 60) * hourHeight,
+    height: Math.max((durationMinutes / 60) * hourHeight, minHeight),
     startMs: visibleStart.getTime(),
     endMs: visibleEnd.getTime(),
     lane: 0,
@@ -76,22 +86,28 @@ export function assignOverlapLanes(blocks) {
   return nextBlocks
 }
 
-export function getNowLinePosition(nowDate) {
+export function getNowLinePosition(nowDate, hourHeight = HOUR_HEIGHT) {
   const minutes = nowDate.getHours() * 60 + nowDate.getMinutes() + nowDate.getSeconds() / 60
-  return (minutes / 60) * HOUR_HEIGHT
+  return (minutes / 60) * hourHeight
 }
 
-export function getDropStartMinutes(clientY, targetRect, durationMinutes = 0, snapStepMinutes = DRAG_SNAP_MINUTES) {
-  const minutesFromTop = ((clientY - targetRect.top) / HOUR_HEIGHT) * 60
+export function getDropStartMinutes(
+  clientY,
+  targetRect,
+  durationMinutes = 0,
+  hourHeight = HOUR_HEIGHT,
+  snapStepMinutes = DRAG_SNAP_MINUTES
+) {
+  const minutesFromTop = ((clientY - targetRect.top) / hourHeight) * 60
   const snappedMinutes = Math.round(minutesFromTop / snapStepMinutes) * snapStepMinutes
   const maxMinutes = Math.max(0, MINUTES_IN_DAY - durationMinutes)
   return Math.max(0, Math.min(snappedMinutes, maxMinutes))
 }
 
-export function minutesToTop(minutes) {
-  return (minutes / 60) * HOUR_HEIGHT
+export function minutesToTop(minutes, hourHeight = HOUR_HEIGHT) {
+  return (minutes / 60) * hourHeight
 }
 
-export function minutesToHeight(minutes, minHeight = MIN_ENTRY_HEIGHT) {
-  return Math.max((minutes / 60) * HOUR_HEIGHT, minHeight)
+export function minutesToHeight(minutes, minHeight = MIN_ENTRY_HEIGHT, hourHeight = HOUR_HEIGHT) {
+  return Math.max((minutes / 60) * hourHeight, minHeight)
 }

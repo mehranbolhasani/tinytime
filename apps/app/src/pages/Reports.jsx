@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react'
-import { BarChart2 } from 'lucide-react'
-import DailyAreaChart from '@/components/reports/DailyAreaChart'
+import { AnimatePresence, motion } from 'motion/react'
+import { ClipboardList } from 'lucide-react'
 import DateRangePicker from '@/components/reports/DateRangePicker'
 import EntryTable from '@/components/reports/EntryTable'
 import FilterBar from '@/components/reports/FilterBar'
-import ProjectBarChart from '@/components/reports/ProjectBarChart'
+import ProjectBreakdown from '@/components/reports/ProjectBreakdown'
 import SummaryBar from '@/components/reports/SummaryBar'
-import TagDonutChart from '@/components/reports/TagDonutChart'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
-import { useTags } from '@/hooks/useTags'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
+import { presets } from '@/lib/motion'
 import { exportToCSV } from '@/lib/utils'
 
 function startOfDay(date) {
@@ -73,49 +72,32 @@ export default function Reports() {
   const [customFrom, setCustomFrom] = useState(null)
   const [customTo, setCustomTo] = useState(null)
   const [selectedProjectIds, setSelectedProjectIds] = useState([])
-  const [selectedTagIds, setSelectedTagIds] = useState([])
 
   const { from, to } = useMemo(() => buildRange(range, customFrom, customTo), [range, customFrom, customTo])
-  const { entries, isLoading, error: entriesError, entryTagsByEntryId } = useTimeEntriesList({ from, to })
+  const { entries, isLoading, error: entriesError } = useTimeEntriesList({ from, to })
   const { projects, error: projectsError } = useProjects()
-  const { tags, error: tagsError } = useTags()
 
   const filteredEntries = useMemo(() => {
+    const completedEntries = entries.filter((entry) => entry.stopped_at !== null)
     const validProjectIds = new Set(projects.map((project) => project.id))
-    const validTagIds = new Set(tags.map((tag) => tag.id))
     const activeProjectIds = selectedProjectIds.filter((id) => validProjectIds.has(id))
-    const activeTagIds = selectedTagIds.filter((id) => validTagIds.has(id))
     const hasValidProjectFilter = activeProjectIds.length > 0
-    const hasValidTagFilter = activeTagIds.length > 0
-    const activeTagIdSet = new Set(activeTagIds)
 
-    return entries
+    return completedEntries
       .filter((entry) => {
         if (hasValidProjectFilter && !activeProjectIds.includes(entry.project_id)) {
           return false
         }
-
-        if (!hasValidTagFilter) {
-          return true
-        }
-
-        const entryTags = entryTagsByEntryId[entry.id] ?? []
-        return entryTags.some((tag) => activeTagIdSet.has(tag.id))
+        return true
       })
       .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
-  }, [entries, selectedProjectIds, selectedTagIds, entryTagsByEntryId, projects, tags])
+  }, [entries, selectedProjectIds, projects])
 
   const handleToggleProject = (projectId) => {
     setSelectedProjectIds((previous) =>
       previous.includes(projectId)
         ? previous.filter((id) => id !== projectId)
         : [...previous, projectId]
-    )
-  }
-
-  const handleToggleTag = (tagId) => {
-    setSelectedTagIds((previous) =>
-      previous.includes(tagId) ? previous.filter((id) => id !== tagId) : [...previous, tagId]
     )
   }
 
@@ -128,12 +110,12 @@ export default function Reports() {
 
   return (
     <section className="space-y-3">
-      <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card p-3">
-        <h1 className="text-sm font-medium text-foreground">Reports</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-pixel font-bold text-foreground tracking-tighter">Reports</h1>
         <Button
           type="button"
           variant="outline"
-          onClick={() => exportToCSV(filteredEntries, entryTagsByEntryId, from, to)}
+          onClick={() => exportToCSV(filteredEntries, from, to)}
           disabled={!canExport}
           className="h-8 rounded-md border-border text-sm transition-colors duration-150"
         >
@@ -149,69 +131,73 @@ export default function Reports() {
         onApplyCustom={handleApplyCustom}
       />
 
-      {entriesError || projectsError || tagsError ? (
+      {entriesError || projectsError ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {entriesError?.message ?? projectsError?.message ?? tagsError?.message}
+          {entriesError?.message ?? projectsError?.message}
         </div>
       ) : null}
 
-      {isLoading ? (
-        <div className="space-y-3 rounded-xl bg-card p-4">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      ) : (
-        <>
-          <SummaryBar entries={filteredEntries} />
+      <AnimatePresence mode="wait" initial={false}>
+        {isLoading ? (
+          <motion.div
+            key="reports-loading"
+            variants={presets.panelSwap.variants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={presets.panelSwap.transition}
+            className="space-y-3 rounded-xl bg-card p-4"
+          >
+            <Skeleton className="h-4 w-40" />
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+            </div>
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="reports-content"
+            variants={presets.panelSwap.variants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={presets.panelSwap.transition}
+            className="space-y-3"
+          >
+            <motion.div className="space-y-3">
+              <SummaryBar entries={filteredEntries} />
 
-          <FilterBar
-            projects={projects}
-            tags={tags}
-            selectedProjectIds={selectedProjectIds}
-            selectedTagIds={selectedTagIds}
-            onToggleProject={handleToggleProject}
-            onToggleTag={handleToggleTag}
-            onResetProjects={() => setSelectedProjectIds([])}
-            onResetTags={() => setSelectedTagIds([])}
-          />
+              <section className="rounded-xl bg-card p-4">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <h2 className="text-sm font-medium text-muted-foreground">Time by project</h2>
+                  <FilterBar
+                    projects={projects}
+                    selectedProjectIds={selectedProjectIds}
+                    onToggleProject={handleToggleProject}
+                    onResetProjects={() => setSelectedProjectIds([])}
+                  />
+                </div>
+                <ProjectBreakdown entries={filteredEntries} />
+              </section>
+            </motion.div>
 
-          <div className="grid gap-4 md:grid-cols-1">
-            <section className="rounded-xl bg-card p-4">
-              <h2 className="mb-4 text-sm font-medium text-muted-foreground">
-                Hours by project
-              </h2>
-              <ProjectBarChart entries={filteredEntries} />
+            <section className="space-y-3">
+              <h2 className="text-sm font-medium text-muted-foreground">Entries</h2>
+              {filteredEntries.length === 0 ? (
+                <div className="flex flex-col items-center py-12 text-center">
+                  <ClipboardList className="mb-2 h-8 w-8 text-muted-foreground/70" />
+                  <p className="text-sm text-muted-foreground/70">Nothing tracked in this period.</p>
+                </div>
+              ) : (
+                <EntryTable entries={filteredEntries} />
+              )}
             </section>
-
-            <section className="rounded-xl bg-card p-4">
-              <h2 className="mb-4 text-sm font-medium text-muted-foreground">
-                Hours by tag
-              </h2>
-              <TagDonutChart entries={filteredEntries} entryTagsMap={entryTagsByEntryId} tags={tags} />
-            </section>
-          </div>
-
-          <section className="rounded-xl bg-card p-4">
-            <h2 className="mb-4 text-sm font-medium text-muted-foreground">
-              Hours by day
-            </h2>
-            <DailyAreaChart entries={filteredEntries} from={from} to={to} />
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium text-muted-foreground">Entries</h2>
-            {filteredEntries.length === 0 ? (
-              <div className="flex flex-col items-center py-12 text-center">
-                <BarChart2 className="mb-2 h-8 w-8 text-muted-foreground/70" />
-                <p className="text-sm text-muted-foreground/70">Nothing tracked in this period.</p>
-              </div>
-            ) : (
-              <EntryTable entries={filteredEntries} entryTagsMap={entryTagsByEntryId} />
-            )}
-          </section>
-        </>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }

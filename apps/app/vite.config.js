@@ -25,14 +25,6 @@ export default defineConfig({
             return 'react'
           }
 
-          if (id.includes('/recharts/')) {
-            return 'charts-recharts'
-          }
-
-          if (id.includes('/victory-vendor/') || id.includes('/d3-')) {
-            return 'charts-d3'
-          }
-
           if (id.includes('/@supabase/supabase-js/')) {
             return 'supabase'
           }

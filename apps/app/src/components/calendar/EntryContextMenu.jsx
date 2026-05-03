@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { Copy, Pencil, Trash2 } from 'lucide-react'
+import { durations, easings, variants } from '@/lib/motion'
 
 function clampPosition(position, max) {
   return Math.max(8, Math.min(position, Math.max(8, max - 184)))
@@ -7,9 +9,15 @@ function clampPosition(position, max) {
 
 export default function EntryContextMenu({ menuState, onClose, onEdit, onDuplicate, onDelete }) {
   const [menuPosition, setMenuPosition] = useState({ left: 0, top: 0 })
+  const isOpen = Boolean(menuState?.open && menuState?.entry)
+  const horizontalOrigin =
+    typeof window !== 'undefined' && menuPosition.left > window.innerWidth / 2 ? 'right' : 'left'
+  const verticalOrigin =
+    typeof window !== 'undefined' && menuPosition.top > window.innerHeight / 2 ? 'bottom' : 'top'
+  const transformOrigin = `${horizontalOrigin} ${verticalOrigin}`
 
   useEffect(() => {
-    if (!menuState?.open) {
+    if (!isOpen) {
       return undefined
     }
 
@@ -46,7 +54,7 @@ export default function EntryContextMenu({ menuState, onClose, onEdit, onDuplica
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('pointerdown', handlePointerDown)
     }
-  }, [menuState, onClose])
+  }, [isOpen, menuState, onClose])
 
   const actions = useMemo(
     () => [
@@ -57,35 +65,41 @@ export default function EntryContextMenu({ menuState, onClose, onEdit, onDuplica
     [onDelete, onDuplicate, onEdit]
   )
 
-  if (!menuState?.open || !menuState.entry) {
-    return null
-  }
-
   return (
-    <div
-      data-entry-context-menu
-      className="fixed z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-xl"
-      style={{ left: menuPosition.left, top: menuPosition.top }}
-      onPointerDown={(event) => event.stopPropagation()}
-    >
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          type="button"
-          onClick={() => {
-            action.onSelect(menuState.entry)
-            onClose()
-          }}
-          className={
-            action.tone === 'danger'
-              ? 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10'
-              : 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary'
-          }
+    <AnimatePresence>
+      {isOpen ? (
+        <motion.div
+          key={`entry-context-menu-${menuState.entry.id}`}
+          data-entry-context-menu
+          className="fixed z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-xl"
+          style={{ left: menuPosition.left, top: menuPosition.top, transformOrigin }}
+          onPointerDown={(event) => event.stopPropagation()}
+          variants={variants.popLayout}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: durations.short, ease: easings.standard }}
         >
-          <action.icon className="h-4 w-4" />
-          <span>{action.label}</span>
-        </button>
-      ))}
-    </div>
+          {actions.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              onClick={() => {
+                action.onSelect(menuState.entry)
+                onClose()
+              }}
+              className={
+                action.tone === 'danger'
+                  ? 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10'
+                  : 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary'
+              }
+            >
+              <action.icon className="h-4 w-4" />
+              <span>{action.label}</span>
+            </button>
+          ))}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   )
 }

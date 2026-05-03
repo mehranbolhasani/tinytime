@@ -13,10 +13,9 @@ import {
   assignOverlapLanes,
   DEFAULT_CREATE_MINUTES,
   getDropStartMinutes,
+  getGridHeight,
   getNowLinePosition,
-  GRID_HEIGHT,
   HOURS,
-  HOUR_HEIGHT,
   isSameDay,
   MINUTES_IN_DAY,
   MIN_ENTRY_HEIGHT,
@@ -45,9 +44,10 @@ export default function DayView({
   selectedDate,
   entries,
   activeEntry,
-  entryTagsByEntryId = {},
   googleEvents = [],
   isLoadingGoogleEvents = false,
+  hourHeight = 32,
+  viewportHeight = 'clamp(420px, 70dvh, 720px)',
 }) {
   const scrollRef = useRef(null)
   const [editingEntry, setEditingEntry] = useState(null)
@@ -63,6 +63,7 @@ export default function DayView({
   const { updateEntry, createEntry, deleteEntry } = useTimeEntryMutations({ entries })
   const isTouchViewport = useMediaQuery('(hover: none)')
   const minEntryHeight = isTouchViewport ? 28 : MIN_ENTRY_HEIGHT
+  const gridHeight = getGridHeight(hourHeight)
   const dayStart = useMemo(() => startOfDay(selectedDate), [selectedDate])
   const dayEnd = useMemo(() => addDays(dayStart, 1), [dayStart])
   const isSelectedToday = isSameDay(selectedDate, now)
@@ -87,11 +88,11 @@ export default function DayView({
   const completedBlocks = useMemo(() => {
     const blocks = entriesForRendering
       .filter((entry) => entry.started_at && entry.stopped_at)
-      .map((entry) => toBlock(entry, dayStart, dayEnd, entry.duration_seconds ?? 0, minEntryHeight))
+      .map((entry) => toBlock(entry, dayStart, dayEnd, entry.duration_seconds ?? 0, minEntryHeight, hourHeight))
       .filter(Boolean)
 
     return assignOverlapLanes(blocks)
-  }, [entriesForRendering, dayStart, dayEnd, minEntryHeight])
+  }, [entriesForRendering, dayStart, dayEnd, minEntryHeight, hourHeight])
 
   const { timedGoogleEvents, allDayGoogleEvents } = useMemo(() => {
     const timed = []
@@ -122,7 +123,8 @@ export default function DayView({
           dayStart,
           dayEnd,
           0,
-          minEntryHeight
+          minEntryHeight,
+          hourHeight
         )
 
         if (!block) {
@@ -137,7 +139,7 @@ export default function DayView({
       .filter(Boolean)
 
     return assignOverlapLanes(blocks)
-  }, [dayEnd, dayStart, minEntryHeight, timedGoogleEvents])
+  }, [dayEnd, dayStart, minEntryHeight, timedGoogleEvents, hourHeight])
 
   const activeBlock = useMemo(() => {
     if (!activeEntry?.started_at) {
@@ -148,8 +150,8 @@ export default function DayView({
       return null
     }
 
-    return toBlock(activeEntry, dayStart, dayEnd, elapsed, minEntryHeight)
-  }, [activeEntry, dayStart, dayEnd, elapsed, minEntryHeight])
+    return toBlock(activeEntry, dayStart, dayEnd, elapsed, minEntryHeight, hourHeight)
+  }, [activeEntry, dayStart, dayEnd, elapsed, minEntryHeight, hourHeight])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -168,8 +170,8 @@ export default function DayView({
     }
 
     const targetHour = Math.max(0, new Date().getHours() - 2)
-    container.scrollTop = targetHour * HOUR_HEIGHT
-  }, [])
+    container.scrollTop = targetHour * hourHeight
+  }, [hourHeight])
 
   useEffect(() => {
     if (!pendingMove) {
@@ -242,12 +244,12 @@ export default function DayView({
     if (!draggingMove) {
       return { startMinutes: 0, durationMinutes: 0 }
     }
-    const adjustedClientY = clientY - (draggingMove.grabOffsetMinutes / 60) * HOUR_HEIGHT
+    const adjustedClientY = clientY - (draggingMove.grabOffsetMinutes / 60) * hourHeight
     const durationMinutes = draggingMove.durationMinutes
-    const startMinutes = getDropStartMinutes(adjustedClientY, containerRect, durationMinutes)
+    const startMinutes = getDropStartMinutes(adjustedClientY, containerRect, durationMinutes, hourHeight)
     setPreviewBlock({
-      top: minutesToTop(startMinutes),
-      height: minutesToHeight(durationMinutes, minEntryHeight),
+      top: minutesToTop(startMinutes, hourHeight),
+      height: minutesToHeight(durationMinutes, minEntryHeight, hourHeight),
       variant: 'move',
     })
     return { startMinutes, durationMinutes }
@@ -256,8 +258,8 @@ export default function DayView({
   const updateCreatePreview = (startMinutes, currentMinutes) => {
     const range = getRangeFromDraft(startMinutes, currentMinutes)
     setPreviewBlock({
-      top: minutesToTop(range.fromMinutes),
-      height: minutesToHeight(range.durationMinutes, minEntryHeight),
+      top: minutesToTop(range.fromMinutes, hourHeight),
+      height: minutesToHeight(range.durationMinutes, minEntryHeight, hourHeight),
       variant: 'create',
     })
     return range
@@ -330,7 +332,8 @@ export default function DayView({
       ) : null}
       <div
         ref={scrollRef}
-        className="h-full overflow-clip rounded-xl bg-card"
+        className="overflow-y-auto overflow-x-hidden rounded-xl bg-card"
+        style={{ height: viewportHeight }}
       >
         {allDayGoogleEvents.length > 0 ? (
           <div className="border-b border-border bg-secondary/40 px-3 py-2">
@@ -352,12 +355,12 @@ export default function DayView({
           </div>
         ) : null}
         <div className="grid grid-cols-[56px_1fr]">
-          <div className="relative border-r border-border bg-secondary/50" style={{ height: GRID_HEIGHT }}>
+          <div className="relative border-r border-border bg-secondary/50" style={{ height: gridHeight }}>
             {HOURS.map((hour) => (
               <div
                 key={hour}
                 className="absolute inset-x-0 border-t border-border px-2 text-right font-mono text-xs text-muted-foreground/70"
-                style={{ top: hour * HOUR_HEIGHT, height: HOUR_HEIGHT, lineHeight: '32px' }}
+                style={{ top: hour * hourHeight, height: hourHeight, lineHeight: `${hourHeight}px` }}
               >
                 {String(hour).padStart(2, '0')}
               </div>
@@ -366,7 +369,7 @@ export default function DayView({
 
           <div
             className="relative"
-            style={{ height: GRID_HEIGHT }}
+            style={{ height: gridHeight }}
             onDragOver={(event) => {
               event.preventDefault()
               const entry = completedBlocks.find((block) => block.entry.id === draggingMove?.entryId)?.entry
@@ -428,7 +431,7 @@ export default function DayView({
                 return
               }
               const rect = event.currentTarget.getBoundingClientRect()
-              const startMinutes = getDropStartMinutes(event.clientY, rect)
+              const startMinutes = getDropStartMinutes(event.clientY, rect, 0, hourHeight)
               setCreateDraft({ startMinutes, currentMinutes: startMinutes })
               updateCreatePreview(startMinutes, startMinutes)
               event.currentTarget.setPointerCapture?.(event.pointerId)
@@ -438,7 +441,7 @@ export default function DayView({
                 return
               }
               const rect = event.currentTarget.getBoundingClientRect()
-              const currentMinutes = getDropStartMinutes(event.clientY, rect)
+              const currentMinutes = getDropStartMinutes(event.clientY, rect, 0, hourHeight)
               setCreateDraft((previous) => (previous ? { ...previous, currentMinutes } : previous))
               updateCreatePreview(createDraft.startMinutes, currentMinutes)
             }}
@@ -471,7 +474,7 @@ export default function DayView({
               <div
                 key={`line-${hour}`}
                 className="pointer-events-none absolute inset-x-0 border-t border-border/70"
-                style={{ top: hour * HOUR_HEIGHT }}
+                style={{ top: hour * hourHeight }}
               />
             ))}
 
@@ -503,7 +506,6 @@ export default function DayView({
               <EntryBlock
                 key={block.entry.id}
                 block={block}
-                tags={entryTagsByEntryId[block.entry.id] ?? []}
                 isDragging={draggingMove?.entryId === block.entry.id}
                 onClick={() => {
                   setEditingEntry(block.entry)
@@ -526,7 +528,7 @@ export default function DayView({
                     1,
                     Math.round((entry.duration_seconds ?? computeDuration(entry.started_at, entry.stopped_at)) / 60)
                   )
-                  const rawOffset = ((event.clientY - targetRect.top) / HOUR_HEIGHT) * 60
+                  const rawOffset = ((event.clientY - targetRect.top) / hourHeight) * 60
                   const grabOffsetMinutes = Math.max(0, Math.min(durationMinutes, rawOffset))
                   setDraggingMove({
                     entryId: entry.id,
@@ -552,7 +554,7 @@ export default function DayView({
             {isSelectedToday ? (
               <div
                 className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
-                style={{ top: getNowLinePosition(now) }}
+                style={{ top: getNowLinePosition(now, hourHeight) }}
               >
                 <span className="h-2 w-2 -translate-x-1 rounded-full bg-primary" />
                 <div className="flex-1 border-t border-primary" />

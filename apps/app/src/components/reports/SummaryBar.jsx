@@ -1,4 +1,4 @@
-import { formatDuration } from '@/lib/utils'
+import { cn, formatDuration } from '@/lib/utils'
 
 function getDateKey(dateInput) {
   const date = new Date(dateInput)
@@ -46,11 +46,19 @@ function calculateSummary(entries) {
   }
 }
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, variant = 'default' }) {
   return (
-    <div className="rounded-xl bg-card p-4">
-      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">{label}</p>
-      <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
+    <div className="rounded-xl bg-card p-3">
+      <p className="mb-1 text-xs font-medium tracking-normal text-muted-foreground/50">{label}</p>
+      <div
+        className={cn(
+          'text-foreground',
+          variant === 'default' && 'text-xl font-medium tracking-tight tabular-nums',
+          variant === 'rich' && 'text-base font-normal'
+        )}
+      >
+        {value}
+      </div>
     </div>
   )
 }
@@ -60,7 +68,7 @@ export default function SummaryBar({ entries }) {
 
   if (!summary) {
     return (
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total time" value="—" />
         <StatCard label="Tracked days" value="—" />
         <StatCard label="Daily average" value="—" />
@@ -70,20 +78,29 @@ export default function SummaryBar({ entries }) {
   }
 
   const topProjectValue = summary.topProject ? (
-    <span className="inline-flex items-center gap-2">
-      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: summary.topProject.color }} />
-      {summary.topProject.name}
-    </span>
+    <div className="space-y-1">
+      <span className="flex min-w-0 items-center gap-2 text-base leading-snug">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{ backgroundColor: summary.topProject.color }}
+          aria-hidden
+        />
+        <span className="min-w-0 truncate">{summary.topProject.name}</span>
+      </span>
+      <div className="text-sm font-normal tabular-nums text-muted-foreground">
+        {formatDuration(summary.topProject.seconds)}
+      </div>
+    </div>
   ) : (
     '—'
   )
 
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+    <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard label="Total time" value={formatDuration(summary.totalSeconds)} />
       <StatCard label="Tracked days" value={summary.trackedDays} />
       <StatCard label="Daily average" value={formatDuration(summary.dailyAverage)} />
-      <StatCard label="Top project" value={topProjectValue} />
+      <StatCard label="Top project" value={topProjectValue} variant="rich" />
     </section>
   )
 }

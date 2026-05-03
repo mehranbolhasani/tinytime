@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -8,10 +9,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useProjects } from '@/hooks/useProjects'
-import TagSelector from '@/components/tags/TagSelector'
-import { useTags } from '@/hooks/useTags'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { toSafeHexColor } from '@/lib/color'
+import { presets } from '@/lib/motion'
 import { cn, formatDurationHMS } from '@/lib/utils'
 
 const NO_PROJECT_VALUE = '__no_project__'
@@ -22,45 +22,17 @@ function normalizeProjectValue(projectId) {
 
 export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading = false }) {
   const { projects, isLoading: isLoadingProjects } = useProjects()
-  const { tags, isLoading: isLoadingTags, getEntryTags, setEntryTags } = useTags()
   const timer = useTimerContext()
   const activeEntry = timer.activeEntry
   const [description, setDescription] = useState(activeEntry?.description ?? '')
   const [selectedProject, setSelectedProject] = useState(normalizeProjectValue(activeEntry?.project_id))
-  const [selectedTagIds, setSelectedTagIds] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!activeEntry?.id) {
-      setSelectedTagIds([])
-      return
-    }
-
-    let isCurrent = true
-
-    setDescription(activeEntry.description ?? '')
-    setSelectedProject(normalizeProjectValue(activeEntry.project_id))
-
-    const loadEntryTags = async () => {
-      try {
-        const entryTags = await getEntryTags(activeEntry.id)
-        if (isCurrent) {
-          setSelectedTagIds(entryTags.map((tag) => tag.id))
-        }
-      } catch {
-        if (isCurrent) {
-          setSelectedTagIds([])
-        }
-      }
-    }
-
-    loadEntryTags()
-
-    return () => {
-      isCurrent = false
-    }
-  }, [activeEntry, getEntryTags])
+    setDescription(activeEntry?.description ?? '')
+    setSelectedProject(normalizeProjectValue(activeEntry?.project_id))
+  }, [activeEntry])
 
   const selectedProjectId = useMemo(
     () => (selectedProject === NO_PROJECT_VALUE ? null : selectedProject),
@@ -74,9 +46,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
     try {
       if (activeEntry) {
         const forcedStoppedAt = new Date().toISOString()
-        const stoppedEntry = await stopEntry(activeEntry.id, forcedStoppedAt)
-        await setEntryTags(stoppedEntry.id, selectedTagIds)
-        setSelectedTagIds([])
+        await stopEntry(activeEntry.id, forcedStoppedAt)
         timer.reset()
       }
 
@@ -103,9 +73,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
 
     try {
       const stoppedAt = timer.stop()
-      const stoppedEntry = await stopEntry(activeEntry.id, stoppedAt)
-      await setEntryTags(stoppedEntry.id, selectedTagIds)
-      setSelectedTagIds([])
+      await stopEntry(activeEntry.id, stoppedAt)
       timer.reset()
     } catch (stopError) {
       timer.start(activeEntry)
@@ -117,79 +85,138 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
 
   const displayTime = timer.isRunning ? formatDurationHMS(timer.elapsed) : '00:00:00'
   const [hours = '00', minutes = '00', seconds = '00'] = displayTime.split(':')
+  const runningDescription = activeEntry?.description?.trim()
+  const runningProjectName = activeEntry?.projects?.name ?? 'No project'
+  const runningProjectColor = activeEntry?.projects?.color
+    ? toSafeHexColor(activeEntry.projects.color)
+    : null
 
   return (
-    <section className="flex flex-col">
-      <div className="space-y-6">
-        <input
-          type="text"
-          placeholder="Describe your work"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          disabled={isSubmitting}
-          className="h-12 w-full bg-card px-3 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none rounded-2xl"
-        />
-
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex w-full min-w-0 flex-1 items-center gap-2">
-            <Select
-              value={selectedProject}
-              onValueChange={setSelectedProject}
-              disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
-            >
-              <SelectTrigger className="h-8 w-full rounded-2xl border-none bg-card text-sm">
-                <SelectValue placeholder="No project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: toSafeHexColor(project.color) }}
-                      />
-                      <span>{project.name}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <TagSelector
-              tags={tags}
-              selectedTagIds={selectedTagIds}
-              onChange={setSelectedTagIds}
-              disabled={isSubmitting || isLoadingTags || isEntriesLoading}
-              triggerLabel="No tags"
-              showSelectedPills={false}
-              className="w-full"
-            />
-          </div>
-
-          <Button
-            type="button"
-            variant={timer.isRunning ? 'destructive' : 'default'}
-            className="h-8 rounded-full px-4 text-sm font-normal"
-            onClick={timer.isRunning ? handleStop : handleStart}
-            disabled={isSubmitting || isEntriesLoading}
+    <section className="flex flex-col gap-4">
+      <div className="overflow-hidden rounded-2xl bg-card">
+        <div className="flex items-center justify-center py-6">
+          <span
+            className={cn(
+              'block text-center font-pixel text-7xl font-bold',
+              timer.isRunning ? 'text-foreground' : 'text-muted-foreground/40'
+            )}
           >
-            {isSubmitting ? 'Working...' : timer.isRunning ? 'Stop' : 'Start'}
-          </Button>
+            <span>{hours}</span>
+            <span className="inline-block -translate-y-2">:</span>
+            <span>{minutes}</span>
+            <span className="inline-block -translate-y-2">:</span>
+            <span>{seconds}</span>
+          </span>
         </div>
-      </div>
 
-      <div className="flex items-center justify-center bg-card rounded-2xl mt-8 shadow-2xl shadow-primary/10 py-6">
-        <span className={cn(
-          'block text-center font-pixel font-bold text-8xl text-foreground',
-          !timer.isRunning && 'text-foreground'
-        )}>
-          <span>{hours}</span>
-          <span className="inline-block -translate-y-2">:</span>
-          <span>{minutes}</span>
-          <span className="inline-block -translate-y-2">:</span>
-          <span>{seconds}</span>
-        </span>
+        <div className="min-h-[132px] border-t border-dotted border-border">
+          <AnimatePresence mode="wait" initial={false}>
+            {timer.isRunning ? (
+              <motion.div
+                key="running"
+                className="flex min-h-[132px] items-stretch"
+                variants={presets.panelSwap.variants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={presets.panelSwap.transition}
+              >
+                <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 px-4 py-3">
+                  <p
+                    className={cn(
+                      'truncate text-base',
+                      runningDescription ? 'text-foreground' : 'italic text-muted-foreground/70'
+                    )}
+                  >
+                    {runningDescription || 'Untitled session'}
+                  </p>
+                  <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                    <span
+                      className={cn(
+                        'h-2.5 w-2.5 rounded-full',
+                        !runningProjectColor && 'border border-border bg-transparent'
+                      )}
+                      style={runningProjectColor ? { backgroundColor: runningProjectColor } : undefined}
+                    />
+                    <span>{runningProjectName}</span>
+                  </p>
+                </div>
+                <div className="grid h-auto w-[120px] min-w-[120px] shrink-0 place-items-center p-1">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="h-full w-full min-w-full rounded-xl px-4 text-sm font-normal"
+                    onClick={handleStop}
+                    disabled={isSubmitting || isEntriesLoading}
+                  >
+                    <span className="inline-flex min-w-14 justify-center">
+                      {isSubmitting ? 'Working...' : 'Stop'}
+                    </span>
+                  </Button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="idle"
+                className="flex min-h-[132px] items-stretch"
+                variants={presets.panelSwap.variants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={presets.panelSwap.transition}
+              >
+                <div className="flex flex-1 flex-col items-stretch">
+                  <input
+                    type="text"
+                    placeholder="Describe your work"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    disabled={isSubmitting || isEntriesLoading}
+                    className="h-16 w-full border-b border-dotted border-border bg-card px-4 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none"
+                  />
+                  <div className="flex h-16 w-full min-w-0 items-stretch">
+                    <Select
+                      value={selectedProject}
+                      onValueChange={setSelectedProject}
+                      disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
+                    >
+                      <SelectTrigger className="h-full w-full border-none rounded-none bg-card text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-none focus:ring-0 focus:outline-none">
+                        <SelectValue placeholder="No project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            <span className="inline-flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full"
+                                style={{ backgroundColor: toSafeHexColor(project.color) }}
+                              />
+                              <span>{project.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid h-auto w-[120px] min-w-[120px] shrink-0 place-items-center p-1">
+                  <Button
+                    type="button"
+                    variant="default"
+                    className="h-full w-full min-w-full rounded-xl px-4 text-sm font-normal"
+                    onClick={handleStart}
+                    disabled={isSubmitting || isEntriesLoading}
+                  >
+                    <span className="inline-flex min-w-14 justify-center">
+                      {isSubmitting ? 'Working...' : 'Start'}
+                    </span>
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {isEntriesLoading ? (

@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { Clock, CalendarDays, BarChart2, Folder, Menu, PlayCircle } from 'lucide-react'
+import { Clock, CalendarDays, ClipboardList, Folder, Menu, PlayCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -10,6 +11,7 @@ import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useTheme } from '@/hooks/useTheme'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
+import { durations, easings, presets } from '@/lib/motion'
 import { formatDurationHMS } from '@/lib/utils'
 import { assertSupabaseClient, getFriendlySupabaseError, supabaseConfigError } from '@/lib/supabase'
 const Today = lazy(() => import('./pages/Today'))
@@ -21,7 +23,7 @@ const Projects = lazy(() => import('./pages/Projects'))
 const NAV_ITEMS = [
   { to: '/', label: 'Today', icon: Clock },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { to: '/reports', label: 'Reports', icon: BarChart2 },
+  { to: '/reports', label: 'Reports', icon: ClipboardList },
   { to: '/projects', label: 'Projects', icon: Folder },
 ]
 
@@ -151,8 +153,32 @@ function ThemePreferenceToggle({ preference, options, onChange }) {
   )
 }
 
+function RouteTransition({ children }) {
+  return (
+    <motion.div
+      className="min-h-[60vh]"
+      variants={presets.route.variants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={presets.route.transition}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+function RouteLoadingFallback() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
+      Loading view...
+    </div>
+  )
+}
+
 function AppLayout({ userEmail, onSignOut, isSigningOut }) {
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
   const navigate = useNavigate()
   const { preference, setThemePreference, options } = useTheme()
   const timer = useTimerContext()
@@ -181,21 +207,58 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
     })
   }
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    if (window.scrollY > 0) {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
+      })
+    }
+  }, [pathname])
+
   const content = (
-    <Suspense
-      fallback={(
-        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
-          Loading view...
-        </div>
-      )}
-    >
-      <Routes>
-        <Route path="/" element={<Today />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/projects" element={<Projects />} />
-      </Routes>
-    </Suspense>
+    <AnimatePresence mode="wait" initial={false}>
+      <RouteTransition key={pathname}>
+        <Routes location={location}>
+          <Route
+            path="/"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Today />
+              </Suspense>
+            )}
+          />
+          <Route
+            path="/calendar"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Calendar />
+              </Suspense>
+            )}
+          />
+          <Route
+            path="/reports"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Reports />
+              </Suspense>
+            )}
+          />
+          <Route
+            path="/projects"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Projects />
+              </Suspense>
+            )}
+          />
+        </Routes>
+      </RouteTransition>
+    </AnimatePresence>
   )
 
   const navLinks = NAV_ITEMS.map((item) => (
@@ -205,43 +268,63 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }) {
         end={item.to === '/'}
         onPointerEnter={item.to === '/reports' ? handlePrefetchReports : undefined}
         className={({ isActive }) =>
-          `inline-flex items-center rounded-md px-4 py-3 text-sm font-normal transition-colors duration-100 ${
+          `relative inline-flex items-center rounded-md px-4 py-3 text-sm font-normal transition-colors duration-100 ${
             isActive
-              ? 'text-primary bg-primary/10'
+              ? 'text-primary'
               : 'text-muted-foreground hover:text-foreground'
           }`
         }
       >
-        <item.icon className="h-5 w-5" />
+        {({ isActive }) => (
+          <>
+            {isActive ? (
+              <motion.span
+                layoutId="bottom-nav-pill"
+                className="absolute inset-0 rounded-md bg-primary/10"
+                transition={easings.spring}
+              />
+            ) : null}
+            <item.icon className="relative z-10 h-5 w-5" />
+          </>
+        )}
       </NavLink>
     </li>
   ))
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="mx-auto w-full max-w-[560px] px-4 pb-44 pt-5 sm:px-6">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start gap-4 bg-background">
+      <main className="mx-auto flex w-full max-w-md flex-col justify-start pt-8 pb-20">
         
 
         {content}
       </main>
 
-      {timer.isRunning ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleMiniTimerClick}
-          className="fixed left-1/2 z-40 flex h-auto w-[calc(100%-2rem)] max-w-[512px] -translate-x-1/2 items-center justify-between rounded-lg border-border bg-card px-3 py-2 shadow-sm"
-          style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
-        >
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-            <PlayCircle className="h-4 w-4 text-primary" />
-            Running timer
-          </span>
-          <span className="font-mono text-sm text-muted-foreground">{formatDurationHMS(timer.elapsed)}</span>
-        </Button>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {timer.isRunning ? (
+          <motion.div
+            key="mini-timer-pill"
+            initial={{ y: -8, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -8, opacity: 0 }}
+            transition={{ duration: durations.short, ease: easings.standard }}
+            className="fixed left-1/2 bottom-20 z-40 -translate-x-1/2"
+          >
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleMiniTimerClick}
+              className="flex h-auto w-[150px] max-w-md items-center justify-between rounded-full border-none bg-card-foreground/90 px-3 py-1 transition-all duration-300 ease-[cubic-bezier(0.8,-0.4,0.5,1)] hover:w-[200px] hover:bg-card-foreground"
+            >
+              <span className="inline-flex items-center gap-2 text-xs font-medium text-card/50">
+                Now
+              </span>
+              <span className="font-pixel text-lg font-black text-white">{formatDurationHMS(timer.elapsed)}</span>
+            </Button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
-        <header className="fixed bottom-4 left-1/2 z-50 w-full max-w-md -translate-x-1/2 flex items-center justify-between bg-card/95 px-4 py-2 backdrop-blur shadow-xl shadow-primary/10 rounded-xl">
+        <header className="fixed bottom-2 z-50 flex items-center justify-between bg-card/95 px-4 py-2 backdrop-blur shadow-xl shadow-primary/10 rounded-xl w-md max-w-md mx-auto">
           <div className="inline-flex items-center gap-1">
             <span className="relative h-1.5 w-4 rounded-sm bg-primary" />
             <span className="text-base font-normal tracking-tight text-foreground">
@@ -545,15 +628,17 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TimerProvider>
-        <BrowserRouter>
-          <AppLayout
-            userEmail={session.user?.email ?? 'signed-in user'}
-            onSignOut={handleSignOut}
-            isSigningOut={isSigningOut}
-          />
-        </BrowserRouter>
-      </TimerProvider>
+      <MotionConfig reducedMotion="user" transition={{ duration: durations.base, ease: easings.standard }}>
+        <TimerProvider>
+          <BrowserRouter>
+            <AppLayout
+              userEmail={session.user?.email ?? 'signed-in user'}
+              onSignOut={handleSignOut}
+              isSigningOut={isSigningOut}
+            />
+          </BrowserRouter>
+        </TimerProvider>
+      </MotionConfig>
     </QueryClientProvider>
   )
 }

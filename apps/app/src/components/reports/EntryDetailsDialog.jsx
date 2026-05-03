@@ -5,10 +5,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { hexToRgba } from '@/lib/color'
 import { formatDate, formatDuration } from '@/lib/utils'
 
-export default function EntryDetailsDialog({ entry, tags, open, onOpenChange }) {
+export default function EntryDetailsDialog({ entry, open, onOpenChange }) {
   const project = entry?.projects
   const description = entry?.description?.trim()
 
@@ -52,28 +51,6 @@ export default function EntryDetailsDialog({ entry, tags, open, onOpenChange }) 
             <div className="space-y-2 rounded-lg bg-secondary px-3 py-2">
               <p className="text-muted-foreground">Description</p>
               <p className="text-foreground">{description || '—'}</p>
-            </div>
-
-            <div className="space-y-2 rounded-lg bg-secondary px-3 py-2">
-              <p className="text-muted-foreground">Tags</p>
-              {tags.length === 0 ? (
-                <span className="text-muted-foreground/80">—</span>
-              ) : (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="rounded-full px-2 py-0.5 text-xs font-medium"
-                      style={{
-                        backgroundColor: hexToRgba(tag.color, 0.15),
-                        color: tag.color,
-                      }}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}
