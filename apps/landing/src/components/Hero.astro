@@ -1,18 +1,273 @@
-<section class="py-16 min-h-[60vh] flex items-center">
+---
+const TIMER_COUNT = 12
+const FOCAL_DEPTH = 0.5
+const PLACEMENT_ATTEMPTS = 48
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
+const lerp = (from: number, to: number, progress: number): number => from + (to - from) * progress
+const randomRange = (min: number, max: number): number => Math.random() * (max - min) + min
+const toTwoDigits = (value: number): string => value.toString().padStart(2, '0')
+
+type Translate = {
+  x: number
+  y: number
+}
+
+type PlacementConfig = {
+  columns: number
+  maxTranslateX: number
+  maxTranslateY: number
+  gridStepX: number
+  gridStepY: number
+  cardBaseWidth: number
+  cardBaseHeight: number
+  collisionPadding: number
+  protectedZone: {
+    centerX: number
+    centerY: number
+    halfWidth: number
+    halfHeight: number
+  }
+}
+
+type Placement = {
+  centerX: number
+  centerY: number
+  halfWidth: number
+  halfHeight: number
+}
+
+const DESKTOP_CONFIG: PlacementConfig = {
+  columns: 4,
+  maxTranslateX: 118,
+  maxTranslateY: 114,
+  gridStepX: 240,
+  gridStepY: 150,
+  cardBaseWidth: 196,
+  cardBaseHeight: 64,
+  collisionPadding: 10,
+  protectedZone: {
+    centerX: 360,
+    centerY: 160,
+    halfWidth: 210,
+    halfHeight: 104,
+  },
+}
+
+const TABLET_CONFIG: PlacementConfig = {
+  columns: 4,
+  maxTranslateX: 84,
+  maxTranslateY: 72,
+  gridStepX: 220,
+  gridStepY: 132,
+  cardBaseWidth: 188,
+  cardBaseHeight: 60,
+  collisionPadding: 10,
+  protectedZone: {
+    centerX: 330,
+    centerY: 146,
+    halfWidth: 188,
+    halfHeight: 92,
+  },
+}
+
+const MOBILE_CONFIG: PlacementConfig = {
+  columns: 4,
+  maxTranslateX: 52,
+  maxTranslateY: 42,
+  gridStepX: 194,
+  gridStepY: 112,
+  cardBaseWidth: 176,
+  cardBaseHeight: 56,
+  collisionPadding: 8,
+  protectedZone: {
+    centerX: 291,
+    centerY: 124,
+    halfWidth: 154,
+    halfHeight: 76,
+  },
+}
+
+const getRandomTimeDigits = (): string[] => {
+  let hours = Math.floor(Math.random() * 24)
+  let minutes = Math.floor(Math.random() * 60)
+  let seconds = Math.floor(Math.random() * 60)
+
+  while (hours === 0 && minutes === 0 && seconds === 0) {
+    hours = Math.floor(Math.random() * 24)
+    minutes = Math.floor(Math.random() * 60)
+    seconds = Math.floor(Math.random() * 60)
+  }
+
+  return [...toTwoDigits(hours), ...toTwoDigits(minutes), ...toTwoDigits(seconds)]
+}
+
+const getPlacement = (
+  index: number,
+  scale: number,
+  x: number,
+  y: number,
+  config: PlacementConfig,
+): Placement => {
+  const row = Math.floor(index / config.columns)
+  const col = index % config.columns
+  return {
+    centerX: col * config.gridStepX + x,
+    centerY: row * config.gridStepY + y,
+    halfWidth: (config.cardBaseWidth * scale) / 2,
+    halfHeight: (config.cardBaseHeight * scale) / 2,
+  }
+}
+
+const collidesWith = (
+  candidate: Placement,
+  placed: Placement[],
+  collisionPadding: number,
+): boolean =>
+  placed.some((item) => {
+    const overlapX =
+      Math.abs(candidate.centerX - item.centerX) <
+      candidate.halfWidth + item.halfWidth + collisionPadding
+    const overlapY =
+      Math.abs(candidate.centerY - item.centerY) <
+      candidate.halfHeight + item.halfHeight + collisionPadding
+    return overlapX && overlapY
+  })
+
+const collidesWithProtectedZone = (
+  candidate: Placement,
+  config: PlacementConfig,
+): boolean => {
+  const zone = config.protectedZone
+  const overlapX =
+    Math.abs(candidate.centerX - zone.centerX) <
+    candidate.halfWidth + zone.halfWidth + config.collisionPadding
+  const overlapY =
+    Math.abs(candidate.centerY - zone.centerY) <
+    candidate.halfHeight + zone.halfHeight + config.collisionPadding
+
+  return overlapX && overlapY
+}
+
+const getSeparationScore = (
+  candidate: Placement,
+  placed: Placement[],
+  config: PlacementConfig,
+): number => {
+  let minScore = Number.POSITIVE_INFINITY
+
+  if (placed.length > 0) {
+    placed.forEach((item) => {
+      const requiredX = candidate.halfWidth + item.halfWidth + config.collisionPadding
+      const requiredY = candidate.halfHeight + item.halfHeight + config.collisionPadding
+      const scoreX = Math.abs(candidate.centerX - item.centerX) / requiredX
+      const scoreY = Math.abs(candidate.centerY - item.centerY) / requiredY
+      minScore = Math.min(minScore, Math.min(scoreX, scoreY))
+    })
+  }
+
+  const zone = config.protectedZone
+  const requiredZoneX = candidate.halfWidth + zone.halfWidth + config.collisionPadding
+  const requiredZoneY = candidate.halfHeight + zone.halfHeight + config.collisionPadding
+  const zoneScoreX = Math.abs(candidate.centerX - zone.centerX) / requiredZoneX
+  const zoneScoreY = Math.abs(candidate.centerY - zone.centerY) / requiredZoneY
+  minScore = Math.min(minScore, Math.min(zoneScoreX, zoneScoreY))
+
+  return minScore
+}
+
+const placeTranslations = (scales: number[], config: PlacementConfig): Translate[] => {
+  const placed: Placement[] = []
+
+  return scales.map((scale, index) => {
+    let bestFallback = {
+      x: randomRange(-config.maxTranslateX, config.maxTranslateX),
+      y: randomRange(-config.maxTranslateY, config.maxTranslateY),
+      score: Number.NEGATIVE_INFINITY,
+      placement: { centerX: 0, centerY: 0, halfWidth: 0, halfHeight: 0 } as Placement,
+    }
+    bestFallback.placement = getPlacement(index, scale, bestFallback.x, bestFallback.y, config)
+
+    for (let attempt = 0; attempt < PLACEMENT_ATTEMPTS; attempt += 1) {
+      const nextX = randomRange(-config.maxTranslateX, config.maxTranslateX)
+      const nextY = randomRange(-config.maxTranslateY, config.maxTranslateY)
+      const candidate = getPlacement(index, scale, nextX, nextY, config)
+
+      if (
+        !collidesWith(candidate, placed, config.collisionPadding) &&
+        !collidesWithProtectedZone(candidate, config)
+      ) {
+        bestFallback = {
+          x: nextX,
+          y: nextY,
+          score: Number.POSITIVE_INFINITY,
+          placement: candidate,
+        }
+        break
+      }
+
+      const score = getSeparationScore(candidate, placed, config)
+      if (score > bestFallback.score) {
+        bestFallback = { x: nextX, y: nextY, score, placement: candidate }
+      }
+    }
+
+    placed.push(bestFallback.placement)
+    return { x: bestFallback.x, y: bestFallback.y }
+  })
+}
+
+const baseTimers = Array.from({ length: TIMER_COUNT }).map(() => {
+  const depth = Math.random()
+  const focalDistance = Math.abs(depth - FOCAL_DEPTH) / 0.5
+  const blurPx = Math.min(3.2, Math.pow(focalDistance, 1.6) * 3.2)
+  const scale = lerp(0.9, 1.08, depth)
+  const rotateDeg = randomRange(-1, 1)
+  const parallaxDistance = randomRange(20, 56)
+  const parallaxDirection = Math.random() > 0.5 ? 1 : -1
+  const parallaxFrom = -parallaxDistance * parallaxDirection
+  const parallaxTo = parallaxDistance * parallaxDirection
+  const zIndex = Math.round(6 + depth * 16)
+  const digits = getRandomTimeDigits()
+
+  return {
+    digits,
+    scale,
+    rotateDeg,
+    blurPx,
+    zIndex,
+    parallaxFrom,
+    parallaxTo,
+  }
+})
+
+const scales = baseTimers.map((timer) => timer.scale)
+const desktopTranslations = placeTranslations(scales, DESKTOP_CONFIG)
+const tabletTranslations = placeTranslations(scales, TABLET_CONFIG)
+const mobileTranslations = placeTranslations(scales, MOBILE_CONFIG)
+
+const timers = baseTimers.map((timer, index) => ({
+  ...timer,
+  translateDesktop: desktopTranslations[index],
+  translateTablet: tabletTranslations[index],
+  translateMobile: mobileTranslations[index],
+}))
+---
+
+<section class="py-16 min-h-[80vh] flex items-center relative">
   <div class="tiny-container">
     <div class="mx-auto max-w-3xl text-center anim-stagger-80">
-      <div class="flex w-12 h-12 rounded-xl aspect-square items-center justify-center mx-auto bg-primary/10 mb-6 anim anim-scale anim-duration-700">
-        <span class="h-2 w-6 rounded-sm bg-[var(--tiny-primary)]" />
+      <div class="flex w-12 h-12 rounded-xl aspect-square items-center justify-center mx-auto bg-primary/10 dark:bg-primary/80 mb-6 anim anim-scale anim-duration-700">
+        <span class="h-2 w-6 rounded-sm bg-primary dark:bg-white/80" />
       </div>
-      <p class="text-xs uppercase tracking-widest text-primary/50 anim anim-fade-up">
+      <p class="text-sm font-pixel font-black tracking-widest uppercase text-primary anim anim-fade-up">
         Personal time tracking
       </p>
       <h1 class="mt-2 text-2xl font-light tracking-tight anim anim-fade-up">
         Track time without the overhead.
       </h1>
-      <p class="mx-auto mt-4 max-w-sm text-sm text-muted-foreground/80 anim anim-fade-up">
-        tinytime is a minimal tracker inspired by Toggl: magic-link sign-in, day-view calendar,
-        useful reports, and no team-management noise.
+      <p class="mx-auto mt-4 max-w-[260px] text-sm text-muted-foreground/70 anim anim-fade-up">
+        tinytime is a minimal tracker inspired by Toggl, without the noise.
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-2 anim anim-fade-up anim-stagger-60">
         <a
@@ -23,11 +278,62 @@
         </a>
         <a
           href="#features"
-          class="inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-normal text-primary no-underline hover:border-primary anim anim-fade-up"
+          class="inline-flex items-center rounded-full bg-primary/30 px-4 py-2 text-sm font-normal text-primary dark:text-white/80 no-underline hover:border-primary anim anim-fade-up"
         >
           See features
         </a>
       </div>
     </div>
   </div>
+
+  <div aria-hidden="true" class="pointer-events-none absolute w-full h-screen left-1/2 -translate-x-1/2 top-8 grid items-start -z-10">
+    <div id="hero-dummy-timers" class="w-full h-2/3 grid grid-cols-4 gap-4 justify-center items-center">
+      {timers.map((timer) => (
+        <div
+          class="hero-dummy-timer-parallax w-fit mx-auto nth-6:invisible nth-7:invisible"
+          data-parallax-from={timer.parallaxFrom.toFixed(6)}
+          data-parallax-to={timer.parallaxTo.toFixed(14)}
+        >
+          <div class="hero-dummy-timer-entry">
+            <div
+              class="hero-dummy-timer relative bg-card/50 dark:bg-card/60 px-4 py-3 rounded-xl backdrop-blur-xs backdrop-brightness-125 backdrop-saturate-150 shadow-xl shadow-primary/10 dark:shadow-primary/5"
+              style={`--timer-tx-desktop: ${timer.translateDesktop.x.toFixed(2)}px; --timer-ty-desktop: ${timer.translateDesktop.y.toFixed(2)}px; --timer-tx-tablet: ${timer.translateTablet.x.toFixed(2)}px; --timer-ty-tablet: ${timer.translateTablet.y.toFixed(2)}px; --timer-tx-mobile: ${timer.translateMobile.x.toFixed(2)}px; --timer-ty-mobile: ${timer.translateMobile.y.toFixed(2)}px; --timer-scale: ${timer.scale.toFixed(3)}; --timer-rotate: ${timer.rotateDeg.toFixed(2)}deg; --timer-blur: ${timer.blurPx.toFixed(2)}px; transform: translate(var(--timer-tx), var(--timer-ty)) scale(var(--timer-scale)) rotate(var(--timer-rotate)); filter: blur(var(--timer-blur)); z-index: ${timer.zIndex};`}
+            >
+              <div class="flex items-center gap-2 justify-center text-center text-2xl leading-none font-pixel tracking-loose tabular-nums font-bold">
+                <span data-part="h1" class="timer-digit">{timer.digits[0]}</span>
+                <span data-part="h2" class="timer-digit">{timer.digits[1]}</span>
+                <span class="timer-separator -translate-y-0.5 opacity-70">:</span>
+                <span data-part="m1" class="timer-digit">{timer.digits[2]}</span>
+                <span data-part="m2" class="timer-digit">{timer.digits[3]}</span>
+                <span class="timer-separator -translate-y-0.5 opacity-70">:</span>
+                <span data-part="s1" class="timer-digit">{timer.digits[4]}</span>
+                <span data-part="s2" class="timer-digit">{timer.digits[5]}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
 </section>
+
+<style>
+  .hero-dummy-timer {
+    --timer-tx: var(--timer-tx-desktop);
+    --timer-ty: var(--timer-ty-desktop);
+  }
+
+  @media (max-width: 1024px) {
+    .hero-dummy-timer {
+      --timer-tx: var(--timer-tx-tablet);
+      --timer-ty: var(--timer-ty-tablet);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .hero-dummy-timer {
+      --timer-tx: var(--timer-tx-mobile);
+      --timer-ty: var(--timer-ty-mobile);
+    }
+  }
+</style>

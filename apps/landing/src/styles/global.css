@@ -25,16 +25,18 @@
   --color-card: var(--card);
   --color-border: var(--border);
   --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
   --font-pixel: "Doto", "Geist Mono", ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
 }
 
 :root {
-  --background: oklch(96.8% 0.007 247.896);
+  --background: var(--color-neutral-100);
   --foreground: #0a0a0a;
   --muted-foreground: #737373;
   --card: #ffffff;
   --border: #e5e5e5;
   --primary: oklch(0.51 0.274 267.287);
+  --primary-light: oklch(78.5% 0.115 274.713);
   /* Keep legacy tiny vars as aliases for current components. */
   --tiny-bg: var(--background);
   --tiny-fg: var(--foreground);
@@ -46,12 +48,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1c1917;
+    --background: oklch(0.107 0.066 277.117);
     --foreground: #f5f3f0;
     --muted-foreground: #d6d3d1;
-    --card: #292524;
+    --card: oklch(25.7% 0.09 281.288);
     --border: #44403c;
     --primary: oklch(0.51 0.274 267.287);
+    --primary-light: oklch(78.5% 0.115 274.713);
   }
 }
 
@@ -64,6 +67,11 @@ body {
   font-family: var(--font-sans);
   background: var(--background);
   color: var(--foreground);
+}
+
+::selection {
+  background: var(--primary);
+  color: #ffffff;
 }
 
 .tiny-container {
