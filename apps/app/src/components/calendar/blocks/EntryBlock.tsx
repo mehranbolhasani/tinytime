@@ -25,12 +25,22 @@ export default function EntryBlock({
   const left = block.hasOverlap ? `${block.lane * 50}%` : '1%'
   const projectColor = toSafeHexColor(block.entry?.projects?.color, '#a8a29e')
 
+  const label = `${block.entry.description || 'Untitled'} — ${block.entry.projects?.name ?? 'No project'}`
+
   return (
     <motion.button
       data-entry-block
       type="button"
+      aria-label={label}
       onClick={onClick}
       onContextMenu={onContextMenu}
+      onKeyDown={(event) => {
+        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+          event.preventDefault()
+          const rect = event.currentTarget.getBoundingClientRect()
+          onContextMenu({ clientX: rect.left + 8, clientY: rect.bottom, preventDefault: () => {} } as React.MouseEvent)
+        }
+      }}
       onDragStart={(event) => onDragStart?.(event as unknown as React.DragEvent, block.entry)}
       onDragEnd={onDragEnd}
       draggable

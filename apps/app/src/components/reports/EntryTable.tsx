@@ -48,7 +48,7 @@ export default function EntryTable({ entries }: EntryTableProps) {
       </div>
 
       <div className="hidden rounded-2xl border border-border bg-card sm:block">
-        <table className="w-full table-fixed text-sm">
+        <table aria-label="Time entries" className="w-full table-fixed text-sm">
           <thead>
             <tr className="bg-secondary">
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Description</th>
@@ -63,6 +63,7 @@ export default function EntryTable({ entries }: EntryTableProps) {
                   key={entry.id}
                   tabIndex={0}
                   role="button"
+                  aria-label={`${entry.description || 'Untitled'} — ${entry.projects?.name ?? 'No project'}`}
                   onClick={() => setSelectedEntryId(entry.id)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {

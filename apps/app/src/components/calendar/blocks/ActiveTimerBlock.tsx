@@ -11,10 +11,15 @@ interface ActiveTimerBlockProps {
 export default function ActiveTimerBlock({ block, elapsed, onClick }: ActiveTimerBlockProps) {
   const accentColor = toSafeHexColor(block.entry?.projects?.color, '#e76f51')
 
+  const description = block.entry.description || 'Untitled'
+  const projectName = block.entry.projects?.name ?? 'No project'
+  const label = `Active timer: ${description} — ${projectName}`
+
   return (
     <button
       data-entry-block
       type="button"
+      aria-label={label}
       onClick={onClick}
       className="absolute left-0 overflow-hidden rounded-lg border border-dashed p-2 text-left text-[11px] shadow-sm"
       style={{
