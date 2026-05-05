@@ -75,7 +75,9 @@ body {
 }
 
 .tiny-container {
-  width: 560px;
+  width: 100%;
+  max-width: 560px;
+  padding-inline: 1rem;
   margin-inline: auto;
 }
 

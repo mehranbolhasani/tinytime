@@ -1,0 +1,44 @@
+---
+description: tinytime engineering contract — align with CONTEXT.md, CI checks, and stack
+alwaysApply: true
+---
+
+# tinytime — engineering rule
+
+**Source of truth:** `CONTEXT.md`. If you change architecture, data flow, stack, or domain boundaries, update `CONTEXT.md` in the same change. CI runs `scripts/check-context.sh`; keep that script green.
+
+## Product
+
+Single-user, browser-only time tracker. No multi-tenant workspaces, billing, native apps, or offline-first unless product scope changes in `CONTEXT.md`.
+
+## Monorepo stacks
+
+- **`apps/app`:** React 19 + Vite, TypeScript **strict**, Tailwind v4 + `tw-animate-css`, TanStack Query v5, Supabase. Only `.ts` / `.tsx` under `apps/app/src/` (no production `.js`/`.jsx` outside `__tests__`).
+- **`apps/landing`:** Astro, Tailwind v4, marketing-only (e.g. `@vercel/analytics/astro` where wired).
+
+Prefer the existing stack; do not add parallel UI or animation libraries.
+
+## Data and Supabase
+
+- Feature UI under `apps/app/src/components/` **must not** call `supabase.from(...)` — use `hooks/` and `lib/` (auth shell in the app entry is the documented exception).
+- Duration and DB logic: **seconds** only; no `duration_minutes`. Persist `duration_seconds` when stopping; at most one running entry per user (`stopped_at = null`).
+
+## Motion
+
+- App code: `import` from `motion/react`, **not** `framer-motion`. Reuse `apps/app/src/lib/motion.ts` tokens; use `tw-animate-css` for Radix open/close; wrap with `MotionConfig reducedMotion="user"` where appropriate.
+- Landing: vanilla `motion` for in-view animations is fine.
+
+## UI and TypeScript
+
+- Tailwind-first; inline `style` only for truly dynamic layout/color values.
+- Reuse shadcn/Radix primitives from `components/ui/`.
+- No `@ts-ignore` / `@ts-nocheck`. Use `as unknown as T` only for known bridges; add a short comment why.
+
+## Accessibility
+
+Interactive controls need a visible label, `aria-label`, or `aria-labelledby`. Errors: `role="alert"`. Live updating status (timers): `role="status"` / `aria-live`. Decorative icons: `aria-hidden="true"`. Do not replace Radix focus management.
+
+## Before finishing a change
+
+- Run `bash scripts/check-context.sh` (or rely on CI) after edits that touch app data access, motion imports, duration fields, or `apps/app/src` file types.
+- If this rule and `CONTEXT.md` disagree, **`CONTEXT.md` wins** — fix the rule or the doc in the same PR.

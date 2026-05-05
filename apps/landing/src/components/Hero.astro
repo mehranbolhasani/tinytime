@@ -254,7 +254,7 @@ const timers = baseTimers.map((timer, index) => ({
 }))
 ---
 
-<section class="py-16 min-h-[80vh] flex items-center relative">
+<section class="py-14 sm:py-16 min-h-[72vh] sm:min-h-[80vh] flex items-center relative overflow-x-clip">
   <div class="tiny-container">
     <div class="mx-auto max-w-3xl text-center anim-stagger-80">
       <div class="flex w-12 h-12 rounded-xl aspect-square items-center justify-center mx-auto bg-primary/10 dark:bg-primary/80 mb-6 anim anim-scale anim-duration-700">
@@ -286,8 +286,8 @@ const timers = baseTimers.map((timer, index) => ({
     </div>
   </div>
 
-  <div aria-hidden="true" class="pointer-events-none absolute w-full h-screen left-1/2 -translate-x-1/2 top-8 grid items-start -z-10">
-    <div id="hero-dummy-timers" class="w-full h-2/3 grid grid-cols-4 gap-4 justify-center items-center">
+  <div aria-hidden="true" class="pointer-events-none absolute w-full max-w-full h-[95vh] sm:h-screen left-1/2 -translate-x-1/2 top-8 sm:top-8 grid items-start -z-10 overflow-x-clip">
+    <div id="hero-dummy-timers" class="w-full h-2/3 grid grid-cols-2 sm:grid-cols-4 gap-4 justify-center items-center">
       {timers.map((timer) => (
         <div
           class="hero-dummy-timer-parallax w-fit mx-auto nth-6:invisible nth-7:invisible"
@@ -332,8 +332,22 @@ const timers = baseTimers.map((timer, index) => ({
 
   @media (max-width: 640px) {
     .hero-dummy-timer {
-      --timer-tx: var(--timer-tx-mobile);
-      --timer-ty: var(--timer-ty-mobile);
+      transform: translate(0px, 0px) scale(0.7) rotate(0deg) !important;
+      filter: blur(0.8px) !important;
+    }
+
+    .hero-dummy-timer-parallax {
+      opacity: 0.55;
+    }
+
+    /* Keep top/bottom rows and clear center around the hero copy. */
+    #hero-dummy-timers > :nth-child(5),
+    #hero-dummy-timers > :nth-child(6),
+    #hero-dummy-timers > :nth-child(7),
+    #hero-dummy-timers > :nth-child(8),
+    #hero-dummy-timers > :nth-child(9),
+    #hero-dummy-timers > :nth-child(10) {
+      visibility: hidden;
     }
   }
 </style>
