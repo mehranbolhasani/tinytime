@@ -321,8 +321,8 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   ))
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start gap-4 bg-background">
-      <main className="mx-auto flex w-full max-w-md flex-col justify-start pt-8 pb-20">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-start gap-4 overflow-x-clip bg-background px-4">
+      <main className="mx-auto flex w-full max-w-md flex-col justify-start pt-8 pb-24">
         {content}
       </main>
 
@@ -334,13 +334,13 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -8, opacity: 0 }}
             transition={{ duration: durations.short, ease: easings.standard as unknown as import('motion/react').Easing }}
-            className="fixed left-1/2 bottom-20 z-40 -translate-x-1/2"
+            className="fixed left-1/2 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 -translate-x-1/2"
           >
             <Button
               type="button"
               variant="outline"
               onClick={handleMiniTimerClick}
-              className="flex h-auto w-[150px] max-w-md items-center justify-between rounded-full border-none bg-card-foreground/90 px-3 py-1 transition-all duration-300 ease-[cubic-bezier(0.8,-0.4,0.5,1)] hover:w-[200px] hover:bg-card-foreground"
+              className="flex h-auto w-[150px] max-w-md items-center justify-between rounded-full border-none bg-card-foreground/90 px-3 py-1 transition-all duration-300 ease-[cubic-bezier(0.8,-0.4,0.5,1)] hover:bg-card-foreground [@media(hover:hover)]:hover:w-[200px]"
             >
               <span className="inline-flex items-center gap-2 text-xs font-medium text-card/50">
                 Now
@@ -351,16 +351,16 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         ) : null}
       </AnimatePresence>
 
-        <header className="fixed bottom-2 z-50 flex items-center justify-between bg-card/95 px-4 py-2 backdrop-blur shadow-xl shadow-primary/10 rounded-xl w-md max-w-md mx-auto">
-          <div className="inline-flex items-center gap-1">
-            <span className="relative h-1.5 w-4 rounded-sm bg-primary" />
-            <span className="text-base font-normal tracking-tight text-foreground">
+        <header className="fixed left-1/2 bottom-4 z-50 flex w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 items-center justify-between rounded-xl bg-card/95 px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur shadow-xl shadow-primary/10">
+          <div className="inline-flex items-center gap-1 min-w-10">
+            <span className="relative h-1.5 w-5 rounded-sm bg-primary" />
+            <span className="text-base font-normal tracking-tight text-foreground hidden sm:block">
               tiny<span className="text-primary">time</span>
             </span>
           </div>
 
           <nav className="">
-            <ul className="flex items-center justify-between gap-1">
+            <ul className="flex items-center justify-between gap-0 sm:gap-1">
               {navLinks}
             </ul>
           </nav>

@@ -106,7 +106,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
             role="status"
             aria-label={`Timer: ${displayTime}`}
             className={cn(
-              'block text-center font-pixel text-7xl font-bold',
+              'block text-center font-pixel text-5xl sm:text-6xl md:text-7xl font-bold',
               timer.isRunning ? 'text-foreground' : 'text-muted-foreground/40'
             )}
           >
