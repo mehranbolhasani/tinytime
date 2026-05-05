@@ -7,6 +7,7 @@ import Hero from '../components/Hero.astro'
 import Layout from '../components/Layout.astro'
 import Preview from '../components/Preview.astro'
 import '../styles/global.css'
+import Analytics from '@vercel/analytics/astro'
 ---
 
 <Layout
@@ -28,4 +29,5 @@ import '../styles/global.css'
     <span class="bg-primary/20 dark:bg-primary/80 w-px h-full rounded-full anim anim-fade anim-duration-700"></span>
   </div>
   <CTA />
+  <Analytics />
 </Layout>
