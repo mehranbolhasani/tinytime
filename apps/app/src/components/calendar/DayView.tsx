@@ -372,7 +372,7 @@ export default function DayView({
   return (
     <>
       {mutationError ? (
-        <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <div role="alert" className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {mutationError}
         </div>
       ) : null}
@@ -382,7 +382,7 @@ export default function DayView({
         style={{ height: viewportHeight }}
       >
         {allDayGoogleEvents.length > 0 ? (
-          <div className="border-b border-border bg-secondary/40 px-3 py-2">
+          <div role="group" aria-label="All-day events" className="border-b border-border bg-secondary/40 px-3 py-2">
             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">All-day events</p>
             <div className="flex flex-wrap gap-1.5">
               {allDayGoogleEvents.map((event) => (

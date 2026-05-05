@@ -103,6 +103,8 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
       <div className="overflow-hidden rounded-2xl bg-card">
         <div className="flex items-center justify-center py-6">
           <span
+            role="status"
+            aria-label={`Timer: ${displayTime}`}
             className={cn(
               'block text-center font-pixel text-7xl font-bold',
               timer.isRunning ? 'text-foreground' : 'text-muted-foreground/40'
@@ -175,6 +177,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
                 <div className="flex flex-1 flex-col items-stretch">
                   <input
                     type="text"
+                    aria-label="Work description"
                     placeholder="Describe your work"
                     value={description}
                     onChange={(event) => setDescription(event.target.value)}
@@ -230,7 +233,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
         <p className="text-xs text-muted-foreground/80">Loading your current timer state...</p>
       ) : null}
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     </section>
   )
 }

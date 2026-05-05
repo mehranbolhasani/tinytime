@@ -33,8 +33,9 @@ tinytime is a single-user, browser-only time tracker.
 - **Data**: Supabase (Auth + Postgres + Edge Functions)
 - **Fetching/cache**: TanStack Query v5
 - **Animation**:
-  - App: `motion/react` (tokens in `apps/app/src/lib/motion.js`)
+  - App: `motion/react` (tokens in `apps/app/src/lib/motion.ts`)
   - Landing: `motion` (vanilla in-view animation script)
+- **Language**: TypeScript strict mode throughout `apps/app/src/` (no `.js`/`.jsx` files)
 
 ### Dependency policy
 - Prefer existing stack over new packages.
@@ -54,10 +55,24 @@ tinytime is a single-user, browser-only time tracker.
 - Timer elapsed display is client-derived from `started_at`.
 - `duration_seconds` must be persisted when stopping an entry.
 
+### TypeScript
+- All source files under `apps/app/src/` must use `.ts` or `.tsx` extensions.
+- `tsconfig.json` has `strict: true`; no `@ts-ignore` or `@ts-nocheck` suppressions.
+- Use `as unknown as T` only when bridging a known type mismatch (motion/react Easing, drag event spread). Document why.
+- Export named interfaces/types from the file that owns them; import with `import type` where possible.
+
 ### Styling and UI primitives
 - Tailwind-first styling.
 - Inline `style` is only allowed for truly dynamic values (e.g. block top/height, dynamic colors).
 - Reuse shadcn/Radix primitives for common controls.
+
+### Accessibility
+- Interactive elements must have an accessible label: visible text, `aria-label`, or `aria-labelledby`.
+- Error messages must use `role="alert"` so screen readers announce them immediately.
+- Live regions that update (timers, status) must use `role="status"` or `aria-live`.
+- Keyboard alternatives: calendar blocks support context-menu via `ContextMenu` key / `Shift+F10`.
+- Decorative icons get `aria-hidden="true"`; informational icons need an accompanying label.
+- Radix UI dialogs/menus handle focus trapping natively — do not reimplement it.
 
 ### Animation
 - Import animation APIs from `motion/react` in app code.
@@ -74,35 +89,40 @@ apps/
   app/
     src/
       contexts/
-        TimerContext.jsx       # Active entry + live elapsed timer state
+        TimerContext.tsx       # Active entry + live elapsed timer state
       hooks/
-        useTimer.js            # Client elapsed timer from started_at
-        useTimeEntries.js      # Entry queries/mutations
-        useProjects.js         # Project queries/mutations
-        useGoogleCalendar.js   # Google status, selections, events
-        useTheme.js            # Theme preference
-        useMediaQuery.js       # Media query helper
+        useTimer.ts            # Client elapsed timer from started_at
+        useTimeEntries.ts      # Entry queries/mutations
+        useProjects.ts         # Project queries/mutations
+        useGoogleCalendar.ts   # Google status, selections, events
+        useTheme.ts            # Theme preference
+        useMediaQuery.ts       # Media query helper
       components/
-        timer/                 # Timer widget + today entries list
-        calendar/              # Day timeline + edit/drag/resize + context menu
+        timer/                 # TimerWidget + EntryList (today view)
+        calendar/              # DayView + edit/drag/resize dialogs + context menu
+          blocks/              # EntryBlock, ActiveTimerBlock, GoogleEventBlock
         projects/              # Project CRUD UI
-        reports/               # Summary stats, project breakdown, filters, entry table/dialog
-        settings/              # Google calendar settings
+        reports/               # SummaryBar, ProjectBreakdown, FilterBar, EntryTable/Dialog, DateRangePicker
+        settings/              # GoogleCalendarSection
         ui/                    # shadcn/Radix component implementations
       lib/
-        supabase.js
-        utils.js
-        calendar.js
-        color.js
-        googleSignIn.js
-        googleCalendar.js
-        motion.js
+        supabase.ts
+        utils.ts
+        calendar.ts
+        color.ts
+        googleSignIn.ts
+        googleCalendar.ts
+        motion.ts
       pages/
-        Today.jsx
-        Calendar.jsx
-        Reports.jsx
-        Projects.jsx
+        Today.tsx
+        Calendar.tsx
+        Reports.tsx
+        Projects.tsx
+      types.ts                 # Shared TypeScript types (TimeEntry, Project, CalendarBlock, etc.)
 ```
+
+### Data flow rule (enforced by `scripts/check-context.sh`)
+Components must not call `supabase.from(...)` directly. All Supabase access goes through hooks or `lib/` helpers.
 
 ---
 
@@ -173,7 +193,7 @@ Production domains:
 
 - Improve dense mobile responsiveness for Calendar and Reports.
 - Add test baseline (unit + smoke E2E).
-- Accessibility pass (keyboard, focus order, contrast, semantics).
+- ~~Accessibility pass (keyboard, focus order, contrast, semantics).~~ ✅ Done — aria-labels, role=alert/status, keyboard context menu.
 - Performance pass for heavy calendar/report states.
 - Cleanup stale leftovers after feature removals/dependency shifts (e.g. unused build chunking rules).
 
@@ -185,14 +205,18 @@ Any PR that changes architecture, data flow, stack choices, or domain boundaries
 - update this file, and
 - keep the update specific (what changed + new rule or invariant).
 
+`scripts/check-context.sh` runs as a CI gate and enforces the machine-checkable invariants listed in §3 and §4.
+
 ---
 
 ## 11) PR Checklist (Quick Gate)
 
 Before merging, verify:
 
+- [ ] `scripts/check-context.sh` passes (runs automatically in CI).
 - [ ] No feature UI component performs direct table queries/mutations; data access stays in hooks/lib.
 - [ ] Duration/timer logic still uses seconds and preserves running-entry invariants.
 - [ ] New motion uses `motion/react` + shared tokens, and respects reduced motion.
 - [ ] UI changes reuse existing primitives (shadcn/Radix/Tailwind) instead of introducing parallel stacks.
+- [ ] Interactive elements have accessible labels; errors use `role="alert"`.
 - [ ] `CONTEXT.md` was updated if architecture/data flow/stack/domain rules changed.
