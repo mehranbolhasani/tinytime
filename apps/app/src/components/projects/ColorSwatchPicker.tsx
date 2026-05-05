@@ -1,0 +1,31 @@
+import { COLOR_PRESETS, toSafeHexColor } from '@/lib/color'
+import { cn } from '@/lib/utils'
+
+interface ColorSwatchPickerProps {
+  value: string
+  onChange: (color: string) => void
+  colors?: readonly string[]
+}
+
+export default function ColorSwatchPicker({ value, onChange, colors = COLOR_PRESETS }: ColorSwatchPickerProps) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {colors.map((color) => {
+        const isSelected = value === color
+        return (
+          <button
+            key={color}
+            type="button"
+            onClick={() => onChange(color)}
+            className={cn(
+              'h-10 w-10 cursor-pointer rounded-full border border-border transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7',
+              isSelected && 'ring-2 ring-offset-2 ring-foreground'
+            )}
+            style={{ backgroundColor: toSafeHexColor(color) }}
+            aria-label={`Select ${color} color`}
+          />
+        )
+      })}
+    </div>
+  )
+}

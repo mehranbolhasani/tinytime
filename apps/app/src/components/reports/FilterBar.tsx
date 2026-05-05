@@ -1,0 +1,68 @@
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import type { Project } from '@/types'
+
+function getFilterLabel(items: readonly string[], noun: string): string {
+  if (items.length === 0) {
+    return `All ${noun}`
+  }
+  if (items.length === 1) {
+    return `1 ${noun.slice(0, -1)}`
+  }
+  return `${items.length} ${noun}`
+}
+
+interface FilterBarProps {
+  projects: Project[]
+  selectedProjectIds: string[]
+  onToggleProject: (id: string) => void
+  onResetProjects: () => void
+}
+
+export default function FilterBar({
+  projects,
+  selectedProjectIds,
+  onToggleProject,
+  onResetProjects,
+}: FilterBarProps) {
+  return (
+    <section className="flex flex-wrap gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" variant="outline" className="h-8 rounded-md border-border text-sm transition-colors duration-150">
+            {getFilterLabel(selectedProjectIds, 'projects')}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuLabel>Project filter</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={selectedProjectIds.length === 0}
+            onSelect={(event) => event.preventDefault()}
+            onCheckedChange={onResetProjects}
+          >
+            All projects
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          {projects.map((project) => (
+            <DropdownMenuCheckboxItem
+              key={project.id}
+              checked={selectedProjectIds.includes(project.id)}
+              onSelect={(event) => event.preventDefault()}
+              onCheckedChange={() => onToggleProject(project.id)}
+            >
+              {project.name}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </section>
+  )
+}
