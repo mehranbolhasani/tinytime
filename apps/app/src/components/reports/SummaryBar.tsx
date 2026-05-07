@@ -82,7 +82,7 @@ export default function SummaryBar({ entries }: SummaryBarProps) {
 
   if (!summary) {
     return (
-      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-2 sm:grid-cols-2">
         <StatCard label="Total time" value="—" />
         <StatCard label="Tracked days" value="—" />
         <StatCard label="Daily average" value="—" />
@@ -110,7 +110,7 @@ export default function SummaryBar({ entries }: SummaryBarProps) {
   )
 
   return (
-    <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-2 sm:grid-cols-2">
       <StatCard label="Total time" value={formatDuration(summary.totalSeconds)} />
       <StatCard label="Tracked days" value={summary.trackedDays} />
       <StatCard label="Daily average" value={formatDuration(summary.dailyAverage)} />
