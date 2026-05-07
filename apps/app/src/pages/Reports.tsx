@@ -177,7 +177,7 @@ export default function Reports() {
               <SummaryBar entries={filteredEntries} />
 
               <section className="rounded-xl bg-card p-4">
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-sm font-medium text-muted-foreground">Time by project</h2>
                   <FilterBar
                     projects={projects}

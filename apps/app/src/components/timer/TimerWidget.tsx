@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useProjects } from '@/hooks/useProjects'
+import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { toSafeHexColor } from '@/lib/color'
 import { presets } from '@/lib/motion'
@@ -33,8 +34,10 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
   const activeEntry = timer.activeEntry
   const [description, setDescription] = useState(activeEntry?.description ?? '')
   const [selectedProject, setSelectedProject] = useState(normalizeProjectValue(activeEntry?.project_id))
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const { isSubmitting, error, startTimer, stopTimer } = useTimerControlActions({
+    createEntry,
+    stopEntry,
+  })
 
   useEffect(() => {
     setDescription(activeEntry?.description ?? '')
@@ -46,48 +49,15 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
     [selectedProject]
   )
 
-  const handleStart = async () => {
-    setIsSubmitting(true)
-    setError('')
-
-    try {
-      if (activeEntry) {
-        const forcedStoppedAt = new Date().toISOString()
-        await stopEntry(activeEntry.id, forcedStoppedAt)
-        timer.reset()
-      }
-
-      const created = await createEntry({
-        project_id: selectedProjectId,
-        description,
-        started_at: new Date().toISOString(),
-      })
-      timer.start(created)
-    } catch (startError) {
-      setError((startError as Error)?.message ?? 'Unable to start timer.')
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleStart = () => {
+    void startTimer({
+      projectId: selectedProjectId,
+      description,
+    })
   }
 
-  const handleStop = async () => {
-    if (!activeEntry) {
-      return
-    }
-
-    setIsSubmitting(true)
-    setError('')
-
-    try {
-      const stoppedAt = timer.stop()
-      await stopEntry(activeEntry.id, stoppedAt)
-      timer.reset()
-    } catch (stopError) {
-      timer.start(activeEntry)
-      setError((stopError as Error)?.message ?? 'Unable to stop timer.')
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleStop = () => {
+    void stopTimer()
   }
 
   const displayTime = timer.isRunning ? formatDurationHMS(timer.elapsed) : '00:00:00'
@@ -157,6 +127,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
                     className="h-full w-full min-w-full rounded-xl px-4 text-sm font-normal"
                     onClick={handleStop}
                     disabled={isSubmitting || isEntriesLoading}
+                    aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
                   >
                     <span className="inline-flex min-w-14 justify-center">
                       {isSubmitting ? 'Working...' : 'Stop'}
@@ -217,6 +188,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
                     className="h-full w-full min-w-full rounded-xl px-4 text-sm font-normal"
                     onClick={handleStart}
                     disabled={isSubmitting || isEntriesLoading}
+                    aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
                   >
                     <span className="inline-flex min-w-14 justify-center">
                       {isSubmitting ? 'Working...' : 'Start'}

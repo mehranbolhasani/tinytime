@@ -10,6 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
+import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts'
+import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
+import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTheme } from '@/hooks/useTheme'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
 import { durations, easings, presets } from '@/lib/motion'
@@ -211,7 +214,15 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const navigate = useNavigate()
   const { preference, setThemePreference, options } = useTheme()
   const timer = useTimerContext()
+  const { createEntry, stopEntry } = useTimeEntryMutations()
+  const { toggleTimer } = useTimerControlActions({ createEntry, stopEntry })
   const hasPrefetchedReports = useRef(false)
+
+  useAppKeyboardShortcuts({
+    pathname,
+    navigate,
+    onToggleTimer: toggleTimer,
+  })
 
   const handlePrefetchReports = () => {
     if (hasPrefetchedReports.current) {
@@ -389,6 +400,14 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
                   onChange={setThemePreference}
                 />
                 <GoogleCalendarSection />
+                <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2">
+                  <p className="text-xs font-medium text-foreground">Keyboard shortcuts</p>
+                  <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                    <li>g then t/c/r/p: navigate views</li>
+                    <li>Cmd/Ctrl + Shift + S: start or stop timer</li>
+                    <li>Alt + Left/Right: previous or next day in Calendar</li>
+                  </ul>
+                </div>
                 <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
                 <Button
                   type="button"

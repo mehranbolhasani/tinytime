@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { CalendarDays } from 'lucide-react'
 
 export type RangePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom'
 
@@ -60,7 +61,7 @@ export default function DateRangePicker({
           )}
           onClick={() => onRangeChange('custom')}
         >
-          Custom
+          <CalendarDays className="h-4 w-4" />
         </Button>
       </div>
 

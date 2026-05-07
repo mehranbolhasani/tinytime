@@ -36,7 +36,7 @@ export default function FilterBar({
     <section className="flex flex-wrap gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" aria-label="Filter by project" className="h-8 rounded-md border-border text-sm transition-colors duration-150">
+          <Button type="button" variant="outline" size="sm" aria-label="Filter by project" className="h-8 rounded-md border-border text-sm transition-colors duration-150">
             {getFilterLabel(selectedProjectIds, 'projects')}
           </Button>
         </DropdownMenuTrigger>

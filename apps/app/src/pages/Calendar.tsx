@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronLeft, ChevronRight, Plus, Minus, RotateCcw } from 'lucide-react'
 import DayView from '@/components/calendar/DayView'
@@ -8,6 +8,7 @@ import { useTimerContext } from '@/contexts/TimerContext'
 import { useGoogleCalendar, useGoogleEventsForRange } from '@/hooks/useGoogleCalendar'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { HOUR_HEIGHT } from '@/lib/calendar'
+import { CALENDAR_SHORTCUT_EVENT, type CalendarShortcutDirection } from '@/lib/keyboardShortcuts'
 import { presets } from '@/lib/motion'
 import { localDayRange } from '@/lib/utils'
 
@@ -76,6 +77,23 @@ export default function Calendar() {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(nextIndex))
     }
   }
+
+  useEffect(() => {
+    const handleShortcutNavigation = (event: Event) => {
+      const shortcutEvent = event as CustomEvent<{ direction?: CalendarShortcutDirection }>
+      const direction = shortcutEvent.detail?.direction
+      if (direction === 'previous') {
+        setSelectedDate((prev) => addDays(prev, -1))
+      } else if (direction === 'next') {
+        setSelectedDate((prev) => addDays(prev, 1))
+      }
+    }
+
+    window.addEventListener(CALENDAR_SHORTCUT_EVENT, handleShortcutNavigation)
+    return () => {
+      window.removeEventListener(CALENDAR_SHORTCUT_EVENT, handleShortcutNavigation)
+    }
+  }, [])
 
   return (
     <section className="space-y-3">

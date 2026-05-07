@@ -71,6 +71,8 @@ tinytime is a single-user, browser-only time tracker.
 - Error messages must use `role="alert"` so screen readers announce them immediately.
 - Live regions that update (timers, status) must use `role="status"` or `aria-live`.
 - Keyboard alternatives: calendar blocks support context-menu via `ContextMenu` key / `Shift+F10`.
+- Global shortcuts are active only when focus is outside editable inputs and no modal/popup surface is open.
+- Global shortcuts: `g` then `t/c/r/p` (navigation), `Cmd/Ctrl+Shift+S` (start/stop timer), and `Alt+ArrowLeft/Right` (calendar day navigation).
 - Decorative icons get `aria-hidden="true"`; informational icons need an accompanying label.
 - Radix UI dialogs/menus handle focus trapping natively — do not reimplement it.
 
