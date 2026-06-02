@@ -44,7 +44,7 @@ export default function GoogleEventBlock({ block, event, onStartTimer, disableSt
           </p>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[280px] space-y-2 rounded-lg border-border p-3">
+      <PopoverContent align="start" className="w-[280px] max-sm:w-[calc(100vw-2rem)] space-y-2 rounded-lg border-border p-3">
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">{event.title}</p>
           <p className="text-xs text-muted-foreground">

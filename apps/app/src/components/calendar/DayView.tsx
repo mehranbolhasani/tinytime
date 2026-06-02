@@ -4,6 +4,7 @@ import GoogleEventBlock from '@/components/calendar/blocks/GoogleEventBlock'
 import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
 import EntryBlock from '@/components/calendar/blocks/EntryBlock'
 import EntryContextMenu from '@/components/calendar/EntryContextMenu'
+import EntryDetailSheet from '@/components/calendar/EntryDetailSheet'
 import EntryEditDialog from '@/components/calendar/EntryEditDialog'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -102,6 +103,7 @@ export default function DayView({
   const [createDraft, setCreateDraft] = useState<CreateDraft | null>(null)
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null)
   const [entryToDelete, setEntryToDelete] = useState<TimeEntry | null>(null)
+  const [sheetEntry, setSheetEntry] = useState<TimeEntry | null>(null)
   const [menuState, setMenuState] = useState<MenuState | null>(null)
   const [mutationError, setMutationError] = useState('')
   const [now, setNow] = useState(() => new Date())
@@ -554,7 +556,11 @@ export default function DayView({
                 block={block}
                 isDragging={draggingMove?.entryId === block.entry.id}
                 onClick={() => {
-                  setEditingEntry(block.entry)
+                  if (isTouchViewport) {
+                    setSheetEntry(block.entry)
+                  } else {
+                    setEditingEntry(block.entry)
+                  }
                 }}
                 onContextMenu={(event) => {
                   event.preventDefault()
@@ -635,6 +641,31 @@ export default function DayView({
           }
         }}
         onDelete={(entry) => {
+          setEntryToDelete(entry)
+        }}
+      />
+      <EntryDetailSheet
+        entry={sheetEntry}
+        open={Boolean(sheetEntry)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setSheetEntry(null)
+          }
+        }}
+        onEdit={(entry) => {
+          setSheetEntry(null)
+          setEditingEntry(entry)
+        }}
+        onDuplicate={async (entry) => {
+          try {
+            setMutationError('')
+            await duplicateEntry(entry)
+          } catch (error) {
+            setMutationError(error instanceof Error ? error.message : 'Unable to duplicate this entry.')
+          }
+        }}
+        onDelete={(entry) => {
+          setSheetEntry(null)
           setEntryToDelete(entry)
         }}
       />

@@ -13,12 +13,14 @@ interface UseAppKeyboardShortcutsParams {
   pathname: string
   navigate: NavigateFunction
   onToggleTimer: () => Promise<void>
+  onOpenPalette: () => void
 }
 
 export function useAppKeyboardShortcuts({
   pathname,
   navigate,
   onToggleTimer,
+  onOpenPalette,
 }: UseAppKeyboardShortcutsParams): void {
   const stateRef = useRef<KeyboardShortcutState>(createKeyboardShortcutState())
 
@@ -62,6 +64,11 @@ export function useAppKeyboardShortcuts({
         return
       }
 
+      if (result.action.type === 'open-palette') {
+        onOpenPalette()
+        return
+      }
+
       window.dispatchEvent(
         new CustomEvent(CALENDAR_SHORTCUT_EVENT, {
           detail: { direction: result.action.direction },
@@ -73,5 +80,5 @@ export function useAppKeyboardShortcuts({
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [navigate, onToggleTimer, pathname])
+  }, [navigate, onToggleTimer, onOpenPalette, pathname])
 }

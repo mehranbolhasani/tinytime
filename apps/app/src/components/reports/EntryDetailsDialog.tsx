@@ -20,7 +20,7 @@ export default function EntryDetailsDialog({ entry, open, onOpenChange }: EntryD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent mobileFullscreen className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Entry details</DialogTitle>
           <DialogDescription>Full information for the selected report row.</DialogDescription>

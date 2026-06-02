@@ -138,7 +138,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-1rem)] overflow-y-auto sm:max-w-lg [@media(max-width:639px)]:left-0 [@media(max-width:639px)]:top-0 [@media(max-width:639px)]:h-[100dvh] [@media(max-width:639px)]:w-screen [@media(max-width:639px)]:translate-x-0 [@media(max-width:639px)]:translate-y-0 [@media(max-width:639px)]:rounded-none">
+      <DialogContent mobileFullscreen className="overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Edit entry</DialogTitle>
           <DialogDescription>Update details and times for this entry.</DialogDescription>

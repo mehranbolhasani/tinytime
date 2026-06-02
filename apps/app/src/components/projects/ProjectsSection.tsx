@@ -248,7 +248,7 @@ export default function ProjectsSection({
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={handleFormCloseChange}>
-        <DialogContent>
+        <DialogContent mobileFullscreen>
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">{isEditing ? 'Edit project' : 'Create project'}</DialogTitle>
             <DialogDescription>
@@ -322,7 +322,7 @@ export default function ProjectsSection({
       </Dialog>
 
       <Dialog open={Boolean(projectToDelete)} onOpenChange={(open) => !open && setProjectToDelete(null)}>
-        <DialogContent>
+        <DialogContent mobileFullscreen>
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">Delete {projectToDelete?.name}?</DialogTitle>
             <DialogDescription>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ClipboardList } from 'lucide-react'
+import { ChevronDown, ClipboardList } from 'lucide-react'
 import DateRangePicker, { type RangePreset } from '@/components/reports/DateRangePicker'
 import EntryTable from '@/components/reports/EntryTable'
 import FilterBar from '@/components/reports/FilterBar'
@@ -12,7 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { presets } from '@/lib/motion'
-import { exportToCSV } from '@/lib/utils'
+import { cn, exportToCSV } from '@/lib/utils'
+import ActivityHeatmap from '@/components/reports/ActivityHeatmap'
 
 function startOfDay(date: Date): Date {
   const next = new Date(date)
@@ -77,6 +78,7 @@ export default function Reports() {
   const [customFrom, setCustomFrom] = useState<string | null>(null)
   const [customTo, setCustomTo] = useState<string | null>(null)
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([])
+  const [showHeatmap, setShowHeatmap] = useState(false)
 
   const { from, to } = useMemo(() => buildRange(range, customFrom, customTo), [range, customFrom, customTo])
   const { entries, isLoading, error: entriesError } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })
@@ -180,6 +182,26 @@ export default function Reports() {
               <section className="rounded-xl bg-card p-4">
                 <h2 className="mb-3 text-sm font-medium text-muted-foreground">Daily activity</h2>
                 <DailyBarChart entries={filteredEntries} />
+              </section>
+
+              <section className="rounded-xl bg-card p-4">
+                <button
+                  type="button"
+                  onClick={() => setShowHeatmap(v => !v)}
+                  className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground"
+                  aria-expanded={showHeatmap}
+                >
+                  <span>When do you work?</span>
+                  <ChevronDown
+                    className={cn('h-4 w-4 transition-transform', showHeatmap && 'rotate-180')}
+                    aria-hidden="true"
+                  />
+                </button>
+                {showHeatmap ? (
+                  <div className="mt-3">
+                    <ActivityHeatmap entries={filteredEntries} />
+                  </div>
+                ) : null}
               </section>
 
               <section className="rounded-xl bg-card p-4">

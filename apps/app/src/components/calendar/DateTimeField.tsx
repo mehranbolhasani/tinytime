@@ -133,7 +133,7 @@ export default function DateTimeField({ id, value, onChange, required, className
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto p-3">
+        <PopoverContent align="start" className="w-auto p-3 max-sm:max-h-[80dvh] max-sm:overflow-y-auto">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <button

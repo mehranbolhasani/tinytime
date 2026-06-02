@@ -32,6 +32,7 @@ type KeyboardShortcutAction =
   | { type: 'navigate'; to: AppRoute }
   | { type: 'toggle-timer' }
   | { type: 'calendar-nav'; direction: CalendarShortcutDirection }
+  | { type: 'open-palette' }
 
 export interface KeyboardShortcutResolution {
   action: KeyboardShortcutAction | null
@@ -125,6 +126,14 @@ export function resolveKeyboardShortcut(input: KeyboardShortcutInput): KeyboardS
       action: null,
       nextState: { goPrefixAt: input.nowMs },
       shouldPreventDefault: false,
+    }
+  }
+
+  if (modKey && !input.shiftKey && !input.altKey && normalizedKey === 'k') {
+    return {
+      action: { type: 'open-palette' },
+      nextState: createKeyboardShortcutState(),
+      shouldPreventDefault: true,
     }
   }
 

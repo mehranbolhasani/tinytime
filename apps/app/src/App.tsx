@@ -13,8 +13,11 @@ import { useTimerContext } from '@/contexts/TimerContext'
 import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts'
 import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
+import { useIdleDetection } from '@/hooks/useIdleDetection'
 import { useTimerNotification } from '@/hooks/useTimerNotification'
 import { useTheme } from '@/hooks/useTheme'
+import CommandPalette from '@/components/CommandPalette'
+import IdleDetectionDialog from '@/components/IdleDetectionDialog'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
 import { durations, easings, presets } from '@/lib/motion'
 import { formatDurationHMS } from '@/lib/utils'
@@ -218,12 +221,42 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const notification = useTimerNotification({ elapsedSeconds: timer.elapsed, isRunning: timer.isRunning })
   const { createEntry, stopEntry } = useTimeEntryMutations()
   const { toggleTimer } = useTimerControlActions({ createEntry, stopEntry })
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+
+  const [idleState, setIdleState] = useState<{
+    idleSeconds: number
+    hiddenAt: Date
+  } | null>(null)
+
+  useIdleDetection({
+    isRunning: timer.isRunning,
+    onIdleReturn: (idleSeconds, hiddenAt) => {
+      setIdleState({ idleSeconds, hiddenAt })
+    },
+  })
+
+  const handleKeepTime = () => setIdleState(null)
+
+  const handleDiscardIdleTime = async () => {
+    if (!timer.activeEntry || !idleState) return
+    const stoppedAt = idleState.hiddenAt.toISOString()
+    try {
+      await stopEntry(timer.activeEntry.id, stoppedAt)
+      timer.reset()
+    } catch {
+      // silently ignore — user can still stop manually
+    } finally {
+      setIdleState(null)
+    }
+  }
+
   const hasPrefetchedReports = useRef(false)
 
   useAppKeyboardShortcuts({
     pathname,
     navigate,
     onToggleTimer: toggleTimer,
+    onOpenPalette: () => setIsPaletteOpen(true),
   })
 
   const handlePrefetchReports = () => {
@@ -445,6 +478,21 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
             </PopoverContent>
           </Popover>
         </header>
+
+      <IdleDetectionDialog
+        open={Boolean(idleState)}
+        idleSeconds={idleState?.idleSeconds ?? 0}
+        hiddenAt={idleState?.hiddenAt ?? new Date()}
+        onKeep={handleKeepTime}
+        onDiscard={handleDiscardIdleTime}
+      />
+
+      <CommandPalette
+        open={isPaletteOpen}
+        onOpenChange={setIsPaletteOpen}
+        onNavigate={(to) => { navigate(to); setIsPaletteOpen(false) }}
+        onToggleTimer={async () => { await toggleTimer(); setIsPaletteOpen(false) }}
+      />
     </div>
   )
 }

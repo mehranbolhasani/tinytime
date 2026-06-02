@@ -72,7 +72,7 @@ tinytime is a single-user, browser-only time tracker.
 - Live regions that update (timers, status) must use `role="status"` or `aria-live`.
 - Keyboard alternatives: calendar blocks support context-menu via `ContextMenu` key / `Shift+F10`.
 - Global shortcuts are active only when focus is outside editable inputs and no modal/popup surface is open.
-- Global shortcuts: `g` then `t/c/r/p` (navigation), `Cmd/Ctrl+Shift+S` (start/stop timer), and `Alt+ArrowLeft/Right` (calendar day navigation).
+- Global shortcuts: `g` then `t/c/r/p` (navigation), `Cmd/Ctrl+K` (open command palette), `Cmd/Ctrl+Shift+S` (start/stop timer), and `Alt+ArrowLeft/Right` (calendar day navigation).
 - Decorative icons get `aria-hidden="true"`; informational icons need an accompanying label.
 - Radix UI dialogs/menus handle focus trapping natively — do not reimplement it.
 
@@ -188,6 +188,8 @@ Production domains:
 - Google Calendar event overlay in day view
 - Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
 - Project CRUD (name/color/rate + delete behavior)
+- Idle detection + nudge (Page Visibility API, threshold configurable)
+- Command palette (Cmd+K) for navigation, timer control, and entry search
 
 ---
 

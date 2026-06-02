@@ -38,6 +38,17 @@ function formatDayLabel(date: Date): string {
 
 export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(new Date())
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem('tinytime:calendar-jump-date')
+    if (raw) {
+      sessionStorage.removeItem('tinytime:calendar-jump-date')
+      const date = new Date(raw)
+      if (!Number.isNaN(date.getTime())) {
+        setSelectedDate(date)
+      }
+    }
+  }, [])
   const [zoomIndex, setZoomIndex] = useState(() => {
     if (typeof window === 'undefined') {
       return DEFAULT_ZOOM_INDEX
