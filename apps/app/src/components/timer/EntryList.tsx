@@ -17,9 +17,13 @@ import type { TimeEntry } from '@/types'
 interface EntryListProps {
   entries: TimeEntry[]
   deleteEntry: (id: string) => Promise<string>
+  onContinueEntry?: (entry: TimeEntry) => void
+  onPinEntry?: (entry: TimeEntry) => void
+  onUnpinEntry?: (id: string) => void
+  isFavourite?: (entry: TimeEntry) => boolean
 }
 
-export default function EntryList({ entries, deleteEntry }: EntryListProps) {
+export default function EntryList({ entries, deleteEntry, onContinueEntry, onPinEntry, onUnpinEntry, isFavourite }: EntryListProps) {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -122,6 +126,20 @@ export default function EntryList({ entries, deleteEntry }: EntryListProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {onContinueEntry ? (
+                            <DropdownMenuItem onClick={() => onContinueEntry(entry)}>
+                              Continue
+                            </DropdownMenuItem>
+                          ) : null}
+                          {isFavourite?.(entry) ? (
+                            <DropdownMenuItem onClick={() => onUnpinEntry?.(entry.id)}>
+                              Unpin
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => onPinEntry?.(entry)}>
+                              Pin as favourite
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => handleOpenEdit(entry)}>Edit</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"

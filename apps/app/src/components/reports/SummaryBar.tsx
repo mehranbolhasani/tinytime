@@ -1,5 +1,5 @@
 import { cn, formatDuration } from '@/lib/utils'
-import type { TimeEntry } from '@/types'
+import type { Project, TimeEntry } from '@/types'
 
 interface ProjectDuration {
   seconds: number
@@ -19,7 +19,7 @@ function getDateKey(dateInput: string): string | null {
   return `${year}-${month}-${day}`
 }
 
-function calculateSummary(entries: TimeEntry[]) {
+function calculateSummary(entries: TimeEntry[], projects: Project[]) {
   if (entries.length === 0) {
     return null
   }
@@ -47,7 +47,25 @@ function calculateSummary(entries: TimeEntry[]) {
     (Object.values(projectDurations).sort((a, b) => b.seconds - a.seconds)[0] as ProjectDuration | undefined) ??
     null
 
-  return { totalSeconds, trackedDays, dailyAverage, topProject }
+  const projectRateMap = Object.fromEntries(
+    projects
+      .filter((p) => p.hourly_rate !== null)
+      .map((p) => [p.id, p.hourly_rate as number])
+  )
+
+  const hasRates = Object.keys(projectRateMap).length > 0
+
+  const totalEarnings = hasRates
+    ? entries.reduce((sum, entry) => {
+        if (!entry.project_id) return sum
+        const rate = projectRateMap[entry.project_id]
+        if (!rate) return sum
+        const hours = (entry.duration_seconds ?? 0) / 3600
+        return sum + rate * hours
+      }, 0)
+    : undefined
+
+  return { totalSeconds, trackedDays, dailyAverage, topProject, totalEarnings }
 }
 
 interface StatCardProps {
@@ -75,10 +93,11 @@ function StatCard({ label, value, variant = 'default' }: StatCardProps) {
 
 interface SummaryBarProps {
   entries: TimeEntry[]
+  projects: Project[]
 }
 
-export default function SummaryBar({ entries }: SummaryBarProps) {
-  const summary = calculateSummary(entries)
+export default function SummaryBar({ entries, projects }: SummaryBarProps) {
+  const summary = calculateSummary(entries, projects)
 
   if (!summary) {
     return (
@@ -115,6 +134,12 @@ export default function SummaryBar({ entries }: SummaryBarProps) {
       <StatCard label="Tracked days" value={summary.trackedDays} />
       <StatCard label="Daily average" value={formatDuration(summary.dailyAverage)} />
       <StatCard label="Top project" value={topProjectValue} variant="rich" />
+      {summary.totalEarnings !== undefined ? (
+        <StatCard
+          label="Estimated earnings"
+          value={`€${summary.totalEarnings.toFixed(2)}`}
+        />
+      ) : null}
     </section>
   )
 }

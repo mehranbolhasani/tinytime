@@ -71,7 +71,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
   return (
     <section className="flex flex-col gap-4">
       <div className="overflow-hidden rounded-2xl bg-card">
-        <div className="flex items-center justify-center py-6">
+        <div className="flex items-center justify-center py-6 min-h-60">
           <span
             role="status"
             aria-label={`Timer: ${displayTime}`}

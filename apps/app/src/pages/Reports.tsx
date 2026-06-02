@@ -5,6 +5,7 @@ import DateRangePicker, { type RangePreset } from '@/components/reports/DateRang
 import EntryTable from '@/components/reports/EntryTable'
 import FilterBar from '@/components/reports/FilterBar'
 import ProjectBreakdown from '@/components/reports/ProjectBreakdown'
+import DailyBarChart from '@/components/reports/DailyBarChart'
 import SummaryBar from '@/components/reports/SummaryBar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -174,7 +175,12 @@ export default function Reports() {
             className="space-y-3"
           >
             <motion.div className="space-y-3">
-              <SummaryBar entries={filteredEntries} />
+              <SummaryBar entries={filteredEntries} projects={projects} />
+
+              <section className="rounded-xl bg-card p-4">
+                <h2 className="mb-3 text-sm font-medium text-muted-foreground">Daily activity</h2>
+                <DailyBarChart entries={filteredEntries} />
+              </section>
 
               <section className="rounded-xl bg-card p-4">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

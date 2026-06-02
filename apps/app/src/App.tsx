@@ -13,6 +13,7 @@ import { useTimerContext } from '@/contexts/TimerContext'
 import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts'
 import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
+import { useTimerNotification } from '@/hooks/useTimerNotification'
 import { useTheme } from '@/hooks/useTheme'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
 import { durations, easings, presets } from '@/lib/motion'
@@ -214,6 +215,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const navigate = useNavigate()
   const { preference, setThemePreference, options } = useTheme()
   const timer = useTimerContext()
+  const notification = useTimerNotification({ elapsedSeconds: timer.elapsed, isRunning: timer.isRunning })
   const { createEntry, stopEntry } = useTimeEntryMutations()
   const { toggleTimer } = useTimerControlActions({ createEntry, stopEntry })
   const hasPrefetchedReports = useRef(false)
@@ -362,12 +364,9 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         ) : null}
       </AnimatePresence>
 
-        <header className="fixed left-1/2 bottom-4 z-50 flex w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 items-center justify-between rounded-xl bg-card/95 px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur shadow-xl shadow-primary/10">
-          <div className="inline-flex items-center gap-1 min-w-10">
-            <span className="relative h-1.5 w-5 rounded-sm bg-primary" />
-            <span className="text-base font-normal tracking-tight text-foreground hidden sm:block">
-              tiny<span className="text-primary">time</span>
-            </span>
+        <header className="fixed left-1/2 bottom-4 z-50 flex w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 items-center justify-between rounded-xl bg-card/95 px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur shadow-xl shadow-primary/10">
+          <div className="inline-flex items-center gap-0 min-w-6">
+            <span className="relative h-1.5 w-6 rounded-sm bg-primary" />
           </div>
 
           <nav className="">
@@ -385,7 +384,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
                 aria-label="Open account options"
                 className="h-8 w-8 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-8 w-8" />
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="z-50 w-[280px] space-y-3 rounded-lg border-border p-3 shadow-sm">
@@ -400,6 +399,30 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
                   onChange={setThemePreference}
                 />
                 <GoogleCalendarSection />
+                <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 space-y-2">
+                  <p className="text-xs font-medium text-foreground">Timer notifications</p>
+                  {notification.permissionState === 'unsupported' ? (
+                    <p className="text-xs text-muted-foreground">Not supported in this browser.</p>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <select
+                        aria-label="Notify after"
+                        value={notification.thresholdMinutes}
+                        onChange={(e) => notification.setThreshold(Number(e.target.value))}
+                        className="text-xs rounded-md border border-border bg-background px-2 py-1"
+                      >
+                        <option value={0}>Off</option>
+                        <option value={60}>After 1 h</option>
+                        <option value={90}>After 1.5 h</option>
+                        <option value={120}>After 2 h</option>
+                        <option value={180}>After 3 h</option>
+                      </select>
+                      {notification.permissionState === 'denied' ? (
+                        <p className="text-xs text-destructive">Permission denied in browser settings.</p>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
                 <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2">
                   <p className="text-xs font-medium text-foreground">Keyboard shortcuts</p>
                   <ul className="mt-1 space-y-1 text-xs text-muted-foreground">

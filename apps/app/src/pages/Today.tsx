@@ -1,10 +1,15 @@
 import { AnimatePresence, motion } from 'motion/react'
 import EntryList from '@/components/timer/EntryList'
+import FavouriteChips from '@/components/timer/FavouriteChips'
 import TimerWidget from '@/components/timer/TimerWidget'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useFavouriteEntries } from '@/hooks/useFavouriteEntries'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
+import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { presets } from '@/lib/motion'
 import { localDayRange } from '@/lib/utils'
+import type { FavouriteEntry } from '@/hooks/useFavouriteEntries'
+import type { TimeEntry } from '@/types'
 
 export default function Today() {
   const today = new Date()
@@ -12,6 +17,22 @@ export default function Today() {
 
   const { entries, isLoading, error } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })
   const { createEntry, stopEntry, deleteEntry } = useTimeEntryMutations({ entries })
+  const { startTimer } = useTimerControlActions({ createEntry, stopEntry })
+  const { favourites, addFavourite, removeFavourite, isFavourite } = useFavouriteEntries()
+
+  const handleContinueEntry = (entry: TimeEntry) => {
+    void startTimer({
+      projectId: entry.project_id,
+      description: entry.description ?? '',
+    })
+  }
+
+  const handleSelectFavourite = (fav: FavouriteEntry) => {
+    void startTimer({
+      projectId: fav.project_id,
+      description: fav.description ?? '',
+    })
+  }
 
   const completedEntries = entries.filter((entry) => entry.stopped_at !== null)
 
@@ -38,6 +59,12 @@ export default function Today() {
         </div>
       ) : null}
 
+      <FavouriteChips
+        favourites={favourites}
+        onSelect={handleSelectFavourite}
+        onRemove={removeFavourite}
+      />
+
       <TimerWidget
         createEntry={createEntry}
         stopEntry={stopEntry}
@@ -62,7 +89,16 @@ export default function Today() {
         ) : null}
       </AnimatePresence>
 
-      {!isLoading ? <EntryList entries={completedEntries} deleteEntry={deleteEntry} /> : null}
+      {!isLoading ? (
+        <EntryList
+          entries={completedEntries}
+          deleteEntry={deleteEntry}
+          onContinueEntry={handleContinueEntry}
+          onPinEntry={addFavourite}
+          onUnpinEntry={removeFavourite}
+          isFavourite={isFavourite}
+        />
+      ) : null}
     </section>
   )
 }
