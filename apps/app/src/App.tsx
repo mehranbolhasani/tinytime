@@ -459,6 +459,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
                 <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2">
                   <p className="text-xs font-medium text-foreground">Keyboard shortcuts</p>
                   <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                    <li>Cmd/Ctrl + K: open command palette</li>
                     <li>g then t/c/r/p: navigate views</li>
                     <li>Cmd/Ctrl + Shift + S: start or stop timer</li>
                     <li>Alt + Left/Right: previous or next day in Calendar</li>

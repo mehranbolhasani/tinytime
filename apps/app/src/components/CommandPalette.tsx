@@ -118,7 +118,7 @@ export default function CommandPalette({ open, onOpenChange, onNavigate, onToggl
 
   useEffect(() => {
     setSelectedIndex(0)
-  }, [filteredItems.length])
+  }, [query])
 
   useEffect(() => {
     if (open) {

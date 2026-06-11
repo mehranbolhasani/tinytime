@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { toSafeHexColor } from '@/lib/color'
@@ -21,6 +22,14 @@ export default function EntryDetailSheet({
   onDuplicate,
   onDelete,
 }: EntryDetailSheetProps) {
+  const [duplicateError, setDuplicateError] = useState('')
+  const [isDuplicating, setIsDuplicating] = useState(false)
+
+  useEffect(() => {
+    setDuplicateError('')
+    setIsDuplicating(false)
+  }, [entry?.id])
+
   if (!entry) {
     return null
   }
@@ -68,12 +77,21 @@ export default function EntryDetailSheet({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => {
-                onDuplicate(entry)
-                onOpenChange(false)
+              disabled={isDuplicating}
+              onClick={async () => {
+                setDuplicateError('')
+                setIsDuplicating(true)
+                try {
+                  await onDuplicate(entry)
+                  onOpenChange(false)
+                } catch (err) {
+                  setDuplicateError((err as Error)?.message ?? 'Unable to duplicate entry.')
+                } finally {
+                  setIsDuplicating(false)
+                }
               }}
             >
-              Duplicate
+              {isDuplicating ? 'Duplicating...' : 'Duplicate'}
             </Button>
             <Button
               variant="destructive"
@@ -83,6 +101,10 @@ export default function EntryDetailSheet({
               Delete
             </Button>
           </div>
+
+          {duplicateError ? (
+            <p role="alert" className="text-sm text-destructive">{duplicateError}</p>
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>

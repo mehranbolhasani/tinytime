@@ -13,45 +13,47 @@ export default function FavouriteChips({ favourites, onSelect, onRemove }: Favou
   if (favourites.length === 0) return null
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <ul className="flex gap-2 overflow-x-auto pb-1 list-none">
       <AnimatePresence initial={false}>
         {favourites.map((fav) => {
           const label = fav.description ?? fav.projectName ?? 'Untitled'
           const dotColor = fav.projectColor ? toSafeHexColor(fav.projectColor) : null
 
           return (
-            <motion.button
+            <motion.li
               key={fav.id}
-              type="button"
               variants={presets.listItem.variants}
               initial="initial"
               animate="animate"
               exit="exit"
               transition={presets.listItem.transition}
               layout
-              onClick={() => onSelect(fav)}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs transition-colors hover:bg-accent"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs"
             >
               <span
                 className="h-2 w-2 shrink-0 rounded-full"
                 style={dotColor ? { backgroundColor: dotColor } : undefined}
+                aria-hidden="true"
               />
-              <span className="max-w-[120px] truncate">{label}</span>
-              <span
-                role="button"
+              <button
+                type="button"
+                onClick={() => onSelect(fav)}
+                className="max-w-[120px] truncate text-xs text-foreground hover:text-foreground/80 focus-visible:outline-none"
+              >
+                {label}
+              </button>
+              <button
+                type="button"
                 aria-label="Remove favourite"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemove(fav.id)
-                }}
-                className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                onClick={() => onRemove(fav.id)}
+                className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none"
               >
                 ×
-              </span>
-            </motion.button>
+              </button>
+            </motion.li>
           )
         })}
       </AnimatePresence>
-    </div>
+    </ul>
   )
 }
