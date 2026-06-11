@@ -26,38 +26,21 @@ const DEFAULT_COLOR = COLOR_PRESETS[0]
 interface FormState {
   name: string
   color: string
-  hourlyRate: string
 }
 
 const INITIAL_FORM_STATE: FormState = {
   name: '',
   color: DEFAULT_COLOR,
-  hourlyRate: '',
-}
-
-function formatHourlyRate(hourlyRate: number | null | undefined): string {
-  if (hourlyRate === null || hourlyRate === undefined) {
-    return '—'
-  }
-
-  const amount = Number(hourlyRate)
-  if (Number.isNaN(amount)) {
-    return '—'
-  }
-
-  return `€${amount}/hr`
 }
 
 interface CreateProjectInput {
   name: string
   color: string
-  hourly_rate: number | null
 }
 
 interface UpdateProjectInput {
   name?: string
   color?: string | null
-  hourly_rate?: number | null
 }
 
 interface ProjectsSectionProps {
@@ -105,10 +88,6 @@ export default function ProjectsSection({
     setFormData({
       name: project.name,
       color: project.color ?? DEFAULT_COLOR,
-      hourlyRate:
-        project.hourly_rate === null || project.hourly_rate === undefined
-          ? ''
-          : String(project.hourly_rate),
     })
     setNameError('')
     setFormError('')
@@ -131,11 +110,6 @@ export default function ProjectsSection({
       return
     }
 
-    const parsedHourlyRate =
-      formData.hourlyRate === '' ? null : Number.parseFloat(formData.hourlyRate)
-    const normalizedHourlyRate =
-      parsedHourlyRate === null || Number.isFinite(parsedHourlyRate) ? parsedHourlyRate : null
-
     setNameError('')
     setFormError('')
     setIsSaving(true)
@@ -145,13 +119,11 @@ export default function ProjectsSection({
         await updateProject(editingProject.id, {
           name: trimmedName,
           color: formData.color,
-          hourly_rate: normalizedHourlyRate,
         })
       } else {
         await createProject({
           name: trimmedName,
           color: formData.color,
-          hourly_rate: normalizedHourlyRate,
         })
       }
 
@@ -209,11 +181,6 @@ export default function ProjectsSection({
                 style={{ backgroundColor: toSafeHexColor(project.color) }}
               />
               <span className="text-sm font-medium text-foreground sm:flex-1">{project.name}</span>
-              {project.hourly_rate != null ? (
-                <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-                  {formatHourlyRate(project.hourly_rate)}
-                </span>
-              ) : null}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -277,24 +244,6 @@ export default function ProjectsSection({
               <ColorSwatchPicker
                 value={formData.color}
                 onChange={(color) => setFormData((prev) => ({ ...prev, color }))}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="hourly-rate" className="text-sm font-medium text-muted-foreground">
-                Hourly rate (EUR)
-              </label>
-              <Input
-                id="hourly-rate"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.hourlyRate}
-                onChange={(event) =>
-                  setFormData((prev) => ({ ...prev, hourlyRate: event.target.value }))
-                }
-                className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
               />
             </div>
 

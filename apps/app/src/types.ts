@@ -18,7 +18,6 @@ export interface Project {
   id: string
   name: string
   color: string | null
-  hourly_rate: number | null
   created_at: string
 }
 

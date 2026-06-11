@@ -11,13 +11,11 @@ function sortProjectsByName(projects: Project[] = []): Project[] {
 interface CreateProjectInput {
   name: string
   color: string | null
-  hourly_rate: number | null
 }
 
 interface UpdateProjectInput {
   name?: string
   color?: string | null
-  hourly_rate?: number | null
 }
 
 interface UseProjectsResult {
@@ -38,7 +36,7 @@ export function useProjects(): UseProjectsResult {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('id, name, color, hourly_rate, created_at')
+        .select('id, name, color, created_at')
         .order('name', { ascending: true })
 
       if (error) {
@@ -50,11 +48,11 @@ export function useProjects(): UseProjectsResult {
   })
 
   const createProjectMutation = useMutation<Project, Error, CreateProjectInput>({
-    mutationFn: async ({ name, color, hourly_rate }) => {
+    mutationFn: async ({ name, color }) => {
       const { data, error } = await supabase
         .from('projects')
-        .insert({ name, color, hourly_rate })
-        .select('id, name, color, hourly_rate, created_at')
+        .insert({ name, color })
+        .select('id, name, color, created_at')
         .single()
 
       if (error) {
@@ -74,7 +72,7 @@ export function useProjects(): UseProjectsResult {
         .from('projects')
         .update(updates)
         .eq('id', id)
-        .select('id, name, color, hourly_rate, created_at')
+        .select('id, name, color, created_at')
         .single()
 
       if (error) {

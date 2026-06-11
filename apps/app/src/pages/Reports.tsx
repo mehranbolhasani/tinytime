@@ -177,7 +177,7 @@ export default function Reports() {
             className="space-y-3"
           >
             <motion.div className="space-y-3">
-              <SummaryBar entries={filteredEntries} projects={projects} />
+              <SummaryBar entries={filteredEntries} />
 
               <section className="rounded-xl bg-card p-4">
                 <h2 className="mb-3 text-sm font-medium text-muted-foreground">Daily activity</h2>
