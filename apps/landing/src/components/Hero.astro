@@ -278,7 +278,7 @@ const timers = baseTimers.map((timer, index) => ({
         </a>
         <a
           href="#features"
-          class="inline-flex items-center rounded-full bg-primary/30 px-4 py-2 text-sm font-normal text-primary dark:text-white/80 no-underline hover:border-primary anim anim-fade-up"
+          class="inline-flex items-center rounded-full bg-white dark:bg-primary/20 px-4 py-2 text-sm font-normal text-primary dark:text-white/80 no-underline hover:border-primary anim anim-fade-up"
         >
           See features
         </a>
@@ -286,18 +286,18 @@ const timers = baseTimers.map((timer, index) => ({
     </div>
   </div>
 
-  <div aria-hidden="true" class="pointer-events-none absolute w-full max-w-full h-[95vh] sm:h-screen left-1/2 -translate-x-1/2 top-8 sm:top-8 grid items-start -z-10 overflow-x-clip">
+  <div aria-hidden="true" class="pointer-events-none absolute w-full max-w-5xl h-[95vh] sm:h-screen left-1/2 -translate-x-1/2 top-8 sm:top-18 grid items-start -z-10">
     <div id="hero-dummy-timers" class="w-full h-2/3 grid grid-cols-2 sm:grid-cols-4 gap-4 justify-center items-center">
       {timers.map((timer) => (
         <div
           class="hero-dummy-timer-parallax w-fit mx-auto nth-6:invisible nth-7:invisible"
-          data-parallax-from={timer.parallaxFrom.toFixed(6)}
-          data-parallax-to={timer.parallaxTo.toFixed(14)}
+          data-parallax-from={timer.parallaxFrom.toFixed(2)}
+          data-parallax-to={timer.parallaxTo.toFixed(80)}
         >
           <div class="hero-dummy-timer-entry">
             <div
               class="hero-dummy-timer relative bg-card/50 dark:bg-card/60 px-4 py-3 rounded-xl backdrop-blur-xs backdrop-brightness-125 backdrop-saturate-150 shadow-xl shadow-primary/10 dark:shadow-primary/5"
-              style={`--timer-tx-desktop: ${timer.translateDesktop.x.toFixed(2)}px; --timer-ty-desktop: ${timer.translateDesktop.y.toFixed(2)}px; --timer-tx-tablet: ${timer.translateTablet.x.toFixed(2)}px; --timer-ty-tablet: ${timer.translateTablet.y.toFixed(2)}px; --timer-tx-mobile: ${timer.translateMobile.x.toFixed(2)}px; --timer-ty-mobile: ${timer.translateMobile.y.toFixed(2)}px; --timer-scale: ${timer.scale.toFixed(3)}; --timer-rotate: ${timer.rotateDeg.toFixed(2)}deg; --timer-blur: ${timer.blurPx.toFixed(2)}px; transform: translate(var(--timer-tx), var(--timer-ty)) scale(var(--timer-scale)) rotate(var(--timer-rotate)); filter: blur(var(--timer-blur)); z-index: ${timer.zIndex};`}
+              style={`--timer-tx-desktop: ${timer.translateDesktop.x.toFixed(4)}px; --timer-ty-desktop: ${timer.translateDesktop.y.toFixed(14)}px; --timer-tx-tablet: ${timer.translateTablet.x.toFixed(2)}px; --timer-ty-tablet: ${timer.translateTablet.y.toFixed(2)}px; --timer-tx-mobile: ${timer.translateMobile.x.toFixed(2)}px; --timer-ty-mobile: ${timer.translateMobile.y.toFixed(2)}px; --timer-scale: ${timer.scale.toFixed(3)}; --timer-rotate: ${timer.rotateDeg.toFixed(6)}deg; --timer-blur: ${timer.blurPx.toFixed(2)}px; transform: translate(var(--timer-tx), var(--timer-ty)) scale(var(--timer-scale)) rotate(var(--timer-rotate)); filter: blur(var(--timer-blur)); z-index: ${timer.zIndex};`}
             >
               <div class="flex items-center gap-2 justify-center text-center text-2xl leading-none font-pixel tracking-loose tabular-nums font-bold">
                 <span data-part="h1" class="timer-digit">{timer.digits[0]}</span>
