@@ -43,6 +43,13 @@ export function getFriendlySupabaseError(
     (error as { message?: string } | null)?.message ?? fallbackMessage ?? 'Unexpected error.'
 
   if (
+    (error as { code?: string } | null)?.code === '23505' &&
+    rawMessage.includes('time_entries_one_running_per_user')
+  ) {
+    return 'A timer is already running. Refresh to see it, or stop it first.'
+  }
+
+  if (
     rawMessage.includes('row-level security policy') ||
     rawMessage.includes('JWT') ||
     rawMessage.includes('permission denied')

@@ -6,6 +6,7 @@ import {
   computeDuration,
   groupEntriesByDay,
   localDayRange,
+  localDateInputRange,
   exportToCSV,
 } from '../utils.js'
 
@@ -199,6 +200,37 @@ describe('localDayRange', () => {
 })
 
 // ---------------------------------------------------------------------------
+// localDateInputRange
+// ---------------------------------------------------------------------------
+describe('localDateInputRange', () => {
+  it('includes the end date by ending at local midnight the day after to', () => {
+    const { from, to } = localDateInputRange('2024-01-01', '2024-01-07')
+    expect(from).toBe(new Date(2024, 0, 1).toISOString())
+    expect(to).toBe(new Date(2024, 0, 8).toISOString())
+  })
+
+  it('returns a one-day range when from and to are the same day', () => {
+    const { from, to } = localDateInputRange('2024-01-07', '2024-01-07')
+    expect(from).toBe(new Date(2024, 0, 7).toISOString())
+    expect(new Date(to).getTime() - new Date(from).getTime()).toBe(24 * 60 * 60 * 1000)
+  })
+
+  it('returns nulls when from is after to', () => {
+    expect(localDateInputRange('2024-01-08', '2024-01-07')).toEqual({ from: null, to: null })
+  })
+
+  it('returns nulls for garbage input', () => {
+    expect(localDateInputRange('not-a-date', '2024-01-07')).toEqual({ from: null, to: null })
+    expect(localDateInputRange('2024-1-1', '2024-01-07')).toEqual({ from: null, to: null })
+  })
+
+  it('returns nulls when either value is null', () => {
+    expect(localDateInputRange(null, '2024-01-07')).toEqual({ from: null, to: null })
+    expect(localDateInputRange('2024-01-01', null)).toEqual({ from: null, to: null })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // exportToCSV
 // ---------------------------------------------------------------------------
 describe('exportToCSV', () => {
@@ -232,7 +264,6 @@ describe('exportToCSV', () => {
 
   it('names the file using the from/to date range', () => {
     exportToCSV([], '2024-01-01', '2024-01-07')
-    const link = document.querySelector('a')
     expect(capturedCsv).not.toBeNull()
     expect(URL.createObjectURL).toHaveBeenCalledOnce()
   })

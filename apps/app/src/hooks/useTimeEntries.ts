@@ -153,10 +153,27 @@ interface CreateEntryInput {
   duration_seconds?: number | null
 }
 
+export type TimeEntryUpdate = Partial<
+  Pick<TimeEntry, 'started_at' | 'stopped_at' | 'duration_seconds' | 'description' | 'project_id'>
+>
+
+function buildEntryUpdatePayload(updates: TimeEntryUpdate): Record<string, unknown> {
+  const payload: Record<string, unknown> = {}
+  if ('started_at' in updates) payload.started_at = updates.started_at
+  if ('stopped_at' in updates) payload.stopped_at = updates.stopped_at
+  if ('duration_seconds' in updates) payload.duration_seconds = updates.duration_seconds
+  if ('project_id' in updates) payload.project_id = updates.project_id ?? null
+  if ('description' in updates) {
+    const trimmed = updates.description?.trim()
+    payload.description = trimmed ? trimmed : null
+  }
+  return payload
+}
+
 interface UseTimeEntryMutationsResult {
   createEntry: (input: CreateEntryInput) => Promise<TimeEntry>
   stopEntry: (id: string, stopped_at: string) => Promise<TimeEntry>
-  updateEntry: (id: string, updates: Partial<TimeEntry>) => Promise<TimeEntry>
+  updateEntry: (id: string, updates: TimeEntryUpdate) => Promise<TimeEntry>
   deleteEntry: (id: string) => Promise<string>
 }
 
@@ -212,6 +229,9 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
       })
 
       revalidateInactiveEntryQueries()
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: [...TIME_ENTRIES_QUERY_KEY, 'active'] })
     },
   })
 
@@ -274,12 +294,12 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
     },
   })
 
-  const updateEntryMutation = useMutation<TimeEntry, Error, { id: string; updates: Partial<TimeEntry> }>({
+  const updateEntryMutation = useMutation<TimeEntry, Error, { id: string; updates: TimeEntryUpdate }>({
     mutationFn: async ({ id, updates }) => {
-      const payload = {
-        ...updates,
-        project_id: updates.project_id ?? null,
-        description: updates.description?.trim() ? updates.description.trim() : null,
+      const payload = buildEntryUpdatePayload(updates)
+
+      if (Object.keys(payload).length === 0) {
+        throw new Error('Nothing to update.')
       }
 
       const { data, error } = await supabase
@@ -345,7 +365,7 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
 
   const createEntry = (input: CreateEntryInput) => createEntryMutation.mutateAsync(input)
   const stopEntry = (id: string, stopped_at: string) => stopEntryMutation.mutateAsync({ id, stopped_at })
-  const updateEntry = (id: string, updates: Partial<TimeEntry>) => updateEntryMutation.mutateAsync({ id, updates })
+  const updateEntry = (id: string, updates: TimeEntryUpdate) => updateEntryMutation.mutateAsync({ id, updates })
   const deleteEntry = (id: string) => deleteEntryMutation.mutateAsync(id)
 
   return {

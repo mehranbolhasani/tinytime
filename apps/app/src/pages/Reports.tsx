@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { presets } from '@/lib/motion'
-import { cn, exportToCSV } from '@/lib/utils'
+import { cn, exportToCSV, localDateInputRange } from '@/lib/utils'
 import ActivityHeatmap from '@/components/reports/ActivityHeatmap'
 
 function startOfDay(date: Date): Date {
@@ -70,7 +70,7 @@ function buildRange(
     return { from: from.toISOString(), to: thisMonthStart.toISOString() }
   }
 
-  return { from: customFrom, to: customTo }
+  return localDateInputRange(customFrom, customTo)
 }
 
 export default function Reports() {
@@ -125,7 +125,7 @@ export default function Reports() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => exportToCSV(filteredEntries, from ?? '', to ?? '')}
+          onClick={() => exportToCSV(filteredEntries, from ?? '', to ? new Date(new Date(to).getTime() - 1) : '')}
           disabled={!canExport}
           className="h-8 rounded-md border-border text-sm transition-colors duration-150"
         >

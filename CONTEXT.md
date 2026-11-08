@@ -50,6 +50,10 @@ tinytime is a single-user, browser-only time tracker.
 - Supabase data operations belong in hooks and `lib` helpers (`src/hooks`, `src/lib`).
 - Auth/session shell logic in `App.jsx` is an allowed exception.
 
+### Local storage
+- All keys use the `tinytime:` prefix.
+- Per-user state is stored as `tinytime:<name>:<userId>` (for example `tinytime:favourites:<userId>`) so cached state never leaks between accounts.
+
 ### Time and duration
 - Duration base unit is **seconds** across app and DB logic.
 - Timer elapsed display is client-derived from `started_at`.
@@ -93,6 +97,7 @@ apps/
     src/
       contexts/
         TimerContext.tsx       # Active entry + live elapsed timer state
+        SessionContext.tsx     # Current user id for per-user client state
       hooks/
         useTimer.ts            # Client elapsed timer from started_at
         useTimeEntries.ts      # Entry queries/mutations
@@ -109,6 +114,7 @@ apps/
         reports/               # SummaryBar, ProjectBreakdown, FilterBar, EntryTable/Dialog, DateRangePicker
         settings/              # GoogleCalendarSection
         ui/                    # shadcn/Radix component implementations
+        ErrorBoundary.tsx      # App-level and per-route crash containment
       lib/
         supabase.ts
         utils.ts
@@ -118,6 +124,7 @@ apps/
         googleSignIn.ts
         googleCalendar.ts
         motion.ts
+        timerActionLock.ts     # App-wide single-flight guard for start/stop
       pages/
         Today.tsx
         Calendar.tsx           # Clock calendar primary; list DayView toggle
@@ -150,7 +157,8 @@ Components must not call `supabase.from(...)` directly. All Supabase access goes
 
 ### Invariants
 - `time_entries.stopped_at = null` means running entry.
-- At most one running entry per user.
+- At most one running entry per user, enforced by the partial unique index `time_entries_one_running_per_user` (migration `20261108120000_one_running_entry_per_user.sql`).
+- Timer start/stop run through `lib/timerActionLock.ts`, so only one timer action is in flight across the app.
 - Deleting a project must not delete entries; it nulls `project_id`.
 
 ---

@@ -339,6 +339,61 @@ describe('useTimeEntryMutations — updateEntry', () => {
 })
 
 // ---------------------------------------------------------------------------
+// updateEntry — payload tests
+// ---------------------------------------------------------------------------
+
+describe('updateEntry payload', () => {
+  let queryClient
+
+  beforeEach(() => {
+    queryClient = makeQueryClient()
+    mockClient = createMockSupabaseClient({ data: makeEntry({ id: 'payload-entry' }), error: null })
+  })
+
+  async function runUpdate(updates) {
+    const { result } = renderHook(
+      () => useTimeEntryMutations(),
+      { wrapper: makeWrapper(queryClient) }
+    )
+
+    await act(async () => {
+      await result.current.updateEntry('payload-entry', updates)
+    })
+
+    return mockClient._chain.update.mock.calls[0][0]
+  }
+
+  it('omits project_id and description for a times-only update', async () => {
+    const payload = await runUpdate({
+      started_at: '2024-01-15T09:00:00.000Z',
+      stopped_at: '2024-01-15T10:00:00.000Z',
+      duration_seconds: 3600,
+    })
+
+    expect(payload).not.toHaveProperty('project_id')
+    expect(payload).not.toHaveProperty('description')
+  })
+
+  it('trims a description-only update', async () => {
+    const payload = await runUpdate({ description: '  hello  ' })
+
+    expect(payload).toEqual({ description: 'hello' })
+  })
+
+  it('stores null for a whitespace-only description', async () => {
+    const payload = await runUpdate({ description: '   ' })
+
+    expect(payload.description).toBeNull()
+  })
+
+  it('keeps an explicit null project_id', async () => {
+    const payload = await runUpdate({ project_id: null })
+
+    expect(payload).toEqual({ project_id: null })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // deleteEntry — cache update tests
 // ---------------------------------------------------------------------------
 

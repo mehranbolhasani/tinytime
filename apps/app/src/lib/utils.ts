@@ -172,6 +172,33 @@ export function localDayRange(dateInput: string | Date): DayRangeResult {
   }
 }
 
+/**
+ * Converts inclusive `YYYY-MM-DD` date-input values into an ISO range
+ * [local midnight of `from`, local midnight of the day after `to`).
+ * Returns nulls for invalid input or when from > to.
+ */
+export function localDateInputRange(
+  fromValue: string | null,
+  toValue: string | null
+): DayRangeResult {
+  const parse = (value: string | null): Date | null => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+    const [year, month, day] = value.split('-').map(Number)
+    const date = new Date(year, month - 1, day)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+
+  const fromDate = parse(fromValue)
+  const toDate = parse(toValue)
+  if (!fromDate || !toDate || fromDate.getTime() > toDate.getTime()) {
+    return { from: null, to: null }
+  }
+
+  const toExclusive = new Date(toDate)
+  toExclusive.setDate(toExclusive.getDate() + 1)
+  return { from: fromDate.toISOString(), to: toExclusive.toISOString() }
+}
+
 export function exportToCSV(entries: TimeEntry[], from: string | Date, to: string | Date): void {
   const rows: (string | number)[][] = [
     [

@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 import { useTimerContext } from '@/contexts/TimerContext'
+import { isTimerActionPending, runTimerAction, subscribeTimerAction } from '@/lib/timerActionLock'
 import type { TimeEntry } from '@/types'
 
 interface StartTimerInput {
@@ -26,7 +27,7 @@ export function useTimerControlActions({
   stopEntry,
 }: UseTimerControlActionsParams): UseTimerControlActionsResult {
   const timer = useTimerContext()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const isSubmitting = useSyncExternalStore(subscribeTimerAction, isTimerActionPending, () => false)
   const [error, setError] = useState('')
 
   const clearError = useCallback(() => {
@@ -39,43 +40,41 @@ export function useTimerControlActions({
       return
     }
 
-    setIsSubmitting(true)
-    setError('')
+    return runTimerAction(async () => {
+      setError('')
 
-    try {
-      const stoppedAt = timer.stop()
-      await stopEntry(activeEntry.id, stoppedAt)
-      timer.reset()
-    } catch (stopError) {
-      timer.start(activeEntry)
-      setError((stopError as Error)?.message ?? 'Unable to stop timer.')
-    } finally {
-      setIsSubmitting(false)
-    }
+      try {
+        const stoppedAt = timer.stop()
+        await stopEntry(activeEntry.id, stoppedAt)
+        timer.reset()
+      } catch (stopError) {
+        timer.start(activeEntry)
+        setError((stopError as Error)?.message ?? 'Unable to stop timer.')
+      }
+    })
   }, [stopEntry, timer])
 
   const startTimer = useCallback(async (input: StartTimerInput = {}) => {
-    setIsSubmitting(true)
-    setError('')
+    return runTimerAction(async () => {
+      setError('')
 
-    try {
-      if (timer.activeEntry) {
-        const forcedStoppedAt = new Date().toISOString()
-        await stopEntry(timer.activeEntry.id, forcedStoppedAt)
-        timer.reset()
+      try {
+        if (timer.activeEntry) {
+          const forcedStoppedAt = new Date().toISOString()
+          await stopEntry(timer.activeEntry.id, forcedStoppedAt)
+          timer.reset()
+        }
+
+        const created = await createEntry({
+          project_id: input.projectId ?? null,
+          description: input.description ?? '',
+          started_at: new Date().toISOString(),
+        })
+        timer.start(created)
+      } catch (startError) {
+        setError((startError as Error)?.message ?? 'Unable to start timer.')
       }
-
-      const created = await createEntry({
-        project_id: input.projectId ?? null,
-        description: input.description ?? '',
-        started_at: new Date().toISOString(),
-      })
-      timer.start(created)
-    } catch (startError) {
-      setError((startError as Error)?.message ?? 'Unable to start timer.')
-    } finally {
-      setIsSubmitting(false)
-    }
+    })
   }, [createEntry, stopEntry, timer])
 
   const toggleTimer = useCallback(async (input: StartTimerInput = {}) => {

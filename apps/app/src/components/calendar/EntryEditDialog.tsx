@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import DateTimeField from '@/components/calendar/DateTimeField'
 import { Button } from '@/components/ui/button'
 import {
@@ -80,11 +80,17 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
   const [formData, setFormData] = useState<FormState>(createInitialFormState(entry))
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
+  const entryId = entry?.id ?? null
+  const resetForm = useEffectEvent(() => {
     setFormData(createInitialFormState(entry))
     setError('')
-  }, [entry, open])
+  })
+
+  useEffect(() => {
+    if (open) {
+      resetForm()
+    }
+  }, [entryId, open])
 
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {

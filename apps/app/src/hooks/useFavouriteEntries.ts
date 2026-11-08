@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useCurrentUserId } from '@/contexts/SessionContext'
 import type { TimeEntry } from '@/types'
 
 export interface FavouriteEntry {
@@ -16,13 +17,16 @@ interface UseFavouriteEntriesResult {
   isFavourite: (entry: TimeEntry) => boolean
 }
 
-const STORAGE_KEY = 'tinytime:favourites'
+const LEGACY_STORAGE_KEY = 'tinytime:favourites'
 const MAX_FAVOURITES = 8
 
-function loadFavourites(): FavouriteEntry[] {
+function storageKeyForUser(userId: string): string {
+  return `tinytime:favourites:${userId}`
+}
+
+function parseFavourites(raw: string | null): FavouriteEntry[] {
+  if (!raw) return []
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
     return parsed as FavouriteEntry[]
@@ -31,12 +35,49 @@ function loadFavourites(): FavouriteEntry[] {
   }
 }
 
-function saveFavourites(favourites: FavouriteEntry[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(favourites))
+function loadFavourites(userId: string): FavouriteEntry[] {
+  try {
+    const storageKey = storageKeyForUser(userId)
+    const stored = localStorage.getItem(storageKey)
+
+    if (stored !== null) {
+      return parseFavourites(stored)
+    }
+
+    // One-time migration from the pre-user-scoped key.
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY)
+    if (legacy === null) {
+      return []
+    }
+
+    const migrated = parseFavourites(legacy)
+    try {
+      localStorage.setItem(storageKey, legacy)
+      localStorage.removeItem(LEGACY_STORAGE_KEY)
+    } catch {
+      // Ignore storage failures (e.g. Safari private mode).
+    }
+    return migrated
+  } catch {
+    return []
+  }
+}
+
+function saveFavourites(userId: string, favourites: FavouriteEntry[]): void {
+  try {
+    localStorage.setItem(storageKeyForUser(userId), JSON.stringify(favourites))
+  } catch {
+    // Ignore storage failures (e.g. Safari private mode).
+  }
 }
 
 export function useFavouriteEntries(): UseFavouriteEntriesResult {
-  const [favourites, setFavourites] = useState<FavouriteEntry[]>(loadFavourites)
+  const userId = useCurrentUserId()
+  const [favourites, setFavourites] = useState<FavouriteEntry[]>(() => loadFavourites(userId))
+
+  useEffect(() => {
+    setFavourites(loadFavourites(userId))
+  }, [userId])
 
   const addFavourite = useCallback((entry: TimeEntry) => {
     setFavourites((prev) => {
@@ -57,18 +98,18 @@ export function useFavouriteEntries(): UseFavouriteEntriesResult {
         ? [...prev.slice(1), next]
         : [...prev, next]
 
-      saveFavourites(updated)
+      saveFavourites(userId, updated)
       return updated
     })
-  }, [])
+  }, [userId])
 
   const removeFavourite = useCallback((id: string) => {
     setFavourites((prev) => {
       const updated = prev.filter((f) => f.id !== id)
-      saveFavourites(updated)
+      saveFavourites(userId, updated)
       return updated
     })
-  }, [])
+  }, [userId])
 
   const isFavourite = useCallback(
     (entry: TimeEntry) =>

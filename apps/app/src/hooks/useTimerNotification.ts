@@ -25,6 +25,15 @@ function writeStoredThreshold(minutes: number): void {
   window.localStorage.setItem(THRESHOLD_KEY, String(minutes))
 }
 
+function showTimerNotification(body: string): boolean {
+  try {
+    new Notification('tinytime', { body, icon: '/favicon.svg' })
+    return true
+  } catch {
+    return false
+  }
+}
+
 function getNotificationPermission(): NotificationPermission | 'unsupported' {
   if (typeof Notification === 'undefined') {
     return 'unsupported'
@@ -87,10 +96,12 @@ export function useTimerNotification({
     const thresholdSeconds = thresholdMinutes * 60
     if (elapsedSeconds >= thresholdSeconds) {
       firedRef.current = true
-      new Notification('tinytime', {
-        body: `You've been tracking for ${formatDuration(elapsedSeconds)}.`,
-        icon: '/favicon.svg',
-      })
+      const shown = showTimerNotification(
+        `You've been tracking for ${formatDuration(elapsedSeconds)}.`
+      )
+      if (!shown) {
+        setPermissionState('unsupported')
+      }
     }
   }, [isRunning, elapsedSeconds, thresholdMinutes, permissionState])
 

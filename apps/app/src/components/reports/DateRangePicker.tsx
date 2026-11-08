@@ -30,6 +30,7 @@ export default function DateRangePicker({
 }: DateRangePickerProps) {
   const [draftFrom, setDraftFrom] = useState(customFrom ?? '')
   const [draftTo, setDraftTo] = useState(customTo ?? '')
+  const isInvalidRange = Boolean(draftFrom && draftTo && draftFrom > draftTo)
 
   return (
     <section className="space-y-3 rounded-xl bg-card p-3">
@@ -66,40 +67,47 @@ export default function DateRangePicker({
       </div>
 
       {range === 'custom' ? (
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="w-full space-y-1 sm:w-auto">
-            <label htmlFor="custom-from" className="text-xs font-medium text-muted-foreground/70">
-              From
-            </label>
-            <Input
-              id="custom-from"
-              type="date"
-              value={draftFrom}
-              onChange={(event) => setDraftFrom(event.target.value)}
-              className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
-            />
+        <>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="w-full space-y-1 sm:w-auto">
+              <label htmlFor="custom-from" className="text-xs font-medium text-muted-foreground/70">
+                From
+              </label>
+              <Input
+                id="custom-from"
+                type="date"
+                value={draftFrom}
+                onChange={(event) => setDraftFrom(event.target.value)}
+                className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
+              />
+            </div>
+            <div className="w-full space-y-1 sm:w-auto">
+              <label htmlFor="custom-to" className="text-xs font-medium text-muted-foreground/70">
+                To
+              </label>
+              <Input
+                id="custom-to"
+                type="date"
+                value={draftTo}
+                onChange={(event) => setDraftTo(event.target.value)}
+                className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => onApplyCustom(draftFrom || null, draftTo || null)}
+              disabled={!draftFrom || !draftTo || isInvalidRange}
+              className="h-8 rounded-md"
+            >
+              Apply
+            </Button>
           </div>
-          <div className="w-full space-y-1 sm:w-auto">
-            <label htmlFor="custom-to" className="text-xs font-medium text-muted-foreground/70">
-              To
-            </label>
-            <Input
-              id="custom-to"
-              type="date"
-              value={draftTo}
-              onChange={(event) => setDraftTo(event.target.value)}
-              className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
-            />
-          </div>
-          <Button
-            type="button"
-            onClick={() => onApplyCustom(draftFrom || null, draftTo || null)}
-            disabled={!draftFrom || !draftTo}
-            className="h-8 rounded-md"
-          >
-            Apply
-          </Button>
-        </div>
+          {isInvalidRange ? (
+            <p role="alert" className="text-xs text-destructive">
+              "To" must be on or after "From".
+            </p>
+          ) : null}
+        </>
       ) : null}
     </section>
   )

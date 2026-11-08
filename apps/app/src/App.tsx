@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
+import { SessionUserProvider } from '@/contexts/SessionContext'
 import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts'
 import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
@@ -17,6 +18,7 @@ import { useIdleDetection } from '@/hooks/useIdleDetection'
 import { useTimerNotification } from '@/hooks/useTimerNotification'
 import { useTheme } from '@/hooks/useTheme'
 import CommandPalette from '@/components/CommandPalette'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import IdleDetectionDialog from '@/components/IdleDetectionDialog'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
 import { durations, easings, presets } from '@/lib/motion'
@@ -298,40 +300,42 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const content = (
     <AnimatePresence mode="wait" initial={false}>
       <RouteTransition key={pathname}>
-        <Routes location={location}>
-          <Route
-            path="/"
-            element={(
-              <Suspense fallback={<RouteLoadingFallback />}>
-                <Today />
-              </Suspense>
-            )}
-          />
-          <Route
-            path="/calendar"
-            element={(
-              <Suspense fallback={<RouteLoadingFallback />}>
-                <Calendar />
-              </Suspense>
-            )}
-          />
-          <Route
-            path="/reports"
-            element={(
-              <Suspense fallback={<RouteLoadingFallback />}>
-                <Reports />
-              </Suspense>
-            )}
-          />
-          <Route
-            path="/projects"
-            element={(
-              <Suspense fallback={<RouteLoadingFallback />}>
-                <Projects />
-              </Suspense>
-            )}
-          />
-        </Routes>
+        <ErrorBoundary key={pathname} scope={`route:${pathname}`}>
+          <Routes location={location}>
+            <Route
+              path="/"
+              element={(
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <Today />
+                </Suspense>
+              )}
+            />
+            <Route
+              path="/calendar"
+              element={(
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <Calendar />
+                </Suspense>
+              )}
+            />
+            <Route
+              path="/reports"
+              element={(
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <Reports />
+                </Suspense>
+              )}
+            />
+            <Route
+              path="/projects"
+              element={(
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <Projects />
+                </Suspense>
+              )}
+            />
+          </Routes>
+        </ErrorBoundary>
       </RouteTransition>
     </AnimatePresence>
   )
@@ -534,6 +538,7 @@ export default function App() {
   const [googleButtonError, setGoogleButtonError] = useState('')
   const googleButtonRef = useRef<HTMLDivElement>(null)
   const googleNonceRef = useRef('')
+  const lastUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!supabase) {
@@ -541,6 +546,16 @@ export default function App() {
     }
 
     let isCurrent = true
+
+    const syncUser = (nextSession: Session | null) => {
+      const nextUserId = nextSession?.user?.id ?? null
+      if (lastUserIdRef.current !== nextUserId) {
+        if (lastUserIdRef.current !== null) {
+          queryClient.clear()
+        }
+        lastUserIdRef.current = nextUserId
+      }
+    }
 
     const loadSession = async () => {
       const { data, error } = await supabase.auth.getSession()
@@ -551,8 +566,10 @@ export default function App() {
 
       if (error) {
         setAuthError(getFriendlySupabaseError(error, 'Unable to check your auth session.'))
+        syncUser(null)
         setSession(null)
       } else {
+        syncUser(data.session ?? null)
         setSession(data.session ?? null)
       }
 
@@ -562,6 +579,7 @@ export default function App() {
     loadSession()
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      syncUser(nextSession ?? null)
       setSession(nextSession ?? null)
       setIsAuthLoading(false)
     })
@@ -570,7 +588,7 @@ export default function App() {
       isCurrent = false
       authListener.subscription.unsubscribe()
     }
-  }, [supabase])
+  }, [queryClient, supabase])
 
   const handleSendMagicLink = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -744,17 +762,19 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <MotionConfig reducedMotion="user" transition={{ duration: durations.base, ease: easings.standard as unknown as import('motion/react').Easing }}>
-        <TimerProvider>
-          <BrowserRouter>
-            <AppLayout
-              userEmail={session.user?.email ?? 'signed-in user'}
-              onSignOut={handleSignOut}
-              isSigningOut={isSigningOut}
-            />
-          </BrowserRouter>
-        </TimerProvider>
-      </MotionConfig>
+      <SessionUserProvider userId={session.user.id}>
+        <MotionConfig reducedMotion="user" transition={{ duration: durations.base, ease: easings.standard as unknown as import('motion/react').Easing }}>
+          <TimerProvider>
+            <BrowserRouter>
+              <AppLayout
+                userEmail={session.user?.email ?? 'signed-in user'}
+                onSignOut={handleSignOut}
+                isSigningOut={isSigningOut}
+              />
+            </BrowserRouter>
+          </TimerProvider>
+        </MotionConfig>
+      </SessionUserProvider>
     </QueryClientProvider>
   )
 }
