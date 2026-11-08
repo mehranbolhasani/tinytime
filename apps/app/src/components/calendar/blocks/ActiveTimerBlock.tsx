@@ -1,14 +1,33 @@
+import { toBlock } from '@/lib/calendar'
+import { useElapsedSeconds } from '@/hooks/useElapsedSeconds'
 import { hexToRgba, toSafeHexColor } from '@/lib/color'
 import { formatDurationHMS } from '@/lib/utils'
-import type { CalendarBlock } from '@/types'
+import type { TimeEntry } from '@/types'
 
 interface ActiveTimerBlockProps {
-  block: CalendarBlock
-  elapsed: number
+  activeEntry: TimeEntry
+  dayStart: Date
+  dayEnd: Date
+  hourHeight: number
+  minEntryHeight: number
   onClick: () => void
 }
 
-export default function ActiveTimerBlock({ block, elapsed, onClick }: ActiveTimerBlockProps) {
+export default function ActiveTimerBlock({
+  activeEntry,
+  dayStart,
+  dayEnd,
+  hourHeight,
+  minEntryHeight,
+  onClick,
+}: ActiveTimerBlockProps) {
+  const elapsed = useElapsedSeconds(activeEntry.started_at)
+  const block = toBlock(activeEntry, dayStart, dayEnd, elapsed, minEntryHeight, hourHeight)
+
+  if (!block) {
+    return null
+  }
+
   const accentColor = toSafeHexColor(block.entry?.projects?.color, '#e76f51')
 
   const description = block.entry.description || 'Untitled'

@@ -12,7 +12,6 @@ import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { SessionUserProvider } from '@/contexts/SessionContext'
 import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts'
-import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useIdleDetection } from '@/hooks/useIdleDetection'
 import { useTimerNotification } from '@/hooks/useTimerNotification'
@@ -20,9 +19,9 @@ import { useTheme } from '@/hooks/useTheme'
 import CommandPalette from '@/components/CommandPalette'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import IdleDetectionDialog from '@/components/IdleDetectionDialog'
+import MiniTimerPill from '@/components/timer/MiniTimerPill'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
 import { durations, easings, presets } from '@/lib/motion'
-import { formatDurationHMS } from '@/lib/utils'
 import { assertSupabaseClient, getFriendlySupabaseError, supabaseConfigError } from '@/lib/supabase'
 import type { ThemePreference } from '@/types'
 
@@ -219,10 +218,9 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const { pathname } = location
   const navigate = useNavigate()
   const { preference, setThemePreference, options } = useTheme()
-  const timer = useTimerContext()
-  const notification = useTimerNotification({ elapsedSeconds: timer.elapsed, isRunning: timer.isRunning })
-  const { createEntry, stopEntry } = useTimeEntryMutations()
-  const { toggleTimer } = useTimerControlActions({ createEntry, stopEntry })
+  const { isRunning } = useTimerContext()
+  const notification = useTimerNotification()
+  const { toggleTimer, stopTimer } = useTimerControlActions()
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
 
   const [idleState, setIdleState] = useState<{
@@ -231,7 +229,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   } | null>(null)
 
   useIdleDetection({
-    isRunning: timer.isRunning,
+    isRunning,
     onIdleReturn: (idleSeconds, hiddenAt) => {
       setIdleState({ idleSeconds, hiddenAt })
     },
@@ -240,16 +238,9 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const handleKeepTime = () => setIdleState(null)
 
   const handleDiscardIdleTime = async () => {
-    if (!timer.activeEntry || !idleState) return
-    const stoppedAt = idleState.hiddenAt.toISOString()
-    try {
-      await stopEntry(timer.activeEntry.id, stoppedAt)
-      timer.reset()
-    } catch {
-      // silently ignore — user can still stop manually
-    } finally {
-      setIdleState(null)
-    }
+    if (!idleState) return
+    await stopTimer({ stoppedAt: idleState.hiddenAt.toISOString() })
+    setIdleState(null)
   }
 
   const hasPrefetchedReports = useRef(false)
@@ -377,7 +368,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
       </main>
 
       <AnimatePresence initial={false}>
-        {timer.isRunning ? (
+        {isRunning ? (
           <motion.div
             key="mini-timer-pill"
             initial={{ y: -8, opacity: 0 }}
@@ -386,17 +377,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
             transition={{ duration: durations.short, ease: easings.standard as unknown as import('motion/react').Easing }}
             className="fixed left-1/2 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 -translate-x-1/2"
           >
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleMiniTimerClick}
-              className="flex h-auto w-[150px] max-w-md items-center justify-between rounded-full border-none bg-card-foreground/90 px-3 py-1 transition-all duration-300 ease-[cubic-bezier(0.8,-0.4,0.5,1)] hover:bg-card-foreground [@media(hover:hover)]:hover:w-[200px]"
-            >
-              <span className="inline-flex items-center gap-2 text-xs font-medium text-card/50">
-                Now
-              </span>
-              <span className="font-pixel text-lg font-black text-white">{formatDurationHMS(timer.elapsed)}</span>
-            </Button>
+            <MiniTimerPill onClick={handleMiniTimerClick} />
           </motion.div>
         ) : null}
       </AnimatePresence>

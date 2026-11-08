@@ -77,6 +77,7 @@ interface EntryEditDialogProps {
 export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEditDialogProps) {
   const { projects } = useProjects()
   const { updateEntry } = useTimeEntryMutations()
+  const isRunningEntry = entry?.stopped_at === null
   const [formData, setFormData] = useState<FormState>(createInitialFormState(entry))
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
@@ -112,8 +113,31 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
     try {
       const started_at = fromDateTimeInputValue(formData.startedAt)
       const stopped_at = fromDateTimeInputValue(formData.stoppedAt)
+      const project_id = formData.projectId === NO_PROJECT_VALUE ? null : formData.projectId
 
-      if (!started_at || !stopped_at) {
+      if (!started_at) {
+        setError('Please provide a valid start datetime.')
+        setIsSaving(false)
+        return
+      }
+
+      if (isRunningEntry && !stopped_at) {
+        if (new Date(started_at).getTime() > Date.now()) {
+          setError('Start datetime cannot be in the future.')
+          setIsSaving(false)
+          return
+        }
+
+        await updateEntry(entry.id, {
+          description: formData.description,
+          project_id,
+          started_at,
+        })
+        handleClose(false)
+        return
+      }
+
+      if (!stopped_at) {
         setError('Please provide valid start and stop datetimes.')
         setIsSaving(false)
         return
@@ -129,7 +153,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
 
       await updateEntry(entry.id, {
         description: formData.description,
-        project_id: formData.projectId === NO_PROJECT_VALUE ? null : formData.projectId,
+        project_id,
         started_at,
         stopped_at,
         duration_seconds,
@@ -147,7 +171,10 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
       <DialogContent mobileFullscreen className="overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Edit entry</DialogTitle>
-          <DialogDescription>Update details and times for this entry.</DialogDescription>
+          <DialogDescription>
+            Update details and times for this entry.
+            {isRunningEntry ? ' Leave the stop time empty to keep it running.' : ''}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSave} className="space-y-4">
@@ -212,7 +239,8 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
                 id="entry-stopped-at"
                 value={formData.stoppedAt}
                 onChange={(value) => setFormData((prev) => ({ ...prev, stoppedAt: value }))}
-                required
+                placeholder={isRunningEntry ? 'Still running' : undefined}
+                required={!isRunningEntry}
               />
             </div>
           </div>

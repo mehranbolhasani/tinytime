@@ -16,8 +16,8 @@ export default function Today() {
   const { from, to } = localDayRange(today)
 
   const { entries, isLoading, error } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })
-  const { createEntry, stopEntry, deleteEntry } = useTimeEntryMutations({ entries })
-  const { startTimer } = useTimerControlActions({ createEntry, stopEntry })
+  const { deleteEntry } = useTimeEntryMutations({ entries })
+  const { startTimer } = useTimerControlActions()
   const { favourites, addFavourite, removeFavourite, isFavourite } = useFavouriteEntries()
 
   const handleContinueEntry = (entry: TimeEntry) => {
@@ -65,11 +65,7 @@ export default function Today() {
         onRemove={removeFavourite}
       />
 
-      <TimerWidget
-        createEntry={createEntry}
-        stopEntry={stopEntry}
-        isEntriesLoading={isLoading}
-      />
+      <TimerWidget isEntriesLoading={isLoading} />
 
       <AnimatePresence mode="sync" initial={false}>
         {isLoading ? (

@@ -46,7 +46,7 @@ export function getFriendlySupabaseError(
     (error as { code?: string } | null)?.code === '23505' &&
     rawMessage.includes('time_entries_one_running_per_user')
   ) {
-    return 'A timer is already running. Refresh to see it, or stop it first.'
+    return 'A timer was already running, so it has been loaded instead.'
   }
 
   if (

@@ -76,10 +76,11 @@ interface DateTimeFieldProps {
   value: string
   onChange: (value: string) => void
   required?: boolean
+  placeholder?: string
   className?: string
 }
 
-export default function DateTimeField({ id, value, onChange, required, className }: DateTimeFieldProps) {
+export default function DateTimeField({ id, value, onChange, required, placeholder, className }: DateTimeFieldProps) {
   const selectedDate = parseDateTimeValue(value)
   const [open, setOpen] = useState(false)
   const [viewDate, setViewDate] = useState<Date>(() => selectedDate ?? new Date())
@@ -128,7 +129,7 @@ export default function DateTimeField({ id, value, onChange, required, className
             className="flex h-11 w-full items-center justify-between rounded-xl border border-border bg-secondary px-3 text-left text-sm text-foreground outline-none transition-colors focus-visible:ring-1 focus-visible:ring-ring/40"
           >
             <span className={cn('truncate', !value && 'text-muted-foreground/70')}>
-              {formatDisplay(value) || 'Select date and time'}
+              {formatDisplay(value) || placeholder || 'Select date and time'}
             </span>
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </button>

@@ -96,7 +96,9 @@ describe('useTimeEntryMutations — createEntry', () => {
     expect(queryClient.getQueryData(QUERY_KEY_ACTIVE)).toEqual(runningEntry)
   })
 
-  it('sets active cache to null when the created entry is already stopped', async () => {
+  it('leaves the active cache untouched when the created entry is already stopped', async () => {
+    const activeEntry = makeEntry({ id: 'still-running', stopped_at: null })
+    queryClient.setQueryData(QUERY_KEY_ACTIVE, activeEntry)
     const stoppedEntry = makeEntry({ id: 'new-2' })
     mockClient = createMockSupabaseClient({ data: stoppedEntry, error: null })
 
@@ -109,7 +111,7 @@ describe('useTimeEntryMutations — createEntry', () => {
       await result.current.createEntry({ started_at: stoppedEntry.started_at })
     })
 
-    expect(queryClient.getQueryData(QUERY_KEY_ACTIVE)).toBeNull()
+    expect(queryClient.getQueryData(QUERY_KEY_ACTIVE)).toEqual(activeEntry)
   })
 
   it('appends the new entry to the matching list cache, sorted by started_at', async () => {
@@ -181,7 +183,7 @@ describe('useTimeEntryMutations — stopEntry', () => {
     queryClient = makeQueryClient()
   })
 
-  it('clears the active cache entry after stop', async () => {
+  it('clears the active cache entry when stopping the active entry', async () => {
     const runningEntry = makeEntry({ id: 'run-1', stopped_at: null, duration_seconds: null })
     queryClient.setQueryData(QUERY_KEY_ACTIVE, runningEntry)
     queryClient.setQueryData(QUERY_KEY_LIST, [runningEntry])
@@ -199,6 +201,26 @@ describe('useTimeEntryMutations — stopEntry', () => {
     })
 
     expect(queryClient.getQueryData(QUERY_KEY_ACTIVE)).toBeNull()
+  })
+
+  it('leaves a different active entry in place when stopping another entry', async () => {
+    const activeEntry = makeEntry({ id: 'other-active', stopped_at: null })
+    queryClient.setQueryData(QUERY_KEY_ACTIVE, activeEntry)
+
+    const runningEntry = makeEntry({ id: 'run-other', stopped_at: null })
+    const stoppedEntry = { ...runningEntry, stopped_at: '2024-01-15T10:00:00.000Z', duration_seconds: 3600 }
+    mockClient = createMockSupabaseClient({ data: stoppedEntry, error: null })
+
+    const { result } = renderHook(
+      () => useTimeEntryMutations({ entries: [runningEntry] }),
+      { wrapper: makeWrapper(queryClient) }
+    )
+
+    await act(async () => {
+      await result.current.stopEntry('run-other', stoppedEntry.stopped_at)
+    })
+
+    expect(queryClient.getQueryData(QUERY_KEY_ACTIVE)).toEqual(activeEntry)
   })
 
   it('updates the matching list cache entry with the stopped data', async () => {

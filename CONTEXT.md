@@ -57,6 +57,8 @@ tinytime is a single-user, browser-only time tracker.
 ### Time and duration
 - Duration base unit is **seconds** across app and DB logic.
 - Timer elapsed display is client-derived from `started_at`.
+- The running timer is derived only from the active-entry query (`ACTIVE_ENTRY_QUERY_KEY`). There is no local timer state. Start and stop are optimistic cache updates in `useTimerControlActions`, serialized by `lib/timerActionLock.ts`.
+- Live seconds come from `useElapsedSeconds` (shared ticker in `lib/ticker.ts`). Only leaf display components may call it. Contexts, layouts and pages must not hold ticking values.
 - `duration_seconds` must be persisted when stopping an entry.
 - Clock calendar uses a **12-hour AM/PM period** dial; entries that cross noon/midnight are clipped per period (same idea as vertical day-grid clipping).
 
@@ -96,17 +98,17 @@ apps/
   app/
     src/
       contexts/
-        TimerContext.tsx       # Active entry + live elapsed timer state
+        TimerContext.tsx       # Active entry + isRunning (stable, no ticking values)
         SessionContext.tsx     # Current user id for per-user client state
       hooks/
-        useTimer.ts            # Client elapsed timer from started_at
+        useElapsedSeconds.ts   # Live elapsed seconds from the shared ticker
         useTimeEntries.ts      # Entry queries/mutations
         useProjects.ts         # Project queries/mutations
         useGoogleCalendar.ts   # Google status, selections, events
         useTheme.ts            # Theme preference
         useMediaQuery.ts       # Media query helper
       components/
-        timer/                 # TimerWidget + EntryList (today view)
+        timer/                 # TimerWidget + TimerDisplay + MiniTimerPill + EntryList
         calendar/              # DayView (list escape hatch) + edit/drag/resize dialogs + context menu
           blocks/              # EntryBlock, ActiveTimerBlock, GoogleEventBlock
         clock-calendar/        # Primary radial clock day view + month overview
@@ -124,10 +126,12 @@ apps/
         googleSignIn.ts
         googleCalendar.ts
         motion.ts
+        ticker.ts              # Shared 1-second wall-clock ticker
+        timer.ts               # Pure elapsed-seconds helper
         timerActionLock.ts     # App-wide single-flight guard for start/stop
       pages/
         Today.tsx
-        Calendar.tsx           # Clock calendar primary; list DayView toggle
+        Calendar.tsx           # List DayView by default; clock view reachable via toggle
         Reports.tsx
         Projects.tsx
       types.ts                 # Shared TypeScript types (TimeEntry, Project, CalendarBlock, etc.)
@@ -195,9 +199,9 @@ Production domains:
 - Start/stop timer with description and project
 - Running-session summary state in timer widget
 - Today entry list with edit/delete + total duration
-- Calendar clock day view (12h AM/PM dial, labeled entry arcs, drag-create, resize handles)
+- Calendar list DayView is the default calendar view (`tinytime:calendar.view`)
+- Clock day view (12h AM/PM dial, labeled entry arcs, drag-create, resize handles) is experimental and reachable via the view toggle
 - Expandable month overview with per-day project-color arc indicators
-- Vertical list DayView retained as escape hatch (`tinytime:calendar.view`)
 - Google Calendar event overlay on clock and list day views
 - Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
 - Project CRUD (name/color/rate + delete behavior)

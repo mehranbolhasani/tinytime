@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useTimerContext } from '@/contexts/TimerContext'
 import { formatDuration } from '@/lib/utils'
 
 const THRESHOLD_KEY = 'tinytime:notify-threshold'
@@ -48,69 +49,32 @@ export interface UseTimerNotificationResult {
   permissionState: NotificationPermission | 'unsupported'
 }
 
-interface UseTimerNotificationParams {
-  elapsedSeconds: number
-  isRunning: boolean
-}
-
-export function useTimerNotification({
-  elapsedSeconds,
-  isRunning,
-}: UseTimerNotificationParams): UseTimerNotificationResult {
+export function useTimerNotification(): UseTimerNotificationResult {
+  const { activeEntry } = useTimerContext()
   const [thresholdMinutes, setThresholdMinutes] = useState<number>(readStoredThreshold)
   const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
     getNotificationPermission()
   )
-  const firedRef = useRef(false)
 
-  // Reset fired state when the timer stops
   useEffect(() => {
-    if (!isRunning) {
-      firedRef.current = false
-    }
-  }, [isRunning])
-
-  // Reset fired state when the threshold changes
-  useEffect(() => {
-    firedRef.current = false
-  }, [thresholdMinutes])
-
-  // Fire notification when elapsed time crosses the threshold
-  useEffect(() => {
-    if (!isRunning) {
-      return
-    }
-
-    if (thresholdMinutes <= 0) {
-      return
-    }
-
-    if (firedRef.current) {
-      return
-    }
-
-    if (permissionState !== 'granted') {
-      return
-    }
-
-    const thresholdSeconds = thresholdMinutes * 60
-    if (elapsedSeconds >= thresholdSeconds) {
-      firedRef.current = true
-      const shown = showTimerNotification(
-        `You've been tracking for ${formatDuration(elapsedSeconds)}.`
-      )
-      if (!shown) {
-        setPermissionState('unsupported')
-      }
-    }
-  }, [isRunning, elapsedSeconds, thresholdMinutes, permissionState])
+    if (!activeEntry || thresholdMinutes <= 0 || permissionState !== 'granted') return
+    const startedMs = Date.parse(activeEntry.started_at)
+    if (Number.isNaN(startedMs)) return
+    const delay = startedMs + thresholdMinutes * 60_000 - Date.now()
+    // Threshold passed more than a minute ago (e.g. page reload): don't nag again.
+    if (delay < -60_000) return
+    const id = window.setTimeout(() => {
+      const shown = showTimerNotification(`You've been tracking for ${formatDuration(thresholdMinutes * 60)}.`)
+      if (!shown) setPermissionState('unsupported')
+    }, Math.max(0, delay))
+    return () => window.clearTimeout(id)
+  }, [activeEntry?.id, activeEntry?.started_at, thresholdMinutes, permissionState])
 
   const setThreshold = useCallback(
     async (minutes: number) => {
       const clamped = Math.max(0, Math.round(minutes))
       setThresholdMinutes(clamped)
       writeStoredThreshold(clamped)
-      firedRef.current = false
 
       if (
         clamped > 0 &&

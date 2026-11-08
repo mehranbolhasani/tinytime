@@ -1,11 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useActiveTimeEntry } from '@/hooks/useTimeEntries'
-import { useTimer, type UseTimerResult } from '@/hooks/useTimer'
 import type { TimeEntry } from '@/types'
 
-interface TimerContextValue extends UseTimerResult {
+interface TimerContextValue {
   activeEntry: TimeEntry | null
+  isRunning: boolean
   isLoading: boolean
 }
 
@@ -13,15 +13,14 @@ const TimerContext = createContext<TimerContextValue | null>(null)
 
 export function TimerProvider({ children }: { children: ReactNode }) {
   const { activeEntry, isLoading } = useActiveTimeEntry()
-  const timer = useTimer(activeEntry)
 
   const value = useMemo(
     () => ({
       activeEntry,
+      isRunning: activeEntry !== null,
       isLoading,
-      ...timer,
     }),
-    [activeEntry, isLoading, timer]
+    [activeEntry, isLoading]
   )
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>

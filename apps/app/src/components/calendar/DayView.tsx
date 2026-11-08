@@ -9,6 +9,7 @@ import EntryEditDialog from '@/components/calendar/EntryEditDialog'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
+import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import {
   addDays,
   assignOverlapLanes,
@@ -107,8 +108,9 @@ export default function DayView({
   const [menuState, setMenuState] = useState<MenuState | null>(null)
   const [mutationError, setMutationError] = useState('')
   const [now, setNow] = useState(() => new Date())
-  const { elapsed, isRunning, start: startTimer } = useTimerContext()
+  const { isRunning } = useTimerContext()
   const { updateEntry, createEntry, deleteEntry } = useTimeEntryMutations({ entries })
+  const { startTimer } = useTimerControlActions()
   const isTouchViewport = useMediaQuery('(hover: none)')
   const minEntryHeight = isTouchViewport ? 28 : MIN_ENTRY_HEIGHT
   const gridHeight = getGridHeight(hourHeight)
@@ -179,18 +181,6 @@ export default function DayView({
 
     return assignOverlapLanes(blocks)
   }, [dayEnd, dayStart, minEntryHeight, timedGoogleEvents, hourHeight])
-
-  const activeBlock = useMemo(() => {
-    if (!activeEntry?.started_at) {
-      return null
-    }
-    const startedAt = new Date(activeEntry.started_at)
-    if (!isSameDay(startedAt, dayStart)) {
-      return null
-    }
-
-    return toBlock(activeEntry, dayStart, dayEnd, elapsed, minEntryHeight, hourHeight)
-  }, [activeEntry, dayStart, dayEnd, elapsed, minEntryHeight, hourHeight])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -346,14 +336,7 @@ export default function DayView({
       setMutationError('')
 
       if (eventStop.getTime() > nowDate.getTime()) {
-        const created = await createEntry({
-          project_id: null,
-          description: event.title ?? '',
-          started_at: nowDate.toISOString(),
-          stopped_at: null,
-          duration_seconds: null,
-        })
-        startTimer(created)
+        await startTimer({ description: event.title ?? '' })
         return
       }
 
@@ -595,11 +578,14 @@ export default function DayView({
               />
             ))}
 
-            {activeBlock ? (
+            {activeEntry && isSameDay(new Date(activeEntry.started_at), dayStart) ? (
               <ActiveTimerBlock
-                block={activeBlock}
-                elapsed={elapsed}
-                onClick={() => setEditingEntry(activeBlock.entry)}
+                activeEntry={activeEntry}
+                dayStart={dayStart}
+                dayEnd={dayEnd}
+                hourHeight={hourHeight}
+                minEntryHeight={minEntryHeight}
+                onClick={() => setEditingEntry(activeEntry)}
               />
             ) : null}
 

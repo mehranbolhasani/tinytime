@@ -1,16 +1,17 @@
 import { useCallback, useState, useSyncExternalStore } from 'react'
-import { useTimerContext } from '@/contexts/TimerContext'
+import { useQueryClient } from '@tanstack/react-query'
+import { ACTIVE_ENTRY_QUERY_KEY, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { isTimerActionPending, runTimerAction, subscribeTimerAction } from '@/lib/timerActionLock'
-import type { TimeEntry } from '@/types'
+import type { Project, TimeEntry } from '@/types'
 
 interface StartTimerInput {
   projectId?: string | null
   description?: string
 }
 
-interface UseTimerControlActionsParams {
-  createEntry: (input: { project_id: string | null; description: string; started_at: string }) => Promise<TimeEntry>
-  stopEntry: (id: string, stopped_at: string) => Promise<TimeEntry>
+interface StopTimerOptions {
+  /** Defaults to now. Used by idle detection to stop at the moment the user left. */
+  stoppedAt?: string
 }
 
 interface UseTimerControlActionsResult {
@@ -18,15 +19,13 @@ interface UseTimerControlActionsResult {
   error: string
   clearError: () => void
   startTimer: (input?: StartTimerInput) => Promise<void>
-  stopTimer: () => Promise<void>
+  stopTimer: (options?: StopTimerOptions) => Promise<void>
   toggleTimer: (input?: StartTimerInput) => Promise<void>
 }
 
-export function useTimerControlActions({
-  createEntry,
-  stopEntry,
-}: UseTimerControlActionsParams): UseTimerControlActionsResult {
-  const timer = useTimerContext()
+export function useTimerControlActions(): UseTimerControlActionsResult {
+  const queryClient = useQueryClient()
+  const { createEntry, stopEntry } = useTimeEntryMutations()
   const isSubmitting = useSyncExternalStore(subscribeTimerAction, isTimerActionPending, () => false)
   const [error, setError] = useState('')
 
@@ -34,57 +33,74 @@ export function useTimerControlActions({
     setError('')
   }, [])
 
-  const stopTimer = useCallback(async () => {
-    const activeEntry = timer.activeEntry
-    if (!activeEntry) {
-      return
-    }
-
+  const stopTimer = useCallback(async (options: StopTimerOptions = {}) => {
     return runTimerAction(async () => {
+      const current = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY) ?? null
+      if (!current || current.id.startsWith('optimistic-')) {
+        return
+      }
+
+      const stoppedAt = options.stoppedAt ?? new Date().toISOString()
+      await queryClient.cancelQueries({ queryKey: ACTIVE_ENTRY_QUERY_KEY })
+      queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, null)
       setError('')
 
       try {
-        const stoppedAt = timer.stop()
-        await stopEntry(activeEntry.id, stoppedAt)
-        timer.reset()
+        await stopEntry(current.id, stoppedAt, current.started_at)
       } catch (stopError) {
-        timer.start(activeEntry)
+        queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, current)
         setError((stopError as Error)?.message ?? 'Unable to stop timer.')
       }
     })
-  }, [stopEntry, timer])
+  }, [queryClient, stopEntry])
 
   const startTimer = useCallback(async (input: StartTimerInput = {}) => {
     return runTimerAction(async () => {
+      const previous = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY) ?? null
+      const startedAt = new Date().toISOString()
+      const projectId = input.projectId ?? null
+      const project = projectId
+        ? queryClient.getQueryData<Project[]>(['projects'])?.find((p) => p.id === projectId) ?? null
+        : null
+      const description = input.description?.trim() ? input.description.trim() : null
+
+      const optimistic: TimeEntry = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        started_at: startedAt,
+        stopped_at: null,
+        duration_seconds: null,
+        description,
+        project_id: projectId,
+        projects: project ? { id: project.id, name: project.name, color: project.color } : null,
+      }
+
+      await queryClient.cancelQueries({ queryKey: ACTIVE_ENTRY_QUERY_KEY })
+      queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, optimistic)
       setError('')
 
       try {
-        if (timer.activeEntry) {
-          const forcedStoppedAt = new Date().toISOString()
-          await stopEntry(timer.activeEntry.id, forcedStoppedAt)
-          timer.reset()
+        if (previous) {
+          await stopEntry(previous.id, startedAt, previous.started_at)
         }
-
-        const created = await createEntry({
-          project_id: input.projectId ?? null,
-          description: input.description ?? '',
-          started_at: new Date().toISOString(),
-        })
-        timer.start(created)
+        await createEntry({ project_id: projectId, description: description ?? '', started_at: startedAt })
+        // createEntry's onSuccess replaces the optimistic entry with the real row (Task 3a).
       } catch (startError) {
+        queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, previous)
+        queryClient.invalidateQueries({ queryKey: ACTIVE_ENTRY_QUERY_KEY })
         setError((startError as Error)?.message ?? 'Unable to start timer.')
       }
     })
-  }, [createEntry, stopEntry, timer])
+  }, [createEntry, queryClient, stopEntry])
 
   const toggleTimer = useCallback(async (input: StartTimerInput = {}) => {
-    if (timer.activeEntry && timer.isRunning) {
+    const current = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY) ?? null
+    if (current) {
       await stopTimer()
       return
     }
 
     await startTimer(input)
-  }, [startTimer, stopTimer, timer.activeEntry, timer.isRunning])
+  }, [queryClient, startTimer, stopTimer])
 
   return {
     isSubmitting,

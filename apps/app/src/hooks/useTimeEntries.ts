@@ -4,6 +4,7 @@ import { computeDuration } from '@/lib/utils'
 import type { TimeEntry, DayRange } from '@/types'
 
 const TIME_ENTRIES_QUERY_KEY = ['time_entries']
+export const ACTIVE_ENTRY_QUERY_KEY = ['time_entries', 'active'] as const
 const ENTRY_SELECT = '*, projects(id, name, color)'
 
 function getEntryFromCache(queryClient: ReturnType<typeof useQueryClient>, id: string): TimeEntry | null {
@@ -120,7 +121,9 @@ export function useActiveTimeEntry(): UseActiveTimeEntryResult {
   const supabase = assertSupabaseClient()
 
   const { data: activeEntry = null, isLoading, error } = useQuery<TimeEntry | null, Error>({
-    queryKey: [...TIME_ENTRIES_QUERY_KEY, 'active'],
+    queryKey: ACTIVE_ENTRY_QUERY_KEY,
+    // Always resync the running timer when returning to the tab or PWA, including on mobile (other devices may have started or stopped it).
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('time_entries')
@@ -172,7 +175,7 @@ function buildEntryUpdatePayload(updates: TimeEntryUpdate): Record<string, unkno
 
 interface UseTimeEntryMutationsResult {
   createEntry: (input: CreateEntryInput) => Promise<TimeEntry>
-  stopEntry: (id: string, stopped_at: string) => Promise<TimeEntry>
+  stopEntry: (id: string, stopped_at: string, startedAt?: string) => Promise<TimeEntry>
   updateEntry: (id: string, updates: TimeEntryUpdate) => Promise<TimeEntry>
   deleteEntry: (id: string) => Promise<string>
 }
@@ -208,10 +211,9 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
       return data as TimeEntry
     },
     onSuccess: (createdEntry) => {
-      queryClient.setQueryData(
-        [...TIME_ENTRIES_QUERY_KEY, 'active'],
-        createdEntry.stopped_at === null ? createdEntry : null
-      )
+      if (createdEntry.stopped_at === null) {
+        queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, createdEntry)
+      }
 
       updateEntryListCaches(queryClient, (cachedEntries, range) => {
         if (!isEntryInRange(createdEntry, range)) {
@@ -231,27 +233,35 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
       revalidateInactiveEntryQueries()
     },
     onError: () => {
-      queryClient.invalidateQueries({ queryKey: [...TIME_ENTRIES_QUERY_KEY, 'active'] })
+      queryClient.invalidateQueries({ queryKey: ACTIVE_ENTRY_QUERY_KEY })
     },
   })
 
-  const stopEntryMutation = useMutation<TimeEntry, Error, { id: string; stopped_at: string }>({
-    mutationFn: async ({ id, stopped_at }) => {
-      const entry = entries.find((item) => item.id === id) ?? getEntryFromCache(queryClient, id)
-      let startedAt = entry?.started_at ?? null
+  const stopEntryMutation = useMutation<
+    TimeEntry,
+    Error,
+    { id: string; stopped_at: string; started_at?: string }
+  >({
+    mutationFn: async ({ id, stopped_at, started_at: providedStartedAt }) => {
+      let startedAt = providedStartedAt ?? null
 
       if (!startedAt) {
-        const { data: entryById, error: entryByIdError } = await supabase
-          .from('time_entries')
-          .select('id, started_at')
-          .eq('id', id)
-          .single()
+        const entry = entries.find((item) => item.id === id) ?? getEntryFromCache(queryClient, id)
+        startedAt = entry?.started_at ?? null
 
-        if (entryByIdError) {
-          throw new Error(getFriendlySupabaseError(entryByIdError, 'Unable to load timer entry details.'))
+        if (!startedAt) {
+          const { data: entryById, error: entryByIdError } = await supabase
+            .from('time_entries')
+            .select('id, started_at')
+            .eq('id', id)
+            .single()
+
+          if (entryByIdError) {
+            throw new Error(getFriendlySupabaseError(entryByIdError, 'Unable to load timer entry details.'))
+          }
+
+          startedAt = (entryById as { started_at: string } | null)?.started_at ?? null
         }
-
-        startedAt = (entryById as { started_at: string } | null)?.started_at ?? null
       }
 
       if (!startedAt) {
@@ -273,7 +283,10 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
       return data as TimeEntry
     },
     onSuccess: (stoppedEntry) => {
-      queryClient.setQueryData([...TIME_ENTRIES_QUERY_KEY, 'active'], null)
+      const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY)
+      if (cachedActiveEntry?.id === stoppedEntry.id) {
+        queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, null)
+      }
 
       updateEntryListCaches(queryClient, (cachedEntries, range) => {
         if (!isEntryInRange(stoppedEntry, range)) {
@@ -326,10 +339,10 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
         return sortEntriesByStartedAt([...withoutUpdated, updatedEntry])
       })
 
-      const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>([...TIME_ENTRIES_QUERY_KEY, 'active'])
+      const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY)
       if (cachedActiveEntry?.id === updatedEntry.id) {
         queryClient.setQueryData(
-          [...TIME_ENTRIES_QUERY_KEY, 'active'],
+          ACTIVE_ENTRY_QUERY_KEY,
           updatedEntry.stopped_at === null ? updatedEntry : null
         )
       }
@@ -354,9 +367,9 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
         (cachedEntries) => cachedEntries.filter((entry) => entry.id !== deletedId)
       )
 
-      const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>([...TIME_ENTRIES_QUERY_KEY, 'active'])
+      const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY)
       if (cachedActiveEntry?.id === deletedId) {
-        queryClient.setQueryData([...TIME_ENTRIES_QUERY_KEY, 'active'], null)
+        queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, null)
       }
 
       revalidateInactiveEntryQueries()
@@ -364,7 +377,8 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
   })
 
   const createEntry = (input: CreateEntryInput) => createEntryMutation.mutateAsync(input)
-  const stopEntry = (id: string, stopped_at: string) => stopEntryMutation.mutateAsync({ id, stopped_at })
+  const stopEntry = (id: string, stopped_at: string, startedAt?: string) =>
+    stopEntryMutation.mutateAsync({ id, stopped_at, started_at: startedAt })
   const updateEntry = (id: string, updates: TimeEntryUpdate) => updateEntryMutation.mutateAsync({ id, updates })
   const deleteEntry = (id: string) => deleteEntryMutation.mutateAsync(id)
 

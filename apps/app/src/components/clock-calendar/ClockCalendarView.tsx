@@ -12,6 +12,7 @@ import EntryDetailSheet from '@/components/calendar/EntryDetailSheet'
 import EntryEditDialog from '@/components/calendar/EntryEditDialog'
 import { Button } from '@/components/ui/button'
 import { useTimerContext } from '@/contexts/TimerContext'
+import { useElapsedSeconds } from '@/hooks/useElapsedSeconds'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { addDays, isSameDay, startOfDay } from '@/lib/calendar'
@@ -67,7 +68,8 @@ export default function ClockCalendarView({
     to: monthRange.to,
   })
   const { projects } = useProjects()
-  const { activeEntry, elapsed } = useTimerContext()
+  const { activeEntry } = useTimerContext()
+  const elapsed = useElapsedSeconds(activeEntry?.started_at)
   const { createEntry, updateEntry, deleteEntry } = useTimeEntryMutations({ entries })
 
   useEffect(() => {

@@ -8,13 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import TimerDisplay from '@/components/timer/TimerDisplay'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { toSafeHexColor } from '@/lib/color'
 import { presets } from '@/lib/motion'
-import { cn, formatDurationHMS } from '@/lib/utils'
-import type { TimeEntry } from '@/types'
+import { cn } from '@/lib/utils'
 
 const NO_PROJECT_VALUE = '__no_project__'
 
@@ -23,21 +23,16 @@ function normalizeProjectValue(projectId: string | null | undefined): string {
 }
 
 interface TimerWidgetProps {
-  createEntry: (input: { project_id: string | null; description: string; started_at: string }) => Promise<TimeEntry>
-  stopEntry: (id: string, stopped_at: string) => Promise<TimeEntry>
   isEntriesLoading?: boolean
 }
 
-export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading = false }: TimerWidgetProps) {
+export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetProps) {
   const { projects, isLoading: isLoadingProjects } = useProjects()
   const timer = useTimerContext()
   const activeEntry = timer.activeEntry
   const [description, setDescription] = useState(activeEntry?.description ?? '')
   const [selectedProject, setSelectedProject] = useState(normalizeProjectValue(activeEntry?.project_id))
-  const { isSubmitting, error, startTimer, stopTimer } = useTimerControlActions({
-    createEntry,
-    stopEntry,
-  })
+  const { isSubmitting, error, startTimer, stopTimer } = useTimerControlActions()
 
   useEffect(() => {
     setDescription(activeEntry?.description ?? '')
@@ -60,8 +55,6 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
     void stopTimer()
   }
 
-  const displayTime = timer.isRunning ? formatDurationHMS(timer.elapsed) : '00:00:00'
-  const [hours = '00', minutes = '00', seconds = '00'] = displayTime.split(':')
   const runningDescription = activeEntry?.description?.trim()
   const runningProjectName = activeEntry?.projects?.name ?? 'No project'
   const runningProjectColor = activeEntry?.projects?.color
@@ -72,20 +65,7 @@ export default function TimerWidget({ createEntry, stopEntry, isEntriesLoading =
     <section className="flex flex-col gap-4">
       <div className="overflow-hidden rounded-2xl bg-card">
         <div className="flex items-center justify-center py-6 min-h-60">
-          <span
-            role="status"
-            aria-label={`Timer: ${displayTime}`}
-            className={cn(
-              'block text-center font-pixel text-5xl sm:text-6xl md:text-7xl font-bold',
-              timer.isRunning ? 'text-foreground' : 'text-muted-foreground/40'
-            )}
-          >
-            <span>{hours}</span>
-            <span className="inline-block -translate-y-2">:</span>
-            <span>{minutes}</span>
-            <span className="inline-block -translate-y-2">:</span>
-            <span>{seconds}</span>
-          </span>
+          <TimerDisplay />
         </div>
 
         <div className="min-h-[132px] border-t border-dotted border-border">

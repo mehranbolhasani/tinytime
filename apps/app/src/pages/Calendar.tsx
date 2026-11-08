@@ -42,10 +42,10 @@ function formatDayLabel(date: Date): string {
 
 function readViewMode(): CalendarViewMode {
   if (typeof window === 'undefined') {
-    return 'clock'
+    return 'list'
   }
   const raw = window.localStorage.getItem(VIEW_STORAGE_KEY)
-  return raw === 'list' ? 'list' : 'clock'
+  return raw === 'clock' ? 'clock' : 'list'
 }
 
 export default function Calendar() {
