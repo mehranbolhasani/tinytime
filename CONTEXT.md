@@ -11,7 +11,7 @@ tinytime is a single-user, browser-only time tracker.
 
 ### In scope
 - Personal timer + entries
-- Calendar day planning/editing
+- Calendar day planning/editing (clock dial primary; list timeline escape hatch)
 - Reporting + CSV export
 - Project management
 - Google Calendar read-only overlay integration
@@ -54,6 +54,7 @@ tinytime is a single-user, browser-only time tracker.
 - Duration base unit is **seconds** across app and DB logic.
 - Timer elapsed display is client-derived from `started_at`.
 - `duration_seconds` must be persisted when stopping an entry.
+- Clock calendar uses a **12-hour AM/PM period** dial; entries that cross noon/midnight are clipped per period (same idea as vertical day-grid clipping).
 
 ### TypeScript
 - All source files under `apps/app/src/` must use `.ts` or `.tsx` extensions.
@@ -101,8 +102,9 @@ apps/
         useMediaQuery.ts       # Media query helper
       components/
         timer/                 # TimerWidget + EntryList (today view)
-        calendar/              # DayView + edit/drag/resize dialogs + context menu
+        calendar/              # DayView (list escape hatch) + edit/drag/resize dialogs + context menu
           blocks/              # EntryBlock, ActiveTimerBlock, GoogleEventBlock
+        clock-calendar/        # Primary radial clock day view + month overview
         projects/              # Project CRUD UI
         reports/               # SummaryBar, ProjectBreakdown, FilterBar, EntryTable/Dialog, DateRangePicker
         settings/              # GoogleCalendarSection
@@ -110,14 +112,15 @@ apps/
       lib/
         supabase.ts
         utils.ts
-        calendar.ts
+        calendar.ts            # Vertical day-grid geometry
+        clockCalendar.ts       # Polar clock day geometry (12h AM/PM periods)
         color.ts
         googleSignIn.ts
         googleCalendar.ts
         motion.ts
       pages/
         Today.tsx
-        Calendar.tsx
+        Calendar.tsx           # Clock calendar primary; list DayView toggle
         Reports.tsx
         Projects.tsx
       types.ts                 # Shared TypeScript types (TimeEntry, Project, CalendarBlock, etc.)
@@ -162,7 +165,7 @@ Components must not call `supabase.from(...)` directly. All Supabase access goes
 ### Google Calendar integration contract
 - Uses edge functions `google-oauth` and `google-calendar`.
 - Selected calendars persisted in `google_calendar_selections`.
-- Calendar overlay appears in day view only when connected and selected.
+- Calendar overlay appears in clock and list day views when connected and selected.
 
 Production domains:
 - Landing: `https://tinytime.work`
@@ -184,8 +187,10 @@ Production domains:
 - Start/stop timer with description and project
 - Running-session summary state in timer widget
 - Today entry list with edit/delete + total duration
-- Calendar day timeline with drag/move/resize and edit flows
-- Google Calendar event overlay in day view
+- Calendar clock day view (12h AM/PM dial, labeled entry arcs, drag-create, resize handles)
+- Expandable month overview with per-day project-color arc indicators
+- Vertical list DayView retained as escape hatch (`tinytime:calendar.view`)
+- Google Calendar event overlay on clock and list day views
 - Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
 - Project CRUD (name/color/rate + delete behavior)
 - Idle detection + nudge (Page Visibility API, threshold configurable)

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronLeft, ChevronRight, Plus, Minus, RotateCcw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw } from 'lucide-react'
+import ClockCalendarView from '@/components/clock-calendar/ClockCalendarView'
 import DayView from '@/components/calendar/DayView'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,7 +14,10 @@ import { presets } from '@/lib/motion'
 import { localDayRange } from '@/lib/utils'
 
 const ZOOM_STORAGE_KEY = 'tinytime.calendar.zoom-index'
+const VIEW_STORAGE_KEY = 'tinytime:calendar.view'
 const DEFAULT_ZOOM_INDEX = 2
+
+type CalendarViewMode = 'clock' | 'list'
 
 const ZOOM_STEPS = [
   { hourHeight: 22 },
@@ -36,8 +40,17 @@ function formatDayLabel(date: Date): string {
   })
 }
 
+function readViewMode(): CalendarViewMode {
+  if (typeof window === 'undefined') {
+    return 'clock'
+  }
+  const raw = window.localStorage.getItem(VIEW_STORAGE_KEY)
+  return raw === 'list' ? 'list' : 'clock'
+}
+
 export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(readViewMode)
 
   useEffect(() => {
     const raw = sessionStorage.getItem('tinytime:calendar-jump-date')
@@ -49,6 +62,7 @@ export default function Calendar() {
       }
     }
   }, [])
+
   const [zoomIndex, setZoomIndex] = useState(() => {
     if (typeof window === 'undefined') {
       return DEFAULT_ZOOM_INDEX
@@ -89,6 +103,13 @@ export default function Calendar() {
     }
   }
 
+  const changeViewMode = (mode: CalendarViewMode) => {
+    setViewMode(mode)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, mode)
+    }
+  }
+
   useEffect(() => {
     const handleShortcutNavigation = (event: Event) => {
       const shortcutEvent = event as CustomEvent<{ direction?: CalendarShortcutDirection }>
@@ -105,6 +126,25 @@ export default function Calendar() {
       window.removeEventListener(CALENDAR_SHORTCUT_EVENT, handleShortcutNavigation)
     }
   }, [])
+
+  if (viewMode === 'clock') {
+    return (
+      <div className="space-y-3">
+        {googleEventsError ? (
+          <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            {googleEventsError.message}
+          </div>
+        ) : null}
+        <ClockCalendarView
+          selectedDate={selectedDate}
+          onSelectedDateChange={setSelectedDate}
+          googleEvents={googleEvents}
+          isLoadingGoogleEvents={isLoadingGoogleEvents}
+          onSwitchToList={() => changeViewMode('list')}
+        />
+      </div>
+    )
+  }
 
   return (
     <section className="space-y-3">
@@ -133,13 +173,25 @@ export default function Calendar() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            variant="outline"
-            className="h-8 rounded-md border-border text-sm transition-colors duration-150"
-            onClick={() => setSelectedDate(new Date())}
-          >
-            Today
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="h-8 rounded-md border-border text-sm transition-colors duration-150"
+              onClick={() => setSelectedDate(new Date())}
+            >
+              Today
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Switch to clock calendar view"
+              onClick={() => changeViewMode('clock')}
+            >
+              <Clock3 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </div>
         </div>
       </header>
       <div className="flex items-center justify-between w-full bg-card p-3 rounded-xl">
@@ -176,19 +228,30 @@ export default function Calendar() {
             className="h-6 w-6 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
             onClick={() => changeZoom(DEFAULT_ZOOM_INDEX)}
             disabled={zoomIndex === DEFAULT_ZOOM_INDEX}
+            aria-label="Reset calendar zoom"
           >
             <RotateCcw className="h-3 w-3" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-md text-muted-foreground"
+            aria-label="List view active"
+            disabled
+          >
+            <List className="h-3 w-3" aria-hidden="true" />
           </Button>
         </div>
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+        <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error.message}
         </div>
       ) : null}
       {googleEventsError ? (
-        <div className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+        <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
           {googleEventsError.message}
         </div>
       ) : null}

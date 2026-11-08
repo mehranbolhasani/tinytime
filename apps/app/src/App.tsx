@@ -367,7 +367,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   ))
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-start gap-4 overflow-x-clip bg-background px-4">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-start gap-4 bg-background px-4">
       <main className="mx-auto flex w-full max-w-md flex-col justify-start pt-8 pb-24">
         {content}
       </main>

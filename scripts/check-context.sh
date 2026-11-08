@@ -77,6 +77,7 @@ required_dirs=(
   "components/timer"
   "components/calendar"
   "components/calendar/blocks"
+  "components/clock-calendar"
   "components/projects"
   "components/reports"
   "components/settings"
@@ -105,6 +106,7 @@ required_files=(
   "lib/supabase.ts"
   "lib/motion.ts"
   "lib/calendar.ts"
+  "lib/clockCalendar.ts"
   "lib/utils.ts"
   "contexts/TimerContext.tsx"
 )

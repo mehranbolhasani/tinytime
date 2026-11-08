@@ -23,6 +23,7 @@ bash scripts/check-context.sh
 - **Path alias**: `@/*` → `./src/*` in apps/app
 - **Data flow**: Components must NOT call `supabase.from()` directly. All DB access goes through `hooks/` or `lib/`.
 - **Duration unit**: Seconds. Never use `duration_minutes`.
+- **Calendar**: Primary day view is the radial clock (`components/clock-calendar/`); vertical `DayView` is a list escape hatch.
 - **Animation**: Import from `motion/react`, not `framer-motion`. Use tokens from `src/lib/motion.ts`.
 - **TypeScript**: Strict mode, no `@ts-ignore`. All source files must be `.ts`/`.tsx`.
 
