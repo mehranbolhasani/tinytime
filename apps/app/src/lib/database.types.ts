@@ -128,30 +128,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tags: {
-        Row: {
-          color: string
-          created_at: string | null
-          id: string
-          name: string
-          user_id: string | null
-        }
-        Insert: {
-          color?: string
-          created_at?: string | null
-          id?: string
-          name: string
-          user_id?: string | null
-        }
-        Update: {
-          color?: string
-          created_at?: string | null
-          id?: string
-          name?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       time_entries: {
         Row: {
           created_at: string | null
@@ -189,36 +165,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      time_entry_tags: {
-        Row: {
-          tag_id: string
-          time_entry_id: string
-        }
-        Insert: {
-          tag_id: string
-          time_entry_id: string
-        }
-        Update: {
-          tag_id?: string
-          time_entry_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "time_entry_tags_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "time_entry_tags_time_entry_id_fkey"
-            columns: ["time_entry_id"]
-            isOneToOne: false
-            referencedRelation: "time_entries"
             referencedColumns: ["id"]
           },
         ]
