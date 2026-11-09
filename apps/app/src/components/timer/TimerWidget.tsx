@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { LoaderCircle, Play, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -117,12 +118,12 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-2xl bg-card">
-        <div className="flex items-center justify-center py-6 min-h-60">
+      <div className="overflow-hidden min-h-[80svh] flex flex-col justify-between">
+        <div className="flex items-center justify-center py-6 min-h-60 flex-1">
           <TimerDisplay />
         </div>
 
-        <div className="min-h-[132px] border-t border-dotted border-border">
+        <div className="min-h-[132px]">
           <AnimatePresence mode="wait" initial={false}>
             {timer.isRunning ? (
               <motion.div
@@ -193,14 +194,17 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   <Button
                     type="button"
                     variant="destructive"
-                    className="h-full w-full min-w-full rounded-xl px-4 text-sm font-normal"
+                    className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-6"
                     onClick={handleStop}
                     disabled={isSubmitting || isEntriesLoading}
+                    aria-label="Stop timer"
                     aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
                   >
-                    <span className="inline-flex min-w-14 justify-center">
-                      {isSubmitting ? 'Working...' : 'Stop'}
-                    </span>
+                    {isSubmitting ? (
+                      <LoaderCircle className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Square className="fill-current" aria-hidden="true" />
+                    )}
                   </Button>
                 </div>
               </motion.div>
@@ -258,13 +262,16 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   <Button
                     type="submit"
                     variant="default"
-                    className="h-full w-full min-w-full rounded-xl px-4 text-sm font-normal"
+                    className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-6"
                     disabled={isSubmitting || isEntriesLoading}
+                    aria-label="Start timer"
                     aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
                   >
-                    <span className="inline-flex min-w-14 justify-center">
-                      {isSubmitting ? 'Working...' : 'Start'}
-                    </span>
+                    {isSubmitting ? (
+                      <LoaderCircle className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Play className="fill-current" aria-hidden="true" />
+                    )}
                   </Button>
                 </div>
               </motion.form>

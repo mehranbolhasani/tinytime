@@ -13,7 +13,7 @@ export default function TimerDisplay() {
       role="status"
       aria-label={`Timer: ${displayTime}`}
       className={cn(
-        'block text-center text-5xl sm:text-6xl md:text-7xl font-bold tabular-nums',
+        'block text-center text-5xl sm:text-6xl md:text-8xl font-bold tabular-nums',
         activeEntry ? 'text-foreground' : 'text-muted-foreground/40'
       )}
     >
