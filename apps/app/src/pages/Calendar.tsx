@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import ClockCalendarView from '@/components/clock-calendar/ClockCalendarView'
 import DayView from '@/components/calendar/DayView'
 import { Button } from '@/components/ui/button'
@@ -46,6 +47,52 @@ function readViewMode(): CalendarViewMode {
   }
   const raw = window.localStorage.getItem(VIEW_STORAGE_KEY)
   return raw === 'clock' ? 'clock' : 'list'
+}
+
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  expired: 'That connection link expired. Please try again.',
+  wrong_account:
+    'This connection was started from a different tinytime account. Start again from the account you want to connect.',
+  denied: "Google access wasn't granted.",
+  scope_missing: "Calendar permission wasn't granted. Try again and allow calendar access.",
+}
+
+function GoogleResultBanner() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const result = searchParams.get('google')
+  const reason = searchParams.get('reason')
+
+  if (result !== 'connected' && result !== 'error') {
+    return null
+  }
+
+  const isError = result === 'error'
+  const message = isError
+    ? GOOGLE_ERROR_MESSAGES[reason ?? ''] ?? "Couldn't connect Google Calendar. Please try again."
+    : 'Google Calendar connected.'
+
+  return (
+    <div
+      role={isError ? 'alert' : 'status'}
+      className={
+        isError
+          ? 'flex items-start justify-between gap-2 rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300'
+          : 'flex items-start justify-between gap-2 rounded-lg border border-emerald-300/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300'
+      }
+    >
+      <p>{message}</p>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Dismiss"
+        className="h-5 w-5 shrink-0"
+        onClick={() => setSearchParams({}, { replace: true })}
+      >
+        <X className="h-4 w-4" aria-hidden="true" />
+      </Button>
+    </div>
+  )
 }
 
 export default function Calendar() {
@@ -130,6 +177,7 @@ export default function Calendar() {
   if (viewMode === 'clock') {
     return (
       <div className="space-y-3">
+        <GoogleResultBanner />
         {googleEventsError ? (
           <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
             {googleEventsError.message}
@@ -148,6 +196,7 @@ export default function Calendar() {
 
   return (
     <section className="space-y-3">
+      <GoogleResultBanner />
       <header className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-card p-3">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center justify-between gap-2">

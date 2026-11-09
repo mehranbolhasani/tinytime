@@ -1,6 +1,7 @@
 import { useCallback, useState, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ACTIVE_ENTRY_QUERY_KEY, useTimeEntryMutations } from '@/hooks/useTimeEntries'
+import { isOptimisticEntry } from '@/lib/timer'
 import { isTimerActionPending, runTimerAction, subscribeTimerAction } from '@/lib/timerActionLock'
 import type { Project, TimeEntry } from '@/types'
 
@@ -36,7 +37,7 @@ export function useTimerControlActions(): UseTimerControlActionsResult {
   const stopTimer = useCallback(async (options: StopTimerOptions = {}) => {
     return runTimerAction(async () => {
       const current = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY) ?? null
-      if (!current || current.id.startsWith('optimistic-')) {
+      if (!current || isOptimisticEntry(current)) {
         return
       }
 

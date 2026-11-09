@@ -30,6 +30,7 @@ const Calendar = lazy(() => import('./pages/Calendar'))
 const loadReportsPage = () => import('./pages/Reports')
 const Reports = lazy(loadReportsPage)
 const Projects = lazy(() => import('./pages/Projects'))
+const GoogleCallback = lazy(() => import('./pages/GoogleCallback'))
 
 const NAV_ITEMS = [
   { to: '/', label: 'Today', icon: Clock },
@@ -322,6 +323,14 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
               element={(
                 <Suspense fallback={<RouteLoadingFallback />}>
                   <Projects />
+                </Suspense>
+              )}
+            />
+            <Route
+              path="/google/callback"
+              element={(
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <GoogleCallback />
                 </Suspense>
               )}
             />

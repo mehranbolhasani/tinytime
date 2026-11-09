@@ -35,6 +35,17 @@ export default function GoogleCalendarSection() {
         </p>
       ) : null}
 
+      {connection.needsReconnect ? (
+        <Button
+          type="button"
+          onClick={() => connect()}
+          disabled={isConnecting || isLoadingConnection}
+          className="h-8 w-full rounded-md text-sm"
+        >
+          {isConnecting ? 'Connecting...' : 'Reconnect'}
+        </Button>
+      ) : null}
+
       {connection.connected ? (
         <Button
           type="button"

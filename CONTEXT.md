@@ -134,6 +134,7 @@ apps/
         Calendar.tsx           # List DayView by default; clock view reachable via toggle
         Reports.tsx
         Projects.tsx
+        GoogleCallback.tsx     # /google/callback route; completes the OAuth exchange
       types.ts                 # Shared TypeScript types (TimeEntry, Project, CalendarBlock, etc.)
 ```
 
@@ -149,6 +150,7 @@ Components must not call `supabase.from(...)` directly. All Supabase access goes
 - `time_entries`
 - `google_integrations`
 - `google_calendar_selections`
+- `google_oauth_requests` (service-role only, single use, 10-minute expiry)
 - view: `google_integration_status`
 
 ### Important migration history
@@ -158,6 +160,8 @@ Components must not call `supabase.from(...)` directly. All Supabase access goes
   - adds `google_integration_status` view
 - `20260501213000_remove_tags_feature.sql`:
   - drops `tags` and `time_entry_tags`
+- `20261109100000_google_oauth_requests.sql`:
+  - adds `google_oauth_requests` for pending, single-use OAuth state/PKCE verifiers
 
 ### Invariants
 - `time_entries.stopped_at = null` means running entry.
@@ -178,6 +182,13 @@ Components must not call `supabase.from(...)` directly. All Supabase access goes
 - Uses edge functions `google-oauth` and `google-calendar`.
 - Selected calendars persisted in `google_calendar_selections`.
 - Calendar overlay appears in clock and list day views when connected and selected.
+- Connect flow:
+  1. `start` (JWT) checks the request origin against `APP_ALLOWED_ORIGINS` and stores the random `state` plus PKCE verifier server-side in `google_oauth_requests`.
+  2. The function's GET callback only redirects to `{app_origin}/google/callback` with `code` and `state`; it never exchanges the code or serves HTML.
+  3. `complete` (JWT) verifies that the state's `user_id` matches the signed-in user, consumes the row, then exchanges the code with the stored verifier.
+  4. The function never serves HTML, and all failures are returned as short codes rather than raw Google/Postgres messages.
+- Required edge-function env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `APP_ALLOWED_ORIGINS` (comma-separated).
+- `OAUTH_STATE_SECRET` is removed; HMAC state signing is no longer used.
 
 Production domains:
 - Landing: `https://tinytime.work`

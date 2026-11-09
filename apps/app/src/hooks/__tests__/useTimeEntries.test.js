@@ -223,6 +223,71 @@ describe('useTimeEntryMutations — stopEntry', () => {
     expect(queryClient.getQueryData(QUERY_KEY_ACTIVE)).toEqual(activeEntry)
   })
 
+  it('only updates entries that are still running', async () => {
+    const runningEntry = makeEntry({ id: 'run-guard', stopped_at: null })
+    const stoppedEntry = { ...runningEntry, stopped_at: '2024-01-15T10:00:00.000Z', duration_seconds: 3600 }
+    mockClient = createMockSupabaseClient({ data: stoppedEntry, error: null })
+
+    const { result } = renderHook(
+      () => useTimeEntryMutations({ entries: [runningEntry] }),
+      { wrapper: makeWrapper(queryClient) }
+    )
+
+    await act(async () => {
+      await result.current.stopEntry('run-guard', stoppedEntry.stopped_at)
+    })
+
+    expect(mockClient._chain.is).toHaveBeenCalledWith('stopped_at', null)
+  })
+
+  it('keeps the existing stop time when the entry was already stopped elsewhere', async () => {
+    const alreadyStopped = makeEntry({
+      id: 'run-already',
+      stopped_at: '2024-01-15T09:30:00.000Z',
+      duration_seconds: 1800,
+    })
+    mockClient = createMockSupabaseClient({ data: null, error: null })
+    mockClient._chain.maybeSingle
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: alreadyStopped, error: null })
+
+    const { result } = renderHook(
+      () => useTimeEntryMutations(),
+      { wrapper: makeWrapper(queryClient) }
+    )
+
+    let stoppedEntry
+    await act(async () => {
+      stoppedEntry = await result.current.stopEntry(
+        'run-already',
+        '2024-01-15T10:00:00.000Z',
+        alreadyStopped.started_at
+      )
+    })
+
+    expect(stoppedEntry).toEqual(alreadyStopped)
+    expect(stoppedEntry.stopped_at).toBe('2024-01-15T09:30:00.000Z')
+  })
+
+  it('rejects when the entry was deleted before the stop landed', async () => {
+    mockClient = createMockSupabaseClient({ data: null, error: null })
+
+    const { result } = renderHook(
+      () => useTimeEntryMutations(),
+      { wrapper: makeWrapper(queryClient) }
+    )
+
+    await act(async () => {
+      await expect(
+        result.current.stopEntry(
+          'run-deleted',
+          '2024-01-15T10:00:00.000Z',
+          '2024-01-15T09:00:00.000Z'
+        )
+      ).rejects.toThrow('This timer entry no longer exists.')
+    })
+  })
+
   it('updates the matching list cache entry with the stopped data', async () => {
     const runningEntry = makeEntry({ id: 'run-2', stopped_at: null })
     queryClient.setQueryData(QUERY_KEY_LIST, [runningEntry])

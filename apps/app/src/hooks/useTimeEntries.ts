@@ -273,11 +273,29 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
         .from('time_entries')
         .update({ stopped_at, duration_seconds })
         .eq('id', id)
+        .is('stopped_at', null)
         .select(ENTRY_SELECT)
-        .single()
+        .maybeSingle()
 
       if (error) {
         throw new Error(getFriendlySupabaseError(error, 'Unable to stop timer entry.'))
+      }
+
+      if (!data) {
+        // Already stopped (e.g. on another device) or deleted: return the current row unchanged.
+        const { data: current, error: currentError } = await supabase
+          .from('time_entries')
+          .select(ENTRY_SELECT)
+          .eq('id', id)
+          .maybeSingle()
+
+        if (currentError) {
+          throw new Error(getFriendlySupabaseError(currentError, 'Unable to stop timer entry.'))
+        }
+        if (!current) {
+          throw new Error('This timer entry no longer exists.')
+        }
+        return current as TimeEntry
       }
 
       return data as TimeEntry

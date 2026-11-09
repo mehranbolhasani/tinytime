@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { normalizeGoogleEvents } from '@/lib/googleCalendar'
 import type { GoogleCalendar, GoogleCalendarConnection, NormalizedGoogleEvent } from '@/types'
@@ -114,46 +115,8 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
 
       const url = (data as { url: string }).url
 
-      await new Promise<void>((resolve, reject) => {
-        const authTab = window.open(url, '_blank')
-        if (!authTab) {
-          window.location.assign(url)
-          resolve()
-          return
-        }
-
-        const startAt = Date.now()
-        const poll = window.setInterval(async () => {
-          if (Date.now() - startAt > 180_000) {
-            window.clearInterval(poll)
-            reject(new Error('Google authorization timed out. Please try again.'))
-            return
-          }
-
-          try {
-            const { data: statusData, error: statusError } = await supabase.functions.invoke('google-calendar', {
-              body: { action: 'status' },
-            })
-
-            if (statusError) {
-              return
-            }
-
-            if ((statusData as { connected?: boolean })?.connected) {
-              window.clearInterval(poll)
-              resolve()
-            }
-          } catch {
-            // Keep polling for transient network errors.
-          }
-        }, 1500)
-      })
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: GOOGLE_STATUS_QUERY_KEY })
-      queryClient.invalidateQueries({ queryKey: GOOGLE_CALENDARS_QUERY_KEY })
-      queryClient.invalidateQueries({ queryKey: GOOGLE_SELECTIONS_QUERY_KEY })
-      queryClient.invalidateQueries({ queryKey: GOOGLE_EVENTS_QUERY_KEY })
+      // Same-tab navigation: Safari blocks window.open after an await.
+      window.location.assign(url)
     },
   })
 
@@ -256,6 +219,43 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
     isDisconnecting: disconnectMutation.isPending,
     toggleCalendar,
   }
+}
+
+export type GoogleConnectErrorCode =
+  | 'expired' | 'wrong_account' | 'scope_missing' | 'denied' | 'google_error'
+  | 'exchange_failed' | 'save_failed' | 'invalid_request' | 'unknown'
+
+export class GoogleConnectError extends Error {
+  constructor(public code: GoogleConnectErrorCode) {
+    super(code)
+  }
+}
+
+export function useCompleteGoogleConnection() {
+  const queryClient = useQueryClient()
+  const supabase = assertSupabaseClient()
+
+  return useMutation<void, GoogleConnectError, { code: string; state: string }>({
+    mutationFn: async ({ code, state }) => {
+      const { error } = await supabase.functions.invoke('google-oauth', {
+        body: { action: 'complete', code, state },
+      })
+      if (error) {
+        let errorCode: GoogleConnectErrorCode = 'unknown'
+        if (error instanceof FunctionsHttpError) {
+          const body = await error.context.json().catch(() => null)
+          if (typeof body?.error === 'string') errorCode = body.error as GoogleConnectErrorCode
+        }
+        throw new GoogleConnectError(errorCode)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: GOOGLE_STATUS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: GOOGLE_CALENDARS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: GOOGLE_SELECTIONS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: GOOGLE_EVENTS_QUERY_KEY })
+    },
+  })
 }
 
 interface UseGoogleEventsForRangeOptions {

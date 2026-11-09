@@ -11,13 +11,6 @@ export function jsonResponse(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), { ...init, headers })
 }
 
-export function htmlResponse(body: string, init: ResponseInit = {}) {
-  const headers = new Headers(init.headers)
-  headers.set('Content-Type', 'text/html; charset=utf-8')
-  Object.entries(corsHeaders).forEach(([key, value]) => headers.set(key, value))
-  return new Response(body, { ...init, headers })
-}
-
 export function errorResponse(message: string, status = 400) {
   return jsonResponse({ error: message }, { status })
 }

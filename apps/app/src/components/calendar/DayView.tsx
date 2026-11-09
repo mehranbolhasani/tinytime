@@ -26,6 +26,7 @@ import {
   startOfDay,
   toBlock,
 } from '@/lib/calendar'
+import { isOptimisticEntry } from '@/lib/timer'
 import { computeDuration } from '@/lib/utils'
 import type { CalendarBlock, NormalizedGoogleEvent, TimeEntry } from '@/types'
 
@@ -585,7 +586,11 @@ export default function DayView({
                 dayEnd={dayEnd}
                 hourHeight={hourHeight}
                 minEntryHeight={minEntryHeight}
-                onClick={() => setEditingEntry(activeEntry)}
+                onClick={() => {
+                  if (!isOptimisticEntry(activeEntry)) {
+                    setEditingEntry(activeEntry)
+                  }
+                }}
               />
             ) : null}
 
