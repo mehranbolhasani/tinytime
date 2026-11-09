@@ -104,11 +104,11 @@ export default function EntryList({ entries, deleteEntry, onContinueEntry, onPin
                       />
 
                       <div className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
-                        <span className="truncate font-mono text-sm text-foreground">
+                        <span className="truncate text-sm tabular-nums text-foreground">
                           {entry.description ? `${entry.description} - ` : ''}
                           {formatTimeWithSeconds(entry.started_at)}
                         </span>
-                        <span className="shrink-0 font-mono text-sm text-[#9ca3af]">
+                        <span className="shrink-0 text-sm tabular-nums text-[#9ca3af]">
                           {formatDurationHMS(entry.duration_seconds ?? 0)}
                         </span>
                       </div>

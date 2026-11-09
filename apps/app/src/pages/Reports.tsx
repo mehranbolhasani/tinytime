@@ -121,7 +121,7 @@ export default function Reports() {
   return (
     <section className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-pixel font-bold text-foreground tracking-tighter">Reports</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tighter">Reports</h1>
         <Button
           type="button"
           variant="outline"

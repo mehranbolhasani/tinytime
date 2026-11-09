@@ -35,7 +35,7 @@ export default function EntryDetailsDialog({ entry, open, onOpenChange }: EntryD
 
             <div className="flex items-center justify-between gap-2 rounded-lg bg-secondary px-3 py-2">
               <span className="text-muted-foreground">Duration</span>
-              <span className="font-mono font-medium text-foreground">
+              <span className="font-medium tabular-nums text-foreground">
                 {formatDuration(entry.duration_seconds ?? 0)}
               </span>
             </div>

@@ -13,14 +13,14 @@ export default function TimerDisplay() {
       role="status"
       aria-label={`Timer: ${displayTime}`}
       className={cn(
-        'block text-center font-pixel text-5xl sm:text-6xl md:text-7xl font-bold',
+        'block text-center text-5xl sm:text-6xl md:text-7xl font-bold tabular-nums',
         activeEntry ? 'text-foreground' : 'text-muted-foreground/40'
       )}
     >
       <span>{hours}</span>
-      <span className="inline-block -translate-y-2">:</span>
+      <span>:</span>
       <span>{minutes}</span>
-      <span className="inline-block -translate-y-2">:</span>
+      <span>:</span>
       <span>{seconds}</span>
     </span>
   )

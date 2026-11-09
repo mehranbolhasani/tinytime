@@ -43,7 +43,7 @@ export default function EntryTable({ entries }: EntryTableProps) {
             >
               <span className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground">{formatDate(entry.started_at)}</span>
-                <span className="font-mono text-sm font-medium text-foreground">{formatDuration(entry.duration_seconds ?? 0)}</span>
+                <span className="text-sm font-medium tabular-nums text-foreground">{formatDuration(entry.duration_seconds ?? 0)}</span>
               </span>
               <span className="mt-1 block text-sm font-medium text-foreground">{truncateDescription(entry.description, 90)}</span>
               <span className="mt-1 inline-flex items-center gap-2 text-xs text-muted-foreground">
@@ -101,7 +101,7 @@ export default function EntryTable({ entries }: EntryTableProps) {
                       <span className="text-muted-foreground/70">—</span>
                     )}
                   </td>
-                  <td className="w-28 px-4 py-3 text-right font-mono font-medium tabular-nums text-foreground">
+                  <td className="w-28 px-4 py-3 text-right font-medium tabular-nums text-foreground">
                     {formatDuration(entry.duration_seconds ?? 0)}
                   </td>
                 </tr>

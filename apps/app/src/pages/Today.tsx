@@ -66,7 +66,7 @@ export default function Today() {
     <section className="flex flex-col gap-4">
 
       <div className="flex w-full flex-col gap-1 bg-background sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-pixel font-bold text-foreground tracking-tighter">Today</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tighter">Today</h1>
 
         <p className="min-w-0 text-sm text-muted-foreground tracking-tight sm:text-right">
           {today.toLocaleDateString(undefined, {

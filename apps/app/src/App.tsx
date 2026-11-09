@@ -355,7 +355,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         end={item.to === '/'}
         onPointerEnter={item.to === '/reports' ? handlePrefetchReports : undefined}
         className={({ isActive }) =>
-          `relative inline-flex items-center rounded-md px-4 py-3 text-sm font-normal transition-colors duration-100 ${
+          `relative inline-flex items-center rounded-lg w-12 h-12 justify-center text-sm font-normal transition-colors duration-100 ${
             isActive
               ? 'text-primary'
               : 'text-muted-foreground hover:text-foreground'
@@ -399,13 +399,13 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         ) : null}
       </AnimatePresence>
 
-        <header className="fixed left-1/2 bottom-4 z-50 flex w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 items-center justify-between rounded-xl bg-card/95 px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur shadow-xl shadow-primary/10">
-          <div className="inline-flex items-center gap-0 min-w-6">
+        <header className="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4 w-auto items-center justify-between px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <div className="inline-flex items-center gap-0 w-12 h-12 justify-center bg-primary/10 rounded-lg aspect-square">
             <span className="relative h-1.5 w-6 rounded-sm bg-primary" />
           </div>
 
           <nav className="">
-            <ul className="flex items-center justify-between gap-0 sm:gap-1">
+            <ul className="flex flex-col items-center justify-between gap-0 sm:gap-1">
               {navLinks}
             </ul>
           </nav>

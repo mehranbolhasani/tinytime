@@ -21,7 +21,7 @@ export default function MiniTimerPill({ onClick }: MiniTimerPillProps) {
       <span className="inline-flex items-center gap-2 text-xs font-medium text-card/50">
         Now
       </span>
-      <span className="font-pixel text-lg font-black text-white">{formatDurationHMS(elapsed)}</span>
+      <span className="tabular-nums text-lg font-black text-white">{formatDurationHMS(elapsed)}</span>
     </Button>
   )
 }

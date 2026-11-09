@@ -128,7 +128,7 @@ function CustomColorPicker({ value, onChange }: { value: string; onChange: (colo
           value={hexInput}
           onChange={handleHexChange}
           placeholder="#000000"
-          className="h-8 flex-1 rounded-lg border-border bg-secondary font-mono text-sm focus:bg-background focus:ring-1 focus:ring-ring/40"
+          className="h-8 flex-1 rounded-lg border-border bg-secondary text-sm focus:bg-background focus:ring-1 focus:ring-ring/40"
         />
       </div>
     </div>

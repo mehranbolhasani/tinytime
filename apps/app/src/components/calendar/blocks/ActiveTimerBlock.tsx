@@ -56,7 +56,7 @@ export default function ActiveTimerBlock({
       <p className="truncate text-[11px] text-muted-foreground">
         {block.entry.description || 'No description'}
       </p>
-      <p className="truncate text-[11px] font-medium font-mono text-foreground">{formatDurationHMS(elapsed)}</p>
+      <p className="truncate text-[11px] font-medium tabular-nums text-foreground">{formatDurationHMS(elapsed)}</p>
     </button>
   )
 }

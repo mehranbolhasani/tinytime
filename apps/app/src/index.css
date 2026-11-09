@@ -2,29 +2,13 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@font-face {
-    font-family: 'Geist Sans';
-    src: url('/fonts/geist-sans.woff2') format('woff2');
-    font-weight: 100 900;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Geist Mono';
-    src: url('/fonts/geist-mono.woff2') format('woff2');
-    font-weight: 100 900;
-    font-style: normal;
-    font-display: swap;
-}
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
-    --font-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
-    --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
-    --font-pixel: 'Doto Variable', 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace;
+    --font-heading: 'SN Pro Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'SN Pro Variable', ui-sans-serif, system-ui, sans-serif;
+    /* Single-typeface app: the mono slot also uses SN Pro. */
+    --font-mono: 'SN Pro Variable', ui-sans-serif, system-ui, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -62,13 +46,8 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Match the previous Google Fonts request (ROND axis fixed at 100). */
-.font-pixel {
-  font-variation-settings: 'ROND' 100;
-}
-
 :root {
-    font-family: 'Geist Sans', sans-serif;
+    font-family: 'SN Pro Variable', ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: 'liga' 1, 'calt' 1;
 
     /* shadcn variable overrides — warm palette */
@@ -161,15 +140,5 @@
   ::selection {
     background-color: color-mix(in oklab, var(--primary) 28%, transparent);
     color: var(--foreground);
-  }
-}
-
-@layer utilities {
-  .font-geist-mono {
-    font-family: var(--font-mono);
-  }
-
-  .font-pixel {
-    font-family: var(--font-pixel);
   }
 }

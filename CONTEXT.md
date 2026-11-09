@@ -83,9 +83,9 @@ tinytime is a single-user, browser-only time tracker.
 - Context menus use Radix `DropdownMenu`, anchored at the pointer (or focused block) with keyboard navigation and focus return.
 
 ### Fonts
-- Geist and Doto are both self-hosted (Geist via `public/fonts`, Doto via `@fontsource-variable/doto`).
+- SN Pro is the only typeface in the app, self-hosted via `@fontsource-variable/sn-pro` (variable `wght` axis, 200–900).
 - No third-party font requests are allowed (`fonts.googleapis.com` / `fonts.gstatic.com` must not appear).
-- `.font-pixel` fixes the Doto `ROND` axis at 100 to match the previous Google Fonts request.
+- Numeric readouts (timer, durations, hour labels) use `tabular-nums` so digits don't jitter now that the font is proportional.
 
 ### Scripts and CSP
 - The theme bootstrap is `/public/theme-init.js`, loaded synchronously as the first script in `<head>`.
