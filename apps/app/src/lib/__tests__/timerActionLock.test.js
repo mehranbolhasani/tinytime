@@ -3,6 +3,8 @@ import {
   isTimerActionPending,
   runTimerAction,
   subscribeTimerAction,
+  trackRunningEntryEdit,
+  waitForRunningEntryEdits,
 } from '../timerActionLock.js'
 
 function createDeferred() {
@@ -52,6 +54,37 @@ describe('timerActionLock', () => {
 
     await expect(promise).rejects.toThrow('boom')
     expect(isTimerActionPending()).toBe(false)
+  })
+
+  it('waits for nothing when no edits are tracked', async () => {
+    await expect(waitForRunningEntryEdits()).resolves.toBeUndefined()
+  })
+
+  it('waits for a tracked edit to settle', async () => {
+    const gate = createDeferred()
+    let settled = false
+
+    trackRunningEntryEdit(gate.promise)
+    const waiting = waitForRunningEntryEdits().then(() => {
+      settled = true
+    })
+
+    await Promise.resolve()
+    expect(settled).toBe(false)
+
+    gate.resolve()
+    await waiting
+    expect(settled).toBe(true)
+  })
+
+  it('does not reject when a tracked edit rejects', async () => {
+    const gate = createDeferred()
+    trackRunningEntryEdit(gate.promise)
+
+    const waiting = waitForRunningEntryEdits()
+    gate.reject(new Error('boom'))
+
+    await expect(waiting).resolves.toBeUndefined()
   })
 
   it('notifies subscribers on start and on settle', async () => {

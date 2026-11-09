@@ -7,6 +7,13 @@ import type { Session } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { useTimerContext } from '@/contexts/TimerContext'
@@ -433,18 +440,24 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
                     <p className="text-xs text-muted-foreground">Not supported in this browser.</p>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <select
-                        aria-label="Notify after"
-                        value={notification.thresholdMinutes}
-                        onChange={(e) => notification.setThreshold(Number(e.target.value))}
-                        className="text-xs rounded-md border border-border bg-background px-2 py-1"
+                      <Select
+                        value={String(notification.thresholdMinutes)}
+                        onValueChange={(value) => notification.setThreshold(Number(value))}
                       >
-                        <option value={0}>Off</option>
-                        <option value={60}>After 1 h</option>
-                        <option value={90}>After 1.5 h</option>
-                        <option value={120}>After 2 h</option>
-                        <option value={180}>After 3 h</option>
-                      </select>
+                        <SelectTrigger
+                          aria-label="Notify after"
+                          className="h-8 w-[120px] text-xs"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Off</SelectItem>
+                          <SelectItem value="60">After 1 h</SelectItem>
+                          <SelectItem value="90">After 1.5 h</SelectItem>
+                          <SelectItem value="120">After 2 h</SelectItem>
+                          <SelectItem value="180">After 3 h</SelectItem>
+                        </SelectContent>
+                      </Select>
                       {notification.permissionState === 'denied' ? (
                         <p className="text-xs text-destructive">Permission denied in browser settings.</p>
                       ) : null}

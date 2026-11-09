@@ -45,6 +45,7 @@ interface MenuState {
   entry: TimeEntry
   x: number
   y: number
+  returnFocusTo?: HTMLElement | null
 }
 
 interface DraggingMove {
@@ -323,9 +324,12 @@ export default function DayView({
     }
   }, [isTouchViewport])
 
-  const handleOpenMenu = useCallback((entry: TimeEntry, x: number, y: number) => {
-    setMenuState({ open: true, entry, x, y })
-  }, [])
+  const handleOpenMenu = useCallback(
+    (entry: TimeEntry, x: number, y: number, returnFocusTo?: HTMLElement | null) => {
+      setMenuState({ open: true, entry, x, y, returnFocusTo })
+    },
+    []
+  )
 
   const handleBlockDragStart = useCallback((event: React.DragEvent, entry: TimeEntry) => {
     event.dataTransfer.effectAllowed = 'move'

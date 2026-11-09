@@ -58,6 +58,7 @@ tinytime is a single-user, browser-only time tracker.
 - Duration base unit is **seconds** across app and DB logic.
 - Timer elapsed display is client-derived from `started_at`.
 - The running timer is derived only from the active-entry query (`ACTIVE_ENTRY_QUERY_KEY`). There is no local timer state. Start and stop are optimistic cache updates in `useTimerControlActions`, serialized by `lib/timerActionLock.ts`.
+- The running entry's description and project are edited in place. `stopTimer` waits for in-flight edits via `waitForRunningEntryEdits`, but captures its stop time at the click.
 - Live seconds come from `useElapsedSeconds` (shared ticker in `lib/ticker.ts`). Only leaf display components may call it. Contexts, layouts and pages must not hold ticking values.
 - `duration_seconds` must be persisted when stopping an entry.
 - The selected Calendar date lives in the URL (`?date=YYYY-MM-DD`), so palette jumps and back/forward navigation share one source of truth.
@@ -79,6 +80,7 @@ tinytime is a single-user, browser-only time tracker.
 - Tailwind-first styling.
 - Inline `style` is only allowed for truly dynamic values (e.g. block top/height, dynamic colors).
 - Reuse shadcn/Radix primitives for common controls.
+- Context menus use Radix `DropdownMenu`, anchored at the pointer (or focused block) with keyboard navigation and focus return.
 
 ### Fonts
 - Geist and Doto are both self-hosted (Geist via `public/fonts`, Doto via `@fontsource-variable/doto`).
@@ -240,6 +242,7 @@ Production domains:
 - Google Calendar event overlay on clock and list day views
 - Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
 - CSV exports are UTF-8 with a BOM and guard string cells against spreadsheet formula injection
+- The daily bar chart shows every day for ranges up to 62 days, including days with no entries
 - Activity heatmap spreads each entry across the hours it covers, Monday-first, using theme colours
 - Project CRUD (name/color + delete behavior)
 - Idle detection + nudge (Page Visibility API, threshold configurable)

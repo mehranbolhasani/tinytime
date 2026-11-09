@@ -1,5 +1,6 @@
 let pending: Promise<void> | null = null
 const listeners = new Set<() => void>()
+const runningEntryEdits = new Set<Promise<unknown>>()
 
 function notify(): void {
   listeners.forEach((listener) => listener())
@@ -31,4 +32,18 @@ export function subscribeTimerAction(listener: () => void): () => void {
   return () => {
     listeners.delete(listener)
   }
+}
+
+/** Remember an in-flight edit of the running entry. */
+export function trackRunningEntryEdit(promise: Promise<unknown>): void {
+  const tracked = promise.catch(() => undefined)
+  runningEntryEdits.add(tracked)
+  void tracked.finally(() => {
+    runningEntryEdits.delete(tracked)
+  })
+}
+
+/** Resolves when every tracked edit has settled (success or failure). */
+export function waitForRunningEntryEdits(): Promise<void> {
+  return Promise.all([...runningEntryEdits]).then(() => undefined)
 }

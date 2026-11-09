@@ -3,9 +3,10 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { createEntryMock, stopEntryMock } = vi.hoisted(() => ({
+const { createEntryMock, stopEntryMock, updateEntryMock } = vi.hoisted(() => ({
   createEntryMock: vi.fn(),
   stopEntryMock: vi.fn(),
+  updateEntryMock: vi.fn(),
 }))
 
 vi.mock('@/hooks/useTimeEntries', () => ({
@@ -13,11 +14,12 @@ vi.mock('@/hooks/useTimeEntries', () => ({
   useTimeEntryMutations: () => ({
     createEntry: createEntryMock,
     stopEntry: stopEntryMock,
-    updateEntry: vi.fn(),
+    updateEntry: updateEntryMock,
     deleteEntry: vi.fn(),
   }),
 }))
 
+import { trackRunningEntryEdit } from '@/lib/timerActionLock'
 import { useTimerControlActions } from '../useTimerControlActions.js'
 
 const ACTIVE_KEY = ['time_entries', 'active']
@@ -184,6 +186,73 @@ describe('useTimerControlActions', () => {
 
     await act(async () => {
       await result.current.stopTimer({ stoppedAt })
+    })
+
+    expect(stopEntryMock).toHaveBeenCalledWith(current.id, stoppedAt, current.started_at)
+  })
+
+  it('updates only the supplied fields of the running entry', async () => {
+    const queryClient = makeQueryClient()
+    const current = makeEntry({ id: 'current', description: 'Old', project_id: 'p1' })
+    queryClient.setQueryData(ACTIVE_KEY, current)
+    updateEntryMock.mockResolvedValue(current)
+
+    const { result } = renderActions(queryClient)
+
+    await act(async () => {
+      await result.current.updateRunningEntry({ description: 'New' })
+    })
+
+    expect(updateEntryMock).toHaveBeenLastCalledWith('current', { description: 'New' })
+
+    await act(async () => {
+      await result.current.updateRunningEntry({ projectId: null })
+    })
+
+    expect(updateEntryMock).toHaveBeenLastCalledWith('current', { project_id: null })
+  })
+
+  it('does nothing when there is no active entry or it is optimistic', async () => {
+    const queryClient = makeQueryClient()
+    const { result } = renderActions(queryClient)
+
+    await act(async () => {
+      await result.current.updateRunningEntry({ description: 'New' })
+    })
+    expect(updateEntryMock).not.toHaveBeenCalled()
+
+    queryClient.setQueryData(ACTIVE_KEY, makeEntry({ id: 'optimistic-1' }))
+    await act(async () => {
+      await result.current.updateRunningEntry({ description: 'New' })
+    })
+    expect(updateEntryMock).not.toHaveBeenCalled()
+  })
+
+  it('waits for a tracked edit before stopping, keeping the captured stop time', async () => {
+    const queryClient = makeQueryClient()
+    const current = makeEntry({ id: 'current' })
+    queryClient.setQueryData(ACTIVE_KEY, current)
+
+    const editGate = createDeferred()
+    trackRunningEntryEdit(editGate.promise)
+    stopEntryMock.mockResolvedValue({ ...current, stopped_at: '2024-01-15T09:30:00.000Z' })
+
+    const { result } = renderActions(queryClient)
+    const stoppedAt = '2024-01-15T09:30:00.000Z'
+
+    let stopPromise
+    act(() => {
+      stopPromise = result.current.stopTimer({ stoppedAt })
+    })
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(ACTIVE_KEY)).toBeNull()
+    })
+    expect(stopEntryMock).not.toHaveBeenCalled()
+
+    editGate.resolve()
+    await act(async () => {
+      await stopPromise
     })
 
     expect(stopEntryMock).toHaveBeenCalledWith(current.id, stoppedAt, current.started_at)

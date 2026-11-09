@@ -1,30 +1,7 @@
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
-import { toSafeHexColor } from '@/lib/color'
+import { buildDailyChartData } from '@/lib/reports'
 import { formatDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
-
-const NO_PROJECT_KEY = 'no-project'
-const NO_PROJECT_COLOR = '#94a3b8'
-
-interface ProjectMeta {
-  id: string
-  name: string
-  color: string
-}
-
-type DayBucket = {
-  dateKey: string
-  [projectId: string]: number | string
-}
-
-function getDateKey(dateInput: string): string | null {
-  const date = new Date(dateInput)
-  if (Number.isNaN(date.getTime())) return null
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 function formatTickLabel(key: string): string {
   const date = new Date(key + 'T00:00:00')
@@ -36,41 +13,6 @@ function formatTooltipDate(key: string): string {
   const date = new Date(key + 'T00:00:00')
   if (Number.isNaN(date.getTime())) return key
   return date.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
-}
-
-function buildChartData(entries: TimeEntry[]): { data: DayBucket[]; projects: ProjectMeta[] } {
-  const projectMap = new Map<string, ProjectMeta>()
-  const dayMap = new Map<string, DayBucket>()
-
-  for (const entry of entries) {
-    const dateKey = getDateKey(entry.started_at)
-    if (!dateKey) continue
-
-    const projectKey = entry.project_id ?? NO_PROJECT_KEY
-    const seconds = entry.duration_seconds ?? 0
-
-    if (!projectMap.has(projectKey)) {
-      projectMap.set(projectKey, {
-        id: projectKey,
-        name: entry.projects?.name ?? 'No project',
-        color: toSafeHexColor(entry.projects?.color, NO_PROJECT_COLOR),
-      })
-    }
-
-    let bucket = dayMap.get(dateKey)
-    if (!bucket) {
-      bucket = { dateKey }
-      dayMap.set(dateKey, bucket)
-    }
-
-    const current = (bucket[projectKey] as number) ?? 0
-    bucket[projectKey] = current + seconds
-  }
-
-  const data = Array.from(dayMap.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey))
-  const projects = Array.from(projectMap.values())
-
-  return { data, projects }
 }
 
 interface TooltipPayloadEntry {
@@ -115,12 +57,14 @@ function CustomTooltip({ active, label, payload }: CustomTooltipProps) {
 
 interface DailyBarChartProps {
   entries: TimeEntry[]
+  from: string | null
+  to: string | null
 }
 
-export default function DailyBarChart({ entries }: DailyBarChartProps) {
+export default function DailyBarChart({ entries, from, to }: DailyBarChartProps) {
   if (entries.length === 0) return null
 
-  const { data, projects } = buildChartData(entries)
+  const { data, projects } = buildDailyChartData(entries, { from, to })
 
   if (data.length === 0) return null
 
@@ -133,6 +77,8 @@ export default function DailyBarChart({ entries }: DailyBarChartProps) {
           tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
           axisLine={false}
           tickLine={false}
+          interval="preserveStartEnd"
+          minTickGap={8}
           dy={8}
         />
         <Tooltip

@@ -8,7 +8,12 @@ import type { CalendarBlock, TimeEntry } from '@/types'
 interface EntryBlockProps {
   block: CalendarBlock
   onSelect: (entry: TimeEntry) => void
-  onOpenMenu: (entry: TimeEntry, x: number, y: number) => void
+  onOpenMenu: (
+    entry: TimeEntry,
+    x: number,
+    y: number,
+    returnFocusTo?: HTMLElement | null
+  ) => void
   onDragStart?: (event: React.DragEvent, entry: TimeEntry) => void
   onDragEnd?: () => void
   isDragging?: boolean
@@ -37,13 +42,13 @@ function EntryBlock({
       onClick={() => onSelect(block.entry)}
       onContextMenu={(event) => {
         event.preventDefault()
-        onOpenMenu(block.entry, event.clientX, event.clientY)
+        onOpenMenu(block.entry, event.clientX, event.clientY, event.currentTarget)
       }}
       onKeyDown={(event) => {
         if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
           event.preventDefault()
           const rect = event.currentTarget.getBoundingClientRect()
-          onOpenMenu(block.entry, rect.left + 8, rect.bottom)
+          onOpenMenu(block.entry, rect.left + 8, rect.bottom, event.currentTarget)
         }
       }}
       onDragStart={(event) => onDragStart?.(event as unknown as React.DragEvent, block.entry)}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import EntryDetailsDialog from '@/components/reports/EntryDetailsDialog'
+import { toSafeHexColor } from '@/lib/color'
 import { formatDate, formatDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
 
@@ -33,16 +34,29 @@ export default function EntryTable({ entries }: EntryTableProps) {
       <div className="space-y-2 sm:hidden">
         {entries.map((entry) => {
           return (
-            <article key={entry.id} className="rounded-xl border border-border bg-card p-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">{formatDate(entry.started_at)}</p>
-                <p className="font-mono text-sm font-medium text-foreground">{formatDuration(entry.duration_seconds ?? 0)}</p>
-              </div>
-              <p className="mt-1 text-sm font-medium text-foreground">{truncateDescription(entry.description, 90)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {entry.projects?.name ?? 'No project'}
-              </p>
-            </article>
+            <button
+              key={entry.id}
+              type="button"
+              aria-label={`${entry.description || 'Untitled'} — ${entry.projects?.name ?? 'No project'}`}
+              onClick={() => setSelectedEntryId(entry.id)}
+              className="w-full rounded-xl border border-border bg-card p-3 text-left transition-colors hover:bg-secondary active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">{formatDate(entry.started_at)}</span>
+                <span className="font-mono text-sm font-medium text-foreground">{formatDuration(entry.duration_seconds ?? 0)}</span>
+              </span>
+              <span className="mt-1 block text-sm font-medium text-foreground">{truncateDescription(entry.description, 90)}</span>
+              <span className="mt-1 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                {entry.projects ? (
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: toSafeHexColor(entry.projects.color, '#94a3b8') }}
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <span>{entry.projects?.name ?? 'No project'}</span>
+              </span>
+            </button>
           )
         })}
       </div>
@@ -79,7 +93,7 @@ export default function EntryTable({ entries }: EntryTableProps) {
                       <span className="inline-flex items-center gap-2">
                         <span
                           className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: entry.projects.color ?? 'var(--muted-foreground)' }}
+                          style={{ backgroundColor: toSafeHexColor(entry.projects.color, '#94a3b8') }}
                         />
                         <span className="text-foreground">{entry.projects.name}</span>
                       </span>

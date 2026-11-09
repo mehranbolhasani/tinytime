@@ -3,7 +3,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ACTIVE_ENTRY_QUERY_KEY, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { isOptimisticEntry } from '@/lib/timer'
-import { isTimerActionPending, runTimerAction, subscribeTimerAction } from '@/lib/timerActionLock'
+import {
+  isTimerActionPending,
+  runTimerAction,
+  subscribeTimerAction,
+  trackRunningEntryEdit,
+  waitForRunningEntryEdits,
+} from '@/lib/timerActionLock'
 import type { Project, TimeEntry } from '@/types'
 
 interface StartTimerInput {
@@ -16,6 +22,11 @@ interface StopTimerOptions {
   stoppedAt?: string
 }
 
+interface UpdateRunningEntryInput {
+  description?: string
+  projectId?: string | null
+}
+
 interface UseTimerControlActionsResult {
   isSubmitting: boolean
   error: string
@@ -23,6 +34,7 @@ interface UseTimerControlActionsResult {
   startTimer: (input?: StartTimerInput) => Promise<void>
   stopTimer: (options?: StopTimerOptions) => Promise<void>
   toggleTimer: (input?: StartTimerInput) => Promise<void>
+  updateRunningEntry: (updates: UpdateRunningEntryInput) => Promise<void>
 }
 
 interface UseTimerControlActionsOptions {
@@ -33,7 +45,7 @@ export function useTimerControlActions({
   reportErrors = 'inline',
 }: UseTimerControlActionsOptions = {}): UseTimerControlActionsResult {
   const queryClient = useQueryClient()
-  const { createEntry, stopEntry } = useTimeEntryMutations()
+  const { createEntry, stopEntry, updateEntry } = useTimeEntryMutations()
   const isSubmitting = useSyncExternalStore(subscribeTimerAction, isTimerActionPending, () => false)
   const [error, setError] = useState('')
 
@@ -63,6 +75,9 @@ export function useTimerControlActions({
       await queryClient.cancelQueries({ queryKey: ACTIVE_ENTRY_QUERY_KEY })
       queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, null)
       setError('')
+
+      // Let in-flight edits land first; keep the stop time captured above.
+      await waitForRunningEntryEdits()
 
       try {
         await stopEntry(current.id, stoppedAt, current.started_at)
@@ -121,6 +136,37 @@ export function useTimerControlActions({
     await startTimer(input)
   }, [queryClient, startTimer, stopTimer])
 
+  const updateRunningEntry = useCallback(
+    async (updates: UpdateRunningEntryInput) => {
+      const current = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY) ?? null
+      if (!current || isOptimisticEntry(current) || isTimerActionPending()) {
+        return
+      }
+
+      const payload: { description?: string; project_id?: string | null } = {}
+      if (updates.description !== undefined) {
+        payload.description = updates.description
+      }
+      if (updates.projectId !== undefined) {
+        payload.project_id = updates.projectId
+      }
+
+      if (Object.keys(payload).length === 0) {
+        return
+      }
+
+      const promise = updateEntry(current.id, payload)
+      trackRunningEntryEdit(promise)
+
+      try {
+        await promise
+      } catch (updateError) {
+        reportError((updateError as Error)?.message ?? 'Unable to update this entry.')
+      }
+    },
+    [queryClient, reportError, updateEntry]
+  )
+
   return {
     isSubmitting,
     error,
@@ -128,5 +174,6 @@ export function useTimerControlActions({
     startTimer,
     stopTimer,
     toggleTimer,
+    updateRunningEntry,
   }
 }

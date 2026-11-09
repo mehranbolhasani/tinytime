@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,6 +14,7 @@ import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { toSafeHexColor } from '@/lib/color'
 import { presets } from '@/lib/motion'
+import { isOptimisticEntry } from '@/lib/timer'
 import { cn } from '@/lib/utils'
 
 const NO_PROJECT_VALUE = '__no_project__'
@@ -32,7 +33,8 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
   const activeEntry = timer.activeEntry
   const [description, setDescription] = useState(activeEntry?.description ?? '')
   const [selectedProject, setSelectedProject] = useState(normalizeProjectValue(activeEntry?.project_id))
-  const { isSubmitting, error, startTimer, stopTimer } = useTimerControlActions()
+  const { isSubmitting, error, startTimer, stopTimer, updateRunningEntry } = useTimerControlActions()
+  const skipDescriptionCommitRef = useRef(false)
   const syncKey = activeEntry
     ? `${activeEntry.id}|${activeEntry.description ?? ''}|${activeEntry.project_id ?? ''}`
     : 'idle'
@@ -48,8 +50,14 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
     () => (selectedProject === NO_PROJECT_VALUE ? null : selectedProject),
     [selectedProject]
   )
+  const isOptimistic = activeEntry ? isOptimisticEntry(activeEntry) : false
+  const runningDisabled = isSubmitting || isEntriesLoading || isOptimistic
 
   const handleStart = () => {
+    if (isSubmitting || isEntriesLoading) {
+      return
+    }
+
     void startTimer({
       projectId: selectedProjectId,
       description,
@@ -60,10 +68,51 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
     void stopTimer()
   }
 
-  const runningDescription = activeEntry?.description?.trim()
-  const runningProjectName = activeEntry?.projects?.name ?? 'No project'
-  const runningProjectColor = activeEntry?.projects?.color
-    ? toSafeHexColor(activeEntry.projects.color)
+  const handleDescriptionCommit = () => {
+    if (skipDescriptionCommitRef.current) {
+      skipDescriptionCommitRef.current = false
+      return
+    }
+
+    if (!activeEntry || runningDisabled) {
+      return
+    }
+
+    const nextDescription = description.trim()
+    const currentDescription = activeEntry.description ?? ''
+
+    if (nextDescription === currentDescription) {
+      if (description !== currentDescription) {
+        setDescription(currentDescription)
+      }
+      return
+    }
+
+    void updateRunningEntry({ description: nextDescription })
+  }
+
+  const handleRunningProjectChange = (value: string) => {
+    setSelectedProject(value)
+
+    if (!activeEntry || runningDisabled) {
+      return
+    }
+
+    const projectId = value === NO_PROJECT_VALUE ? null : value
+    if (projectId === (activeEntry.project_id ?? null)) {
+      return
+    }
+
+    void updateRunningEntry({ projectId })
+  }
+
+  const selectedProjectMeta =
+    selectedProject === NO_PROJECT_VALUE
+      ? null
+      : projects.find((project) => project.id === selectedProject) ??
+        (activeEntry?.project_id === selectedProject ? activeEntry.projects : null)
+  const runningProjectColor = selectedProjectMeta?.color
+    ? toSafeHexColor(selectedProjectMeta.color)
     : null
 
   return (
@@ -86,24 +135,59 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                 transition={presets.panelSwap.transition}
               >
                 <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 px-4 py-3">
-                  <p
-                    className={cn(
-                      'truncate text-base',
-                      runningDescription ? 'text-foreground' : 'italic text-muted-foreground/70'
-                    )}
+                  <input
+                    type="text"
+                    aria-label="Running entry description"
+                    placeholder="Untitled session"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    onBlur={handleDescriptionCommit}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        event.currentTarget.blur()
+                      } else if (event.key === 'Escape') {
+                        skipDescriptionCommitRef.current = true
+                        setDescription(activeEntry?.description ?? '')
+                        event.currentTarget.blur()
+                      }
+                    }}
+                    disabled={runningDisabled}
+                    className="w-full rounded-md border-0 bg-transparent px-1 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:bg-secondary/50 focus-visible:outline-none disabled:opacity-70"
+                  />
+                  <Select
+                    value={selectedProject}
+                    onValueChange={handleRunningProjectChange}
+                    disabled={runningDisabled || isLoadingProjects}
                   >
-                    {runningDescription || 'Untitled session'}
-                  </p>
-                  <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                    <span
-                      className={cn(
-                        'h-2.5 w-2.5 rounded-full',
-                        !runningProjectColor && 'border border-border bg-transparent'
-                      )}
-                      style={runningProjectColor ? { backgroundColor: runningProjectColor } : undefined}
-                    />
-                    <span>{runningProjectName}</span>
-                  </p>
+                    <SelectTrigger
+                      aria-label="Running entry project"
+                      className="h-6 w-auto gap-1 border-0 bg-transparent p-0 text-sm text-muted-foreground shadow-none focus:ring-0 focus-visible:outline-none [&>span]:line-clamp-1"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className={cn(
+                            'h-2.5 w-2.5 rounded-full',
+                            !runningProjectColor && 'border border-border bg-transparent'
+                          )}
+                          style={
+                            runningProjectColor
+                              ? { backgroundColor: runningProjectColor }
+                              : undefined
+                          }
+                        />
+                        <SelectValue placeholder="No project" />
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid h-auto w-[120px] min-w-[120px] shrink-0 place-items-center p-1">
                   <Button
@@ -121,8 +205,12 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                 </div>
               </motion.div>
             ) : (
-              <motion.div
+              <motion.form
                 key="idle"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  handleStart()
+                }}
                 className="flex min-h-[132px] items-stretch"
                 variants={presets.panelSwap.variants}
                 initial="initial"
@@ -168,10 +256,9 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                 </div>
                 <div className="grid h-auto w-[120px] min-w-[120px] shrink-0 place-items-center p-1">
                   <Button
-                    type="button"
+                    type="submit"
                     variant="default"
                     className="h-full w-full min-w-full rounded-xl px-4 text-sm font-normal"
-                    onClick={handleStart}
                     disabled={isSubmitting || isEntriesLoading}
                     aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
                   >
@@ -180,7 +267,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                     </span>
                   </Button>
                 </div>
-              </motion.div>
+              </motion.form>
             )}
           </AnimatePresence>
         </div>

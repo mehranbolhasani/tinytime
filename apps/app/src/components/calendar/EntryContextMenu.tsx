@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import { Copy, Pencil, Trash2, type LucideIcon } from 'lucide-react'
-import { durations, easings, variants } from '@/lib/motion'
+import { useRef } from 'react'
+import { Copy, Pencil, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { TimeEntry } from '@/types'
 
 interface MenuState {
@@ -9,6 +13,7 @@ interface MenuState {
   entry: TimeEntry
   x: number
   y: number
+  returnFocusTo?: HTMLElement | null
 }
 
 interface EntryContextMenuProps {
@@ -19,10 +24,6 @@ interface EntryContextMenuProps {
   onDelete: (entry: TimeEntry) => void
 }
 
-function clampPosition(position: number, max: number): number {
-  return Math.max(8, Math.min(position, Math.max(8, max - 184)))
-}
-
 export default function EntryContextMenu({
   menuState,
   onClose,
@@ -30,105 +31,68 @@ export default function EntryContextMenu({
   onDuplicate,
   onDelete,
 }: EntryContextMenuProps) {
-  const [menuPosition, setMenuPosition] = useState({ left: 0, top: 0 })
+  const skipReturnFocusRef = useRef(false)
   const isOpen = Boolean(menuState?.open && menuState?.entry)
-  const horizontalOrigin =
-    typeof window !== 'undefined' && menuPosition.left > window.innerWidth / 2 ? 'right' : 'left'
-  const verticalOrigin =
-    typeof window !== 'undefined' && menuPosition.top > window.innerHeight / 2 ? 'bottom' : 'top'
-  const transformOrigin = `${horizontalOrigin} ${verticalOrigin}`
-
-  useEffect(() => {
-    if (!isOpen) {
-      return undefined
-    }
-
-    const updatePosition = () => {
-      const maxWidth = window.innerWidth
-      const maxHeight = window.innerHeight
-      setMenuPosition({
-        left: clampPosition(menuState!.x, maxWidth),
-        top: clampPosition(menuState!.y, maxHeight),
-      })
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target
-      if (target instanceof Element && target.closest('[data-entry-context-menu]')) {
-        return
-      }
-      onClose()
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('pointerdown', handlePointerDown)
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('pointerdown', handlePointerDown)
-    }
-  }, [isOpen, menuState, onClose])
-
-  interface Action {
-    label: string
-    icon: LucideIcon
-    onSelect: (entry: TimeEntry) => void
-    tone?: 'danger'
-  }
-
-  const actions = useMemo<Action[]>(
-    () => [
-      { label: 'Edit', icon: Pencil, onSelect: onEdit },
-      { label: 'Duplicate', icon: Copy, onSelect: onDuplicate },
-      { label: 'Delete', icon: Trash2, onSelect: onDelete, tone: 'danger' },
-    ],
-    [onDelete, onDuplicate, onEdit]
-  )
 
   return (
-    <AnimatePresence>
-      {isOpen && menuState ? (
-        <motion.div
-          key={`entry-context-menu-${menuState.entry.id}`}
-          data-entry-context-menu
-          className="fixed z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-xl"
-          style={{ left: menuPosition.left, top: menuPosition.top, transformOrigin }}
-          onPointerDown={(event) => event.stopPropagation()}
-          variants={variants.popLayout}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={{ duration: durations.short, ease: easings.standard as unknown as import('motion/react').Easing }}
+    <DropdownMenu
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose()
+        }
+      }}
+    >
+      <DropdownMenuTrigger asChild>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none fixed h-0 w-0"
+          style={{ left: menuState?.x ?? 0, top: menuState?.y ?? 0 }}
+        />
+      </DropdownMenuTrigger>
+      {menuState ? (
+        <DropdownMenuContent
+          align="start"
+          sideOffset={4}
+          className="w-44 rounded-xl p-1"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            if (!skipReturnFocusRef.current) {
+              menuState.returnFocusTo?.focus()
+            }
+            skipReturnFocusRef.current = false
+          }}
         >
-          {actions.map((action) => (
-            <button
-              key={action.label}
-              type="button"
-              onClick={() => {
-                action.onSelect(menuState.entry)
-                onClose()
-              }}
-              className={
-                action.tone === 'danger'
-                  ? 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10'
-                  : 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary'
-              }
-            >
-              <action.icon className="h-4 w-4" />
-              <span>{action.label}</span>
-            </button>
-          ))}
-        </motion.div>
+          <DropdownMenuItem
+            onSelect={() => {
+              skipReturnFocusRef.current = true
+              onEdit(menuState.entry)
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+            <span>Edit</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => {
+              skipReturnFocusRef.current = false
+              onDuplicate(menuState.entry)
+            }}
+          >
+            <Copy className="h-4 w-4" />
+            <span>Duplicate</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => {
+              skipReturnFocusRef.current = true
+              onDelete(menuState.entry)
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Delete</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
       ) : null}
-    </AnimatePresence>
+    </DropdownMenu>
   )
 }

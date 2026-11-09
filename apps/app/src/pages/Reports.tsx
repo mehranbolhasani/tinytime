@@ -181,7 +181,7 @@ export default function Reports() {
 
               <section className="rounded-xl bg-card p-4">
                 <h2 className="mb-3 text-sm font-medium text-muted-foreground">Daily activity</h2>
-                <DailyBarChart entries={filteredEntries} />
+                <DailyBarChart entries={filteredEntries} from={from} to={to} />
               </section>
 
               <section className="rounded-xl bg-card p-4">
