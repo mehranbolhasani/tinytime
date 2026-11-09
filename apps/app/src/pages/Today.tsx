@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import EntryList from '@/components/timer/EntryList'
 import FavouriteChips from '@/components/timer/FavouriteChips'
 import TimerWidget from '@/components/timer/TimerWidget'
+import TodayDialCard from '@/components/timer/TodayDialCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useFavouriteEntries } from '@/hooks/useFavouriteEntries'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
@@ -66,6 +67,8 @@ export default function Today() {
       />
 
       <TimerWidget isEntriesLoading={isLoading} />
+
+      {!isLoading ? <TodayDialCard entries={entries} /> : null}
 
       <AnimatePresence mode="sync" initial={false}>
         {isLoading ? (

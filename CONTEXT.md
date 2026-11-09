@@ -11,7 +11,7 @@ tinytime is a single-user, browser-only time tracker.
 
 ### In scope
 - Personal timer + entries
-- Calendar day planning/editing (clock dial primary; list timeline escape hatch)
+- Calendar day planning/editing (24-hour clock dial and list timeline)
 - Reporting + CSV export
 - Project management
 - Google Calendar read-only overlay integration
@@ -61,7 +61,7 @@ tinytime is a single-user, browser-only time tracker.
 - Live seconds come from `useElapsedSeconds` (shared ticker in `lib/ticker.ts`). Only leaf display components may call it. Contexts, layouts and pages must not hold ticking values.
 - `duration_seconds` must be persisted when stopping an entry.
 - The selected Calendar date lives in the URL (`?date=YYYY-MM-DD`), so palette jumps and back/forward navigation share one source of truth.
-- Clock calendar uses a **12-hour AM/PM period** dial; entries that cross noon/midnight are clipped per period (same idea as vertical day-grid clipping).
+- The clock calendar uses a **24-hour dial**: 00:00 at the top, minutes increasing clockwise. Drawing is for logging: arcs are clamped to the selected day and, for today, to "now"; future days are read-only. Overlapping entries use up to 3 inward lanes. Only the live layer (`ClockDialLive`) and the centre total (`DialTotal`) subscribe to the ticker.
 
 ### TypeScript
 - All source files under `apps/app/src/` must use `.ts` or `.tsx` extensions.
@@ -116,16 +116,18 @@ apps/
         SessionContext.tsx     # Current user id for per-user client state
       hooks/
         useElapsedSeconds.ts   # Live elapsed seconds from the shared ticker
+        useClockGestures.ts    # Sweep/move/resize/bin pointer logic for the 24-hour dial
+        useMinuteNow.ts        # Minute-aligned "now" for the dial's dim boundary
         useTimeEntries.ts      # Entry queries/mutations
         useProjects.ts         # Project queries/mutations
         useGoogleCalendar.ts   # Google status, selections, events
         useTheme.ts            # Theme preference
         useMediaQuery.ts       # Media query helper
       components/
-        timer/                 # TimerWidget + TimerDisplay + MiniTimerPill + EntryList
+        timer/                 # TimerWidget + TimerDisplay + MiniTimerPill + TodayDialCard + EntryList
         calendar/              # DayView (list escape hatch) + edit/drag/resize dialogs + context menu
           blocks/              # EntryBlock, ActiveTimerBlock, GoogleEventBlock
-        clock-calendar/        # Primary radial clock day view + month overview
+        clock-calendar/        # 24-hour ClockDial + ClockCalendarView + Monday-first month overview
         projects/              # Project CRUD UI
         reports/               # SummaryBar, ProjectBreakdown, FilterBar, EntryTable/Dialog, DateRangePicker
         settings/              # GoogleCalendarSection
@@ -135,7 +137,7 @@ apps/
         supabase.ts
         utils.ts
         calendar.ts            # Vertical day-grid geometry
-        clockCalendar.ts       # Polar clock day geometry (12h AM/PM periods)
+        clockCalendar.ts       # 24-hour dial maths (angles, cumulative sweep, lanes, month grid)
         color.ts
         googleSignIn.ts
         googleCalendar.ts
@@ -145,7 +147,7 @@ apps/
         timerActionLock.ts     # App-wide single-flight guard for start/stop
       pages/
         Today.tsx
-        Calendar.tsx           # List DayView by default; clock view reachable via toggle
+        Calendar.tsx           # List DayView by default; `?view=clock` shows the 24-hour dial
         Reports.tsx
         Projects.tsx
         GoogleCallback.tsx     # /google/callback route; completes the OAuth exchange
@@ -229,8 +231,9 @@ Production domains:
 - Running-session summary state in timer widget
 - Today entry list with edit/delete + total duration
 - Calendar list DayView is the default calendar view (`tinytime:calendar.view`)
-- Clock day view (12h AM/PM dial, labeled entry arcs, drag-create, resize handles) is experimental and reachable via the view toggle
-- Expandable month overview with per-day project-color arc indicators
+- 24-hour dial view: sweep to log, drag to move, handles to resize, bin to delete, 3 overlap lanes, reachable via the view toggle or `?view=clock`
+- Monday-first month overview where each day is a mini 24-hour dial
+- Compact read-only today dial on the Today page that links to the clock view
 - Google Calendar event overlay on clock and list day views
 - Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
 - Project CRUD (name/color + delete behavior)

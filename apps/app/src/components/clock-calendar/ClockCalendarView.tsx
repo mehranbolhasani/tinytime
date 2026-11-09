@@ -1,28 +1,44 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronDown, ChevronLeft, ChevronRight, List, LoaderCircle } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, List, LoaderCircle, Trash2 } from 'lucide-react'
 import ClockCreateBar from '@/components/clock-calendar/ClockCreateBar'
-import ClockDayCanvas from '@/components/clock-calendar/ClockDayCanvas'
+import ClockDial from '@/components/clock-calendar/ClockDial'
+import DialTotal from '@/components/clock-calendar/DialTotal'
 import MonthOverview from '@/components/clock-calendar/MonthOverview'
 import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
 import EntryDetailSheet from '@/components/calendar/EntryDetailSheet'
 import EntryEditDialog from '@/components/calendar/EntryEditDialog'
 import { Button } from '@/components/ui/button'
 import { useTimerContext } from '@/contexts/TimerContext'
-import { useElapsedSeconds } from '@/hooks/useElapsedSeconds'
+import { useClockGestures } from '@/hooks/useClockGestures'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useMinuteNow } from '@/hooks/useMinuteNow'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
-import { addDays, isSameDay, startOfDay } from '@/lib/calendar'
+import { addDays, startOfDay } from '@/lib/calendar'
 import {
-  draftToIsoRange,
+  dateFromDayMinute,
+  entriesToDialArcs,
+  eventsToDialArcs,
   localMonthRange,
-  periodFromDate,
-  type ClockPeriod,
-  type DraftRange,
+  maxDrawableMinute,
+  type DialArc,
 } from '@/lib/clockCalendar'
+import { toSafeHexColor } from '@/lib/color'
 import { presets } from '@/lib/motion'
-import { computeDuration, groupEntriesByDay, localDayRange } from '@/lib/utils'
+import {
+  computeDuration,
+  formatDuration,
+  formatTime,
+  groupEntriesByDay,
+  localDayRange,
+} from '@/lib/utils'
 import type { NormalizedGoogleEvent, TimeEntry } from '@/types'
+
+interface MinuteRange {
+  startMinute: number
+  endMinute: number
+}
 
 interface ClockCalendarViewProps {
   selectedDate: Date
@@ -39,18 +55,29 @@ export default function ClockCalendarView({
   isLoadingGoogleEvents = false,
   onSwitchToList,
 }: ClockCalendarViewProps) {
-  const [period, setPeriod] = useState<ClockPeriod>(() => periodFromDate(new Date()))
   const [monthOpen, setMonthOpen] = useState(false)
   const [viewYear, setViewYear] = useState(selectedDate.getFullYear())
   const [viewMonth, setViewMonth] = useState(selectedDate.getMonth())
-  const [draft, setDraft] = useState<DraftRange | null>(null)
+  const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate)
+  const [createRange, setCreateRange] = useState<MinuteRange | null>(null)
+  const [pendingMove, setPendingMove] = useState<(MinuteRange & { color: string }) | null>(null)
   const [description, setDescription] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [mutationError, setMutationError] = useState('')
+  const [focusedArcId, setFocusedArcId] = useState<string | null>(null)
   const [sheetEntry, setSheetEntry] = useState<TimeEntry | null>(null)
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
   const [entryToDelete, setEntryToDelete] = useState<TimeEntry | null>(null)
+
+  const svgRef = useRef<SVGSVGElement>(null)
+  const binRef = useRef<HTMLDivElement>(null)
+
+  if (selectedDate.getTime() !== prevSelectedDate.getTime()) {
+    setPrevSelectedDate(selectedDate)
+    setViewYear(selectedDate.getFullYear())
+    setViewMonth(selectedDate.getMonth())
+  }
 
   const dayRange = useMemo(() => localDayRange(selectedDate), [selectedDate])
   const monthRange = useMemo(
@@ -68,82 +95,192 @@ export default function ClockCalendarView({
   })
   const { projects } = useProjects()
   const { activeEntry } = useTimerContext()
-  const elapsed = useElapsedSeconds(activeEntry?.started_at)
   const { createEntry, updateEntry, deleteEntry } = useTimeEntryMutations({ entries })
+  const isTouchViewport = useMediaQuery('(hover: none)')
+  const minuteNow = useMinuteNow()
 
-  useEffect(() => {
-    setViewYear(selectedDate.getFullYear())
-    setViewMonth(selectedDate.getMonth())
-  }, [selectedDate])
-
-  useEffect(() => {
-    if (isSameDay(selectedDate, new Date())) {
-      setPeriod(periodFromDate(new Date()))
-    }
-  }, [selectedDate])
-
-  const entriesByDay = useMemo(() => groupEntriesByDay(monthEntries), [monthEntries])
   const dayStart = useMemo(() => startOfDay(selectedDate), [selectedDate])
+  const maxMinute = maxDrawableMinute(dayStart, minuteNow)
+  const entriesByDay = useMemo(() => groupEntriesByDay(monthEntries), [monthEntries])
 
-  const headerLabel = useMemo(() => {
-    return selectedDate.toLocaleDateString([], {
-      weekday: 'long',
-      day: 'numeric',
-    })
-  }, [selectedDate])
+  const completedEntries = useMemo(
+    () => entries.filter((entry) => entry.stopped_at !== null),
+    [entries]
+  )
+  const arcs = useMemo(
+    () => entriesToDialArcs(completedEntries, dayStart, minuteNow),
+    [completedEntries, dayStart, minuteNow]
+  )
+  const eventArcs = useMemo(
+    () => eventsToDialArcs(googleEvents, dayStart),
+    [googleEvents, dayStart]
+  )
+
+  const formatRange = useCallback(
+    (range: MinuteRange) => {
+      const start = dateFromDayMinute(dayStart, range.startMinute).toISOString()
+      const end = dateFromDayMinute(dayStart, range.endMinute).toISOString()
+      return `${formatTime(start)}–${formatTime(end)}`
+    },
+    [dayStart]
+  )
+
+  const handleActivate = useCallback(
+    (arc: DialArc) => {
+      if (arc.isRunning || !isTouchViewport) {
+        setEditingEntry(arc.entry)
+      } else {
+        setSheetEntry(arc.entry)
+      }
+    },
+    [isTouchViewport]
+  )
+
+  const handleCreateDraft = useCallback((range: MinuteRange) => {
+    setCreateRange(range)
+  }, [])
+
+  const handleRequestDelete = useCallback((entry: TimeEntry) => {
+    setEntryToDelete(entry)
+  }, [])
+
+  const handleArcDelete = useCallback((arc: DialArc) => {
+    setEntryToDelete(arc.entry)
+  }, [])
+
+  const handleCommitMove = useCallback(
+    (entry: TimeEntry, startMinute: number, endMinute: number) => {
+      const startedAt = dateFromDayMinute(dayStart, startMinute).toISOString()
+      const stoppedAt = dateFromDayMinute(dayStart, endMinute).toISOString()
+      setPendingMove({
+        startMinute,
+        endMinute,
+        color: toSafeHexColor(entry.projects?.color, '#e76f51'),
+      })
+      setMutationError('')
+      void updateEntry(entry.id, {
+        started_at: startedAt,
+        stopped_at: stoppedAt,
+        duration_seconds: computeDuration(startedAt, stoppedAt),
+      })
+        .catch((updateError: unknown) => {
+          setMutationError(
+            updateError instanceof Error ? updateError.message : 'Unable to move this entry.'
+          )
+        })
+        .finally(() => {
+          setPendingMove(null)
+        })
+    },
+    [dayStart, updateEntry]
+  )
+
+  const gestures = useClockGestures({
+    dayStart,
+    arcs,
+    maxMinute,
+    svgRef,
+    binRef,
+    onCreateDraft: handleCreateDraft,
+    onCommitMove: handleCommitMove,
+    onRequestDelete: handleRequestDelete,
+    onActivate: handleActivate,
+  })
+
+  const activeDraft: MinuteRange | null =
+    gestures.draft ?? createRange ?? pendingMove
+  const draftColor = gestures.draft
+    ? gestures.draftColor
+    : pendingMove?.color ?? '#eab308'
+  const focusedArc = focusedArcId
+    ? arcs.find((arc) => arc.entry.id === focusedArcId) ?? null
+    : null
+
+  const centerPrimary = activeDraft ? (
+    formatRange(activeDraft)
+  ) : focusedArc ? (
+    focusedArc.label
+  ) : (
+    <DialTotal entries={completedEntries} activeEntry={activeEntry} />
+  )
+  const centerSecondary = activeDraft ? (
+    formatDuration((activeDraft.endMinute - activeDraft.startMinute) * 60)
+  ) : focusedArc ? (
+    formatRange(focusedArc)
+  ) : undefined
 
   const handleConfirmDraft = async () => {
-    if (!draft) return
+    if (!createRange) {
+      return
+    }
+
     setIsSaving(true)
     setMutationError('')
+
     try {
-      const range = draftToIsoRange(dayStart, period, draft)
+      const startedAt = dateFromDayMinute(dayStart, createRange.startMinute).toISOString()
+      const stoppedAt = dateFromDayMinute(dayStart, createRange.endMinute).toISOString()
       await createEntry({
         description: description.trim() || null,
         project_id: projectId,
-        started_at: range.started_at,
-        stopped_at: range.stopped_at,
-        duration_seconds: range.duration_seconds,
+        started_at: startedAt,
+        stopped_at: stoppedAt,
+        duration_seconds: computeDuration(startedAt, stoppedAt),
       })
-      setDraft(null)
+      setCreateRange(null)
       setDescription('')
       setProjectId(null)
-    } catch (err) {
-      setMutationError(err instanceof Error ? err.message : 'Unable to create entry.')
+    } catch (createError) {
+      setMutationError(
+        createError instanceof Error ? createError.message : 'Unable to create entry.'
+      )
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleCommitMove = async (entry: TimeEntry, startedAt: string, stoppedAt: string) => {
+  const handleDeleteConfirm = async () => {
+    if (!entryToDelete) {
+      return
+    }
+
     setMutationError('')
+
     try {
-      await updateEntry(entry.id, {
-        started_at: startedAt,
-        stopped_at: stoppedAt,
-        duration_seconds: computeDuration(startedAt, stoppedAt),
-      })
-      setDraft(null)
-    } catch (err) {
-      setMutationError(err instanceof Error ? err.message : 'Unable to update entry.')
+      await deleteEntry(entryToDelete.id)
+      setEntryToDelete(null)
+    } catch (deleteError) {
+      setMutationError(
+        deleteError instanceof Error ? deleteError.message : 'Unable to delete this entry.'
+      )
     }
   }
 
   const handleDuplicate = async (entry: TimeEntry) => {
-    const started = new Date(entry.started_at)
-    const duration =
-      entry.duration_seconds ??
-      computeDuration(entry.started_at, entry.stopped_at ?? entry.started_at)
-    const nextStart = new Date(started.getTime() + 15 * 60 * 1000)
-    const nextStop = new Date(nextStart.getTime() + duration * 1000)
+    const startedAt = entry.started_at
+    const stoppedAt =
+      entry.stopped_at ??
+      new Date(
+        new Date(startedAt).getTime() + (entry.duration_seconds ?? 0) * 1000
+      ).toISOString()
+
     await createEntry({
       description: entry.description,
       project_id: entry.project_id,
-      started_at: nextStart.toISOString(),
-      stopped_at: nextStop.toISOString(),
-      duration_seconds: duration,
+      started_at: startedAt,
+      stopped_at: stoppedAt,
+      duration_seconds: entry.duration_seconds ?? computeDuration(startedAt, stoppedAt),
     })
   }
+
+  const headerLabel = useMemo(
+    () =>
+      selectedDate.toLocaleDateString([], {
+        weekday: 'long',
+        day: 'numeric',
+      }),
+    [selectedDate]
+  )
 
   return (
     <section className="space-y-3">
@@ -226,13 +363,7 @@ export default function ClockCalendarView({
               viewMonth={viewMonth}
               entriesByDay={entriesByDay}
               onSelectDate={(date) => {
-                const clean = startOfDay(date)
-                onSelectedDateChange(clean)
-                if (isSameDay(clean, new Date())) {
-                  setPeriod(periodFromDate(new Date()))
-                } else {
-                  setPeriod(0)
-                }
+                onSelectedDateChange(startOfDay(date))
                 setMonthOpen(false)
               }}
               onViewMonthChange={(year, month) => {
@@ -261,21 +392,29 @@ export default function ClockCalendarView({
           Loading schedule…
         </div>
       ) : (
-        <div className="rounded-xl">
-          <ClockDayCanvas
-            selectedDate={selectedDate}
-            entries={entries}
-            activeEntry={activeEntry}
-            liveElapsedSeconds={elapsed}
-            googleEvents={googleEvents}
-            period={period}
-            onPeriodChange={setPeriod}
-            draft={draft}
-            draftLabel={description}
-            onDraftChange={setDraft}
-            onSelectEntry={setSheetEntry}
-            onCommitMove={handleCommitMove}
-          />
+        <div className="rounded-xl bg-card p-3">
+          <div className="mx-auto flex w-full justify-center">
+            <ClockDial
+              dayStart={dayStart}
+              arcs={arcs}
+              eventArcs={eventArcs}
+              activeEntry={activeEntry}
+              draft={activeDraft}
+              draftColor={draftColor}
+              hiddenEntryId={gestures.hiddenEntryId}
+              focusedArcId={focusedArcId}
+              interactive
+              nowMinute={maxMinute}
+              svgRef={svgRef}
+              onTrackPointerDown={gestures.onTrackPointerDown}
+              onArcPointerDown={gestures.onArcPointerDown}
+              onArcActivate={handleActivate}
+              onArcDelete={handleArcDelete}
+              onArcFocusChange={setFocusedArcId}
+              centerPrimary={centerPrimary}
+              centerSecondary={centerSecondary}
+            />
+          </div>
           {isLoadingGoogleEvents ? (
             <p className="mt-2 text-center text-xs text-muted-foreground">Loading Google events…</p>
           ) : null}
@@ -283,7 +422,34 @@ export default function ClockCalendarView({
       )}
 
       <AnimatePresence>
-        {draft ? (
+        {gestures.isMoving ? (
+          <motion.div
+            key="dial-bin"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={presets.panelSwap.transition}
+          >
+            <div
+              ref={binRef}
+              className={
+                gestures.isOverBin
+                  ? 'flex items-center justify-center gap-2 rounded-xl border border-dashed border-destructive bg-destructive/10 p-3 text-sm text-destructive'
+                  : 'flex items-center justify-center gap-2 rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground'
+              }
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              <span>Drop to delete</span>
+            </div>
+            <span role="status" className="sr-only">
+              {gestures.isOverBin ? 'Release to delete this entry' : 'Drag over the bin to delete'}
+            </span>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {createRange ? (
           <motion.div
             key="create-bar"
             initial={{ opacity: 0, y: 12 }}
@@ -295,13 +461,13 @@ export default function ClockCalendarView({
               description={description}
               projectId={projectId}
               projects={projects}
-              canConfirm={Boolean(draft)}
+              canConfirm={Boolean(createRange)}
               isSaving={isSaving}
               onDescriptionChange={setDescription}
               onProjectChange={setProjectId}
               onConfirm={handleConfirmDraft}
               onCancel={() => {
-                setDraft(null)
+                setCreateRange(null)
                 setDescription('')
                 setProjectId(null)
               }}
@@ -311,8 +477,23 @@ export default function ClockCalendarView({
       </AnimatePresence>
 
       <p className="text-center text-xs text-muted-foreground">
-        Drag on the outer ring to create a time block. Tap an arc to edit.
+        {maxMinute > 0
+          ? 'Sweep around the ring to log time. Drag a block to move it, or onto the bin to delete it.'
+          : 'Future days are read-only. Track time as it happens.'}
       </p>
+      {onSwitchToList ? (
+        <div className="text-center">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground"
+            onClick={onSwitchToList}
+          >
+            Prefer typing? Use the list view
+          </Button>
+        </div>
+      ) : null}
 
       <EntryDetailSheet
         entry={sheetEntry}
@@ -346,8 +527,7 @@ export default function ClockCalendarView({
           if (!open) setEntryToDelete(null)
         }}
         onConfirm={() => {
-          if (!entryToDelete) return
-          void deleteEntry(entryToDelete.id).then(() => setEntryToDelete(null))
+          void handleDeleteConfirm()
         }}
       />
     </section>

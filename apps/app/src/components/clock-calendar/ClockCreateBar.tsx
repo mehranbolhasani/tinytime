@@ -1,4 +1,4 @@
-import { Check, ChevronUp, Trash2 } from 'lucide-react'
+import { Check, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,7 +22,6 @@ interface ClockCreateBarProps {
   onProjectChange: (projectId: string | null) => void
   onConfirm: () => void
   onCancel: () => void
-  onCollapse?: () => void
 }
 
 export default function ClockCreateBar({
@@ -35,7 +34,6 @@ export default function ClockCreateBar({
   onProjectChange,
   onConfirm,
   onCancel,
-  onCollapse,
 }: ClockCreateBarProps) {
   return (
     <div className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
@@ -75,19 +73,6 @@ export default function ClockCreateBar({
           ))}
         </SelectContent>
       </Select>
-
-      {onCollapse ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 shrink-0 rounded-full"
-          aria-label="Collapse editor"
-          onClick={onCollapse}
-        >
-          <ChevronUp className="h-4 w-4" aria-hidden="true" />
-        </Button>
-      ) : null}
 
       <Button
         type="button"

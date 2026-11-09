@@ -164,7 +164,9 @@ export default function Calendar() {
     },
     [searchParams, setSearchParams]
   )
-  const [viewMode, setViewMode] = useState<CalendarViewMode>(readViewMode)
+  const viewParam = searchParams.get('view')
+  const viewMode: CalendarViewMode =
+    viewParam === 'clock' ? 'clock' : viewParam === 'list' ? 'list' : readViewMode()
 
   const [zoomIndex, setZoomIndex] = useState(() => {
     if (typeof window === 'undefined') {
@@ -209,10 +211,12 @@ export default function Calendar() {
   }
 
   const changeViewMode = (mode: CalendarViewMode) => {
-    setViewMode(mode)
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(VIEW_STORAGE_KEY, mode)
     }
+    const params = new URLSearchParams(searchParams)
+    params.set('view', mode)
+    setSearchParams(params, { replace: true })
   }
 
   const selectedCalendarIdsKey = selectedCalendarIds.join(',')

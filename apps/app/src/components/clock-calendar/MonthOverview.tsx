@@ -1,18 +1,14 @@
 import { useMemo } from 'react'
-import { isSameDay } from '@/lib/calendar'
-import { buildMonthGrid, daySummaryColors } from '@/lib/clockCalendar'
-import { cn } from '@/lib/utils'
+import { startOfDay } from '@/lib/calendar'
+import { buildMonthGrid, describeArc, entriesToDialArcs } from '@/lib/clockCalendar'
+import { computeDuration, formatDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
 
-function localDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+const MINI_SIZE = 36
+const MINI_RADIUS = 15
 
 interface MonthOverviewProps {
   selectedDate: Date
@@ -23,43 +19,43 @@ interface MonthOverviewProps {
   onViewMonthChange: (year: number, month: number) => void
 }
 
-function DayCellArcs({ colors }: { colors: string[] }) {
-  if (colors.length === 0) {
-    return null
-  }
+function localDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
-  const size = 36
-  const cx = size / 2
-  const cy = size / 2
-  const radius = 14
-  const sweep = Math.min(0.9, 1.8 / Math.max(colors.length, 1))
+function MiniDial({ date, entries }: { date: Date; entries: TimeEntry[] }) {
+  const dayStart = startOfDay(date)
+  const arcs = entriesToDialArcs(entries, dayStart, new Date())
 
   return (
     <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
+      width={MINI_SIZE}
+      height={MINI_SIZE}
+      viewBox={`0 0 ${MINI_SIZE} ${MINI_SIZE}`}
       className="pointer-events-none absolute inset-0"
       aria-hidden="true"
     >
-      {colors.map((color, index) => {
-        const start = -Math.PI / 2 + index * ((Math.PI * 2) / Math.max(colors.length, 1))
-        const end = start + sweep
-        const x1 = cx + radius * Math.cos(start)
-        const y1 = cy + radius * Math.sin(start)
-        const x2 = cx + radius * Math.cos(end)
-        const y2 = cy + radius * Math.sin(end)
-        return (
-          <path
-            key={`${color}-${index}`}
-            d={`M ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2}`}
-            fill="none"
-            stroke={color}
-            strokeWidth={2.5}
-            strokeLinecap="round"
-          />
-        )
-      })}
+      <circle
+        cx={MINI_SIZE / 2}
+        cy={MINI_SIZE / 2}
+        r={MINI_RADIUS}
+        fill="none"
+        strokeWidth={2}
+        className="stroke-muted-foreground/15"
+      />
+      {arcs.map((arc) => (
+        <path
+          key={arc.entry.id}
+          d={describeArc(MINI_SIZE / 2, MINI_SIZE / 2, MINI_RADIUS, arc.startMinute, arc.endMinute)}
+          fill="none"
+          stroke={arc.color}
+          strokeWidth={3}
+          strokeLinecap="round"
+        />
+      ))}
     </svg>
   )
 }
@@ -89,12 +85,11 @@ export default function MonthOverview({
               key={label}
               type="button"
               aria-pressed={active}
-              className={cn(
-                'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+              className={
                 active
-                  ? 'bg-foreground text-background'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground'
-              )}
+                  ? 'shrink-0 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background transition-colors'
+                  : 'shrink-0 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+              }
               onClick={() => onViewMonthChange(viewYear, index)}
             >
               {label}
@@ -111,12 +106,11 @@ export default function MonthOverview({
               key={year}
               type="button"
               aria-pressed={active}
-              className={cn(
-                'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+              className={
                 active
-                  ? 'bg-foreground text-background'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground'
-              )}
+                  ? 'shrink-0 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background transition-colors'
+                  : 'shrink-0 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground'
+              }
               onClick={() => onViewMonthChange(year, viewMonth)}
             >
               {year}
@@ -133,28 +127,43 @@ export default function MonthOverview({
         ))}
         {cells.map((date) => {
           const inMonth = date.getMonth() === viewMonth
-          const selected = isSameDay(date, selectedDate)
+          const selected = date.toDateString() === selectedDate.toDateString()
+          const isToday = date.toDateString() === today.toDateString()
           const key = localDateKey(date)
-          const colors = daySummaryColors(entriesByDay[key] ?? [])
+          const dayEntries = entriesByDay[key] ?? []
+          const totalSeconds = dayEntries.reduce((sum, entry) => {
+            if (!entry.stopped_at) {
+              return sum
+            }
+            return (
+              sum +
+              (entry.duration_seconds ?? computeDuration(entry.started_at, entry.stopped_at))
+            )
+          }, 0)
 
           return (
             <button
               key={key + String(date.getMonth())}
               type="button"
-              aria-label={date.toLocaleDateString([], {
+              aria-label={`${date.toLocaleDateString([], {
                 weekday: 'long',
                 month: 'long',
                 day: 'numeric',
-              })}
+              })}, ${formatDuration(totalSeconds)} tracked`}
               aria-current={selected ? 'date' : undefined}
-              className={cn(
-                'relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition-colors',
-                inMonth ? 'text-foreground' : 'text-muted-foreground/35',
-                selected ? 'font-semibold ring-2 ring-foreground' : 'hover:bg-secondary'
-              )}
+              className={
+                selected
+                  ? 'relative mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground ring-2 ring-foreground transition-colors'
+                  : inMonth
+                    ? 'relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm text-foreground transition-colors hover:bg-secondary'
+                    : 'relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm text-muted-foreground/35 transition-colors hover:bg-secondary'
+              }
               onClick={() => onSelectDate(date)}
             >
-              <DayCellArcs colors={colors} />
+              <MiniDial date={date} entries={dayEntries} />
+              {isToday && !selected ? (
+                <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-primary/50" />
+              ) : null}
               <span className="relative z-10">{date.getDate()}</span>
             </button>
           )
