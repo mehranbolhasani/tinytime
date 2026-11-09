@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar'
 import { cn } from '@/lib/utils'
@@ -13,6 +14,7 @@ export default function GoogleCalendarSection() {
     disconnect,
     isConnecting,
     isDisconnecting,
+    isTogglingCalendar,
     toggleCalendar,
   } = useGoogleCalendar()
 
@@ -82,7 +84,16 @@ export default function GoogleCalendarSection() {
                   <button
                     key={calendar.id}
                     type="button"
-                    onClick={() => toggleCalendar(calendar)}
+                    disabled={isTogglingCalendar}
+                    onClick={() => {
+                      void toggleCalendar(calendar).catch((toggleError: unknown) => {
+                        toast.error(
+                          toggleError instanceof Error
+                            ? toggleError.message
+                            : 'Unable to update selected calendars.'
+                        )
+                      })
+                    }}
                     className={cn(
                       'flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-left text-xs transition-colors',
                       isSelected

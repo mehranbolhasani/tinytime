@@ -1,5 +1,6 @@
 import { useCallback, useState, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { ACTIVE_ENTRY_QUERY_KEY, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { isOptimisticEntry } from '@/lib/timer'
 import { isTimerActionPending, runTimerAction, subscribeTimerAction } from '@/lib/timerActionLock'
@@ -24,7 +25,13 @@ interface UseTimerControlActionsResult {
   toggleTimer: (input?: StartTimerInput) => Promise<void>
 }
 
-export function useTimerControlActions(): UseTimerControlActionsResult {
+interface UseTimerControlActionsOptions {
+  reportErrors?: 'inline' | 'toast'
+}
+
+export function useTimerControlActions({
+  reportErrors = 'inline',
+}: UseTimerControlActionsOptions = {}): UseTimerControlActionsResult {
   const queryClient = useQueryClient()
   const { createEntry, stopEntry } = useTimeEntryMutations()
   const isSubmitting = useSyncExternalStore(subscribeTimerAction, isTimerActionPending, () => false)
@@ -33,6 +40,17 @@ export function useTimerControlActions(): UseTimerControlActionsResult {
   const clearError = useCallback(() => {
     setError('')
   }, [])
+
+  const reportError = useCallback(
+    (message: string) => {
+      if (reportErrors === 'toast') {
+        toast.error(message)
+        return
+      }
+      setError(message)
+    },
+    [reportErrors]
+  )
 
   const stopTimer = useCallback(async (options: StopTimerOptions = {}) => {
     return runTimerAction(async () => {
@@ -50,10 +68,10 @@ export function useTimerControlActions(): UseTimerControlActionsResult {
         await stopEntry(current.id, stoppedAt, current.started_at)
       } catch (stopError) {
         queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, current)
-        setError((stopError as Error)?.message ?? 'Unable to stop timer.')
+        reportError((stopError as Error)?.message ?? 'Unable to stop timer.')
       }
     })
-  }, [queryClient, stopEntry])
+  }, [queryClient, reportError, stopEntry])
 
   const startTimer = useCallback(async (input: StartTimerInput = {}) => {
     return runTimerAction(async () => {
@@ -88,10 +106,10 @@ export function useTimerControlActions(): UseTimerControlActionsResult {
       } catch (startError) {
         queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, previous)
         queryClient.invalidateQueries({ queryKey: ACTIVE_ENTRY_QUERY_KEY })
-        setError((startError as Error)?.message ?? 'Unable to start timer.')
+        reportError((startError as Error)?.message ?? 'Unable to start timer.')
       }
     })
-  }, [createEntry, queryClient, stopEntry])
+  }, [createEntry, queryClient, reportError, stopEntry])
 
   const toggleTimer = useCallback(async (input: StartTimerInput = {}) => {
     const current = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY) ?? null

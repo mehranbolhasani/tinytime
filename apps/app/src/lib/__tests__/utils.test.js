@@ -8,6 +8,7 @@ import {
   localDayRange,
   localDateInputRange,
   exportToCSV,
+  toCsvCell,
 } from '../utils.js'
 
 // ---------------------------------------------------------------------------
@@ -231,6 +232,36 @@ describe('localDateInputRange', () => {
 })
 
 // ---------------------------------------------------------------------------
+// toCsvCell
+// ---------------------------------------------------------------------------
+describe('toCsvCell', () => {
+  it('guards formulas in strings', () => {
+    expect(toCsvCell('=SUM(A1)')).toBe("'=SUM(A1)")
+  })
+
+  it('does not guard a negative number', () => {
+    expect(toCsvCell(-5)).toBe('-5')
+  })
+
+  it('guards a string that starts with a minus', () => {
+    expect(toCsvCell('-5 min')).toBe("'-5 min")
+  })
+
+  it('quotes values containing commas or newlines', () => {
+    expect(toCsvCell('a,b')).toBe('"a,b"')
+    expect(toCsvCell('a\nb')).toBe('"a\nb"')
+  })
+
+  it('doubles inner quotes and wraps the cell', () => {
+    expect(toCsvCell('say "hi"')).toBe('"say ""hi"""')
+  })
+
+  it('returns an empty string for null', () => {
+    expect(toCsvCell(null)).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // exportToCSV
 // ---------------------------------------------------------------------------
 describe('exportToCSV', () => {
@@ -251,15 +282,21 @@ describe('exportToCSV', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
   it('triggers a download by clicking a link', () => {
+    vi.useFakeTimers()
     exportToCSV([], '2024-01-01', '2024-01-07')
     expect(URL.createObjectURL).toHaveBeenCalledOnce()
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake')
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce()
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+
+    vi.runAllTimers()
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake')
   })
 
   it('names the file using the from/to date range', () => {
@@ -268,8 +305,9 @@ describe('exportToCSV', () => {
     expect(URL.createObjectURL).toHaveBeenCalledOnce()
   })
 
-  it('includes a header row', () => {
+  it('includes a header row and starts with a UTF-8 BOM', () => {
     exportToCSV([], '2024-01-01', '2024-01-07')
+    expect(capturedCsv.startsWith('\uFEFF')).toBe(true)
     expect(capturedCsv).toContain('Date,Start time,End time')
   })
 

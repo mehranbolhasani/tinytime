@@ -20,6 +20,7 @@ import CommandPalette from '@/components/CommandPalette'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import IdleDetectionDialog from '@/components/IdleDetectionDialog'
 import MiniTimerPill from '@/components/timer/MiniTimerPill'
+import Toaster from '@/components/ui/sonner'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
 import { durations, easings, presets } from '@/lib/motion'
 import { assertSupabaseClient, getFriendlySupabaseError, supabaseConfigError } from '@/lib/supabase'
@@ -221,7 +222,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const { preference, setThemePreference, options } = useTheme()
   const { isRunning } = useTimerContext()
   const notification = useTimerNotification()
-  const { toggleTimer, stopTimer } = useTimerControlActions()
+  const { toggleTimer, stopTimer } = useTimerControlActions({ reportErrors: 'toast' })
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
 
   const [idleState, setIdleState] = useState<{
@@ -488,6 +489,8 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         onNavigate={(to) => { navigate(to); setIsPaletteOpen(false) }}
         onToggleTimer={async () => { await toggleTimer(); setIsPaletteOpen(false) }}
       />
+
+      <Toaster />
     </div>
   )
 }

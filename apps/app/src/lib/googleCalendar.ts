@@ -55,6 +55,15 @@ function isDeclinedBySelf(attendees: GoogleEventAttendee[] = []): boolean {
   return attendees.some((attendee) => attendee?.self && attendee?.responseStatus === 'declined')
 }
 
+function toPlainText(html: string | undefined): string {
+  if (!html) {
+    return ''
+  }
+
+  const text = new DOMParser().parseFromString(html, 'text/html').body.textContent ?? ''
+  return text.replace(/\s+/g, ' ').trim()
+}
+
 export function normalizeGoogleEvent(event: RawGoogleEvent): NormalizedGoogleEvent | null {
   if (
     !event ||
@@ -82,7 +91,7 @@ export function normalizeGoogleEvent(event: RawGoogleEvent): NormalizedGoogleEve
     calendarId: event.calendarId ?? '',
     calendarColor: toSafeHexColor(event.calendarColor, '#60a5fa'),
     title: event.summary?.trim() || 'Untitled event',
-    description: event.description ?? '',
+    description: toPlainText(event.description),
     startedAt: startDate.toISOString(),
     stoppedAt: endDate.toISOString(),
     isAllDay,

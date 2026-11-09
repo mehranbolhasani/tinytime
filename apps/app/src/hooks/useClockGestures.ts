@@ -53,6 +53,7 @@ interface UseClockGesturesOptions {
   onCommitMove: (entry: TimeEntry, startMinute: number, endMinute: number) => void
   onRequestDelete: (entry: TimeEntry) => void
   onActivate: (arc: DialArc) => void
+  onPointerPosition?: (x: number, y: number) => void
 }
 
 export interface UseClockGesturesResult {
@@ -61,6 +62,7 @@ export interface UseClockGesturesResult {
   hiddenEntryId: string | null
   isMoving: boolean
   isOverBin: boolean
+  isDetached: boolean
   onTrackPointerDown: (event: React.PointerEvent<SVGSVGElement>) => void
   onArcPointerDown: (arc: DialArc, part: ArcPart, event: React.PointerEvent) => void
 }
@@ -108,20 +110,25 @@ export function useClockGestures({
   onCommitMove,
   onRequestDelete,
   onActivate,
+  onPointerPosition,
 }: UseClockGesturesOptions): UseClockGesturesResult {
   const gestureRef = useRef<Gesture | null>(null)
+  const detachedRef = useRef(false)
   const [draft, setDraft] = useState<MinuteRange | null>(null)
   const [draftColor, setDraftColor] = useState('#eab308')
   const [hiddenEntryId, setHiddenEntryId] = useState<string | null>(null)
   const [isMoving, setIsMoving] = useState(false)
   const [isOverBin, setIsOverBin] = useState(false)
+  const [isDetached, setIsDetached] = useState(false)
 
   const reset = useCallback(() => {
     gestureRef.current = null
+    detachedRef.current = false
     setDraft(null)
     setHiddenEntryId(null)
     setIsMoving(false)
     setIsOverBin(false)
+    setIsDetached(false)
   }, [])
 
   const pointOverBin = (x: number, y: number): boolean => {
@@ -138,6 +145,8 @@ export function useClockGestures({
     if (!gesture) {
       return
     }
+
+    onPointerPosition?.(event.clientX, event.clientY)
 
     if (
       !gesture.moved &&
@@ -158,6 +167,8 @@ export function useClockGestures({
     const angle = pointerAngle(event.clientX, event.clientY, rect)
 
     if (gesture.kind === 'create') {
+      detachedRef.current = false
+      setIsDetached(false)
       const sweep = advanceSweep(gesture.sweep, angle)
       gestureRef.current = { ...gesture, sweep, moved: true }
       const position = clamp(sweep.originMinute + sweep.accumulated, 0, maxMinute)
@@ -167,22 +178,42 @@ export function useClockGestures({
       return
     }
 
-    const sweep = advanceSweep(gesture.sweep, angle)
-    gestureRef.current = { ...gesture, sweep, moved: true }
+    if (gesture.kind === 'resize') {
+      detachedRef.current = false
+      setIsDetached(false)
+      const sweep = advanceSweep(gesture.sweep, angle)
+      gestureRef.current = { ...gesture, sweep, moved: true }
+      setHiddenEntryId(gesture.arc.entry.id)
+      setDraftColor(gesture.arc.color)
+      const range = resizeRange(gesture.arc, gesture.edge, sweep.accumulated, maxMinute)
+      setDraft((previous) => (sameRange(previous, range) ? previous : range))
+      return
+    }
+
+    const fraction = pointerRadiusFraction(event.clientX, event.clientY, rect)
+    const detached = fraction > 1.08
+    detachedRef.current = detached
+    setIsDetached(detached)
+    setIsMoving(true)
+    setIsOverBin(pointOverBin(event.clientX, event.clientY))
     setHiddenEntryId(gesture.arc.entry.id)
     setDraftColor(gesture.arc.color)
 
-    const range =
-      gesture.kind === 'move'
-        ? moveRange(gesture.arc, sweep.accumulated, maxMinute)
-        : resizeRange(gesture.arc, gesture.edge, sweep.accumulated, maxMinute)
-
-    setDraft((previous) => (sameRange(previous, range) ? previous : range))
-
-    if (gesture.kind === 'move') {
-      setIsMoving(true)
-      setIsOverBin(pointOverBin(event.clientX, event.clientY))
+    if (detached) {
+      // Freeze the sweep: keep the accumulated minutes, but follow the pointer's angle
+      // so coming back inside continues without a jump.
+      gestureRef.current = {
+        ...gesture,
+        moved: true,
+        sweep: { ...gesture.sweep, lastAngle: angle },
+      }
+      return
     }
+
+    const sweep = advanceSweep(gesture.sweep, angle)
+    gestureRef.current = { ...gesture, sweep, moved: true }
+    const range = moveRange(gesture.arc, sweep.accumulated, maxMinute)
+    setDraft((previous) => (sameRange(previous, range) ? previous : range))
   })
 
   const handleUp = useEffectEvent((event: PointerEvent) => {
@@ -191,10 +222,13 @@ export function useClockGestures({
       return
     }
 
+    const wasDetached = detachedRef.current
     gestureRef.current = null
+    detachedRef.current = false
     setHiddenEntryId(null)
     setIsMoving(false)
     setIsOverBin(false)
+    setIsDetached(false)
 
     if (!gesture.moved) {
       setDraft(null)
@@ -221,6 +255,12 @@ export function useClockGestures({
     if (gesture.kind === 'move' && pointOverBin(event.clientX, event.clientY)) {
       setDraft(null)
       onRequestDelete(gesture.arc.entry)
+      return
+    }
+
+    if (gesture.kind === 'move' && wasDetached) {
+      // Released outside the dial, away from the bin: cancel the move.
+      setDraft(null)
       return
     }
 
@@ -347,6 +387,7 @@ export function useClockGestures({
     hiddenEntryId,
     isMoving,
     isOverBin,
+    isDetached,
     onTrackPointerDown,
     onArcPointerDown,
   }

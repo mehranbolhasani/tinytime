@@ -16,7 +16,8 @@ import { presets } from '@/lib/motion'
 import { assertSupabaseClient } from '@/lib/supabase'
 import { localDayRange } from '@/lib/utils'
 
-const ZOOM_STORAGE_KEY = 'tinytime.calendar.zoom-index'
+const ZOOM_STORAGE_KEY = 'tinytime:calendar.zoom-index'
+const LEGACY_ZOOM_STORAGE_KEY = 'tinytime.calendar.zoom-index'
 const VIEW_STORAGE_KEY = 'tinytime:calendar.view'
 const DEFAULT_ZOOM_INDEX = 2
 
@@ -172,7 +173,18 @@ export default function Calendar() {
     if (typeof window === 'undefined') {
       return DEFAULT_ZOOM_INDEX
     }
-    const raw = Number(window.localStorage.getItem(ZOOM_STORAGE_KEY))
+
+    let stored = window.localStorage.getItem(ZOOM_STORAGE_KEY)
+    if (stored === null) {
+      const legacy = window.localStorage.getItem(LEGACY_ZOOM_STORAGE_KEY)
+      if (legacy !== null) {
+        window.localStorage.setItem(ZOOM_STORAGE_KEY, legacy)
+        window.localStorage.removeItem(LEGACY_ZOOM_STORAGE_KEY)
+        stored = legacy
+      }
+    }
+
+    const raw = Number(stored)
     if (!Number.isInteger(raw) || raw < 0 || raw >= ZOOM_STEPS.length) {
       return DEFAULT_ZOOM_INDEX
     }
@@ -423,6 +435,7 @@ export default function Calendar() {
           isLoadingGoogleEvents={isLoadingGoogleEvents}
           hourHeight={hourHeight}
           viewportHeight="clamp(420px, 70dvh, 720px)"
+          onSwitchToClock={() => changeViewMode('clock')}
         />
       ) : null}
     </section>

@@ -62,6 +62,8 @@ tinytime is a single-user, browser-only time tracker.
 - `duration_seconds` must be persisted when stopping an entry.
 - The selected Calendar date lives in the URL (`?date=YYYY-MM-DD`), so palette jumps and back/forward navigation share one source of truth.
 - The clock calendar uses a **24-hour dial**: 00:00 at the top, minutes increasing clockwise. Drawing is for logging: arcs are clamped to the selected day and, for today, to "now"; future days are read-only. Overlapping entries use up to 3 inward lanes. Only the live layer (`ClockDialLive`) and the centre total (`DialTotal`) subscribe to the ticker.
+- Both calendar views assign overlap lanes through `lib/calendar.ts`'s `assignIntervalLanes`; the list view sizes each block from `lane`, `laneCount`.
+- The list view does not create entries from touch input (touch logs in the 24-hour dial); mouse and pen keep click/drag creation.
 
 ### TypeScript
 - All source files under `apps/app/src/` must use `.ts` or `.tsx` extensions.
@@ -71,6 +73,7 @@ tinytime is a single-user, browser-only time tracker.
 
 ### Tooling and CI
 - Lint covers all TS/TSX; CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, the app and landing builds, the context guard and `deno check` for Edge Functions.
+- Errors from global actions (keyboard shortcut, command palette, idle discard, calendar toggles) surface as sonner toasts; locally-owned actions keep their inline error UI.
 
 ### Styling and UI primitives
 - Tailwind-first styling.
@@ -236,6 +239,8 @@ Production domains:
 - Compact read-only today dial on the Today page that links to the clock view
 - Google Calendar event overlay on clock and list day views
 - Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
+- CSV exports are UTF-8 with a BOM and guard string cells against spreadsheet formula injection
+- Activity heatmap spreads each entry across the hours it covers, Monday-first, using theme colours
 - Project CRUD (name/color + delete behavior)
 - Idle detection + nudge (Page Visibility API, threshold configurable)
 - Command palette (Cmd+K) for navigation, timer control, and entry search

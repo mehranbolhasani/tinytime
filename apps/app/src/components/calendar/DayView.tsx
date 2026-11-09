@@ -12,7 +12,7 @@ import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import {
   addDays,
-  assignOverlapLanes,
+  assignIntervalLanes,
   DEFAULT_CREATE_MINUTES,
   getDropStartMinutes,
   getGridHeight,
@@ -31,6 +31,14 @@ import { computeDuration } from '@/lib/utils'
 import type { CalendarBlock, NormalizedGoogleEvent, TimeEntry } from '@/types'
 
 type GoogleCalendarBlock = CalendarBlock & { event: NormalizedGoogleEvent }
+
+function withLanes<T extends CalendarBlock>(blocks: T[]): T[] {
+  return assignIntervalLanes(
+    blocks,
+    (block) => block.startMs,
+    (block) => block.endMs
+  ).map(({ item, lane, laneCount }) => ({ ...item, lane, laneCount }))
+}
 
 interface MenuState {
   open: boolean
@@ -87,6 +95,7 @@ interface DayViewProps {
   isLoadingGoogleEvents?: boolean
   hourHeight?: number
   viewportHeight?: string
+  onSwitchToClock?: () => void
 }
 
 export default function DayView({
@@ -97,6 +106,7 @@ export default function DayView({
   isLoadingGoogleEvents = false,
   hourHeight = 32,
   viewportHeight = 'clamp(420px, 70dvh, 720px)',
+  onSwitchToClock,
 }: DayViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
@@ -142,7 +152,7 @@ export default function DayView({
       .map((entry) => toBlock(entry, dayStart, dayEnd, entry.duration_seconds ?? 0, minEntryHeight, hourHeight))
       .filter((b): b is CalendarBlock => b !== null)
 
-    return assignOverlapLanes(blocks)
+    return withLanes(blocks)
   }, [entriesForRendering, dayStart, dayEnd, minEntryHeight, hourHeight])
 
   const { timedGoogleEvents, allDayGoogleEvents } = useMemo(() => {
@@ -180,7 +190,7 @@ export default function DayView({
       })
       .filter((b): b is GoogleCalendarBlock => b !== null)
 
-    return assignOverlapLanes(blocks)
+    return withLanes(blocks)
   }, [dayEnd, dayStart, minEntryHeight, timedGoogleEvents, hourHeight])
 
   useEffect(() => {
@@ -490,7 +500,7 @@ export default function DayView({
               }
             }}
             onPointerDown={(event) => {
-              if (event.button !== 0 || draggingMove) {
+              if (event.pointerType === 'touch' || event.button !== 0 || draggingMove) {
                 return
               }
               const target = event.target
@@ -502,6 +512,14 @@ export default function DayView({
               setCreateDraft({ startMinutes, currentMinutes: startMinutes })
               updateCreatePreview(startMinutes, startMinutes)
               event.currentTarget.setPointerCapture(event.pointerId)
+            }}
+            onPointerCancel={(event) => {
+              if (!createDraft) {
+                return
+              }
+              event.currentTarget.releasePointerCapture?.(event.pointerId)
+              setCreateDraft(null)
+              setPreviewBlock(null)
             }}
             onPointerMove={(event) => {
               if (!createDraft) {
@@ -619,6 +637,24 @@ export default function DayView({
         ) : null}
       </div>
 
+      {isTouchViewport ? (
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          To log time on touch, use the clock view.
+          {onSwitchToClock ? (
+            <>
+              {' '}
+              <button
+                type="button"
+                onClick={onSwitchToClock}
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                Open clock view
+              </button>
+            </>
+          ) : null}
+        </p>
+      ) : null}
+
       <EntryEditDialog
         entry={editingEntry}
         open={Boolean(editingEntry)}
@@ -641,6 +677,7 @@ export default function DayView({
           }
         }}
         onDelete={(entry) => {
+          setMutationError('')
           setEntryToDelete(entry)
         }}
       />
@@ -666,6 +703,7 @@ export default function DayView({
         }}
         onDelete={(entry) => {
           setSheetEntry(null)
+          setMutationError('')
           setEntryToDelete(entry)
         }}
       />
@@ -678,6 +716,7 @@ export default function DayView({
         }}
         entry={entryToDelete}
         onConfirm={handleDeleteConfirm}
+        error={mutationError}
       />
     </>
   )

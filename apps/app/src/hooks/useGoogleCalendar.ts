@@ -39,6 +39,7 @@ interface UseGoogleCalendarResult {
   disconnect: () => Promise<void>
   isConnecting: boolean
   isDisconnecting: boolean
+  isTogglingCalendar: boolean
   toggleCalendar: (calendar: GoogleCalendar) => Promise<void>
 }
 
@@ -146,8 +147,8 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
     },
   })
 
-  const toggleCalendar = useCallback(
-    async (calendar: GoogleCalendar) => {
+  const toggleCalendarMutation = useMutation<void, Error, GoogleCalendar>({
+    mutationFn: async (calendar) => {
       const isEnabled = selectedCalendarIds.includes(calendar.id)
 
       const payload = {
@@ -164,12 +165,12 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
       if (error) {
         throw new Error(getFriendlySupabaseError(error, 'Unable to update selected calendars.'))
       }
-
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: GOOGLE_SELECTIONS_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: GOOGLE_EVENTS_QUERY_KEY })
     },
-    [queryClient, selectedCalendarIds, supabase]
-  )
+  })
 
   useEffect(() => {
     if (!connection.connected || connection.needs_reconnect) {
@@ -225,7 +226,8 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
     disconnect: disconnectMutation.mutateAsync,
     isConnecting: connectMutation.isPending,
     isDisconnecting: disconnectMutation.isPending,
-    toggleCalendar,
+    isTogglingCalendar: toggleCalendarMutation.isPending,
+    toggleCalendar: toggleCalendarMutation.mutateAsync,
   }
 }
 

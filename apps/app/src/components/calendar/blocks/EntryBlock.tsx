@@ -22,8 +22,9 @@ function EntryBlock({
   onDragEnd,
   isDragging = false,
 }: EntryBlockProps) {
-  const width = block.hasOverlap ? 'calc(50% - 12px)' : 'calc(100% - 24px)'
-  const left = block.hasOverlap ? `${block.lane * 50}%` : '1%'
+  const laneCount = Math.max(1, block.laneCount)
+  const width = `calc((100% - 24px) / ${laneCount} - 4px)`
+  const left = `calc(12px + ((100% - 24px) / ${laneCount}) * ${block.lane})`
   const projectColor = toSafeHexColor(block.entry?.projects?.color, '#a8a29e')
 
   const label = `${block.entry.description || 'Untitled'} — ${block.entry.projects?.name ?? 'No project'}`

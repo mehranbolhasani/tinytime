@@ -61,33 +61,52 @@ export function toBlock(
     startMs: visibleStart.getTime(),
     endMs: visibleEnd.getTime(),
     lane: 0,
-    hasOverlap: false,
+    laneCount: 1,
   }
 }
 
-export function assignOverlapLanes<T extends CalendarBlock>(blocks: T[]): T[] {
-  const nextBlocks = [...blocks].sort((a, b) => a.startMs - b.startMs)
+export interface LaneAssignment<T> {
+  item: T
+  lane: number
+  laneCount: number
+}
 
-  for (let i = 0; i < nextBlocks.length; i += 1) {
-    for (let j = i + 1; j < nextBlocks.length; j += 1) {
-      const first = nextBlocks[i]
-      const second = nextBlocks[j]
-      const overlaps = first.startMs < second.endMs && second.startMs < first.endMs
+export function assignIntervalLanes<T>(
+  items: T[],
+  getStart: (item: T) => number,
+  getEnd: (item: T) => number
+): LaneAssignment<T>[] {
+  const sorted = [...items].sort((a, b) => getStart(a) - getStart(b) || getEnd(b) - getEnd(a))
+  const result: LaneAssignment<T>[] = []
+  let cluster: LaneAssignment<T>[] = []
+  let laneEnds: number[] = []
+  let clusterEnd = Number.NEGATIVE_INFINITY
 
-      if (!overlaps) {
-        continue
-      }
-
-      first.hasOverlap = true
-      second.hasOverlap = true
-
-      if (first.lane === second.lane) {
-        second.lane = first.lane === 0 ? 1 : 0
-      }
-    }
+  const flush = () => {
+    const count = cluster.reduce((max, entry) => Math.max(max, entry.lane + 1), 1)
+    for (const entry of cluster) entry.laneCount = count
+    result.push(...cluster)
+    cluster = []
+    laneEnds = []
+    clusterEnd = Number.NEGATIVE_INFINITY
   }
 
-  return nextBlocks as T[]
+  for (const item of sorted) {
+    const start = getStart(item)
+    const end = getEnd(item)
+    if (cluster.length > 0 && start >= clusterEnd) flush()
+    let lane = laneEnds.findIndex((laneEnd) => laneEnd <= start)
+    if (lane === -1) {
+      lane = laneEnds.length
+      laneEnds.push(end)
+    } else {
+      laneEnds[lane] = end
+    }
+    cluster.push({ item, lane, laneCount: 1 })
+    clusterEnd = Math.max(clusterEnd, end)
+  }
+  if (cluster.length > 0) flush()
+  return result
 }
 
 export function getNowLinePosition(nowDate: Date, hourHeight = HOUR_HEIGHT): number {

@@ -32,8 +32,8 @@ export interface CalendarBlock {
   height: number
   startMs: number
   endMs: number
-  lane: 0 | 1
-  hasOverlap: boolean
+  lane: number
+  laneCount: number
 }
 
 export interface NormalizedGoogleEvent {

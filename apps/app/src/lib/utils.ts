@@ -139,13 +139,19 @@ function toLocalDateParts(dateInput: string | Date): LocalDateParts | null {
   }
 }
 
-function toCsvValue(value: string | number | null | undefined): string {
-  const text = value === null || value === undefined ? '' : String(value)
-  const escaped = text.replace(/"/g, '""')
-  if (/[",\n]/.test(escaped)) {
-    return `"${escaped}"`
+export function toCsvCell(value: string | number | null): string {
+  if (value === null) {
+    return ''
   }
-  return escaped
+
+  if (typeof value === 'number') {
+    return String(value)
+  }
+
+  // Prevent spreadsheet formula injection. Numbers are never prefixed.
+  const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+  const escaped = guarded.replace(/"/g, '""')
+  return /[",\n\r]/.test(escaped) ? `"${escaped}"` : escaped
 }
 
 export interface DayRangeResult {
@@ -227,7 +233,7 @@ export function exportToCSV(entries: TimeEntry[], from: string | Date, to: strin
     ])
   })
 
-  const csv = rows.map((row) => row.map(toCsvValue).join(',')).join('\n')
+  const csv = `\uFEFF${rows.map((row) => row.map(toCsvCell).join(',')).join('\n')}`
   const fromKey = toLocalDateParts(from)?.dateKey ?? 'from'
   const toKey = toLocalDateParts(to)?.dateKey ?? 'to'
   const filename = `time-entries-${fromKey}-to-${toKey}.csv`
@@ -240,5 +246,6 @@ export function exportToCSV(entries: TimeEntry[], from: string | Date, to: strin
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  URL.revokeObjectURL(downloadUrl)
+  // Revoking immediately can cancel the download in Safari.
+  window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
 }

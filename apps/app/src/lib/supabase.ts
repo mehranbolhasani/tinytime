@@ -50,9 +50,13 @@ export function getFriendlySupabaseError(
     return 'A timer was already running, so it has been loaded instead.'
   }
 
+  const errorCode = (error as { code?: string } | null)?.code
+  if (errorCode === 'PGRST301' || rawMessage.includes('JWT expired')) {
+    return 'Your session expired. Please sign in again.'
+  }
+
   if (
     rawMessage.includes('row-level security policy') ||
-    rawMessage.includes('JWT') ||
     rawMessage.includes('permission denied')
   ) {
     return 'Not authorized for this action. If you are signed in, your Supabase RLS policies likely need to allow this table for auth.uid().'

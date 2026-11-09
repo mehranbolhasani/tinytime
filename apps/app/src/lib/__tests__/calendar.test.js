@@ -8,7 +8,7 @@ import {
   addDays,
   isSameDay,
   toBlock,
-  assignOverlapLanes,
+  assignIntervalLanes,
   getNowLinePosition,
   getDropStartMinutes,
   minutesToTop,
@@ -185,68 +185,70 @@ describe('toBlock', () => {
     expect(block.height).toBe(MIN_ENTRY_HEIGHT)
   })
 
-  it('initialises lane to 0 and hasOverlap to false', () => {
+  it('initialises lane to 0 and laneCount to 1', () => {
     const entry = makeEntry({
       startedAt: '2024-01-15T09:00:00.000Z',
       stoppedAt: '2024-01-15T10:00:00.000Z',
     })
     const block = toBlock(entry, DAY_START, DAY_END, 3600)
     expect(block.lane).toBe(0)
-    expect(block.hasOverlap).toBe(false)
+    expect(block.laneCount).toBe(1)
   })
 })
 
 // ---------------------------------------------------------------------------
-// assignOverlapLanes
+// assignIntervalLanes
 // ---------------------------------------------------------------------------
-describe('assignOverlapLanes', () => {
-  function makeBlock(startMs, endMs) {
-    return { startMs, endMs, lane: 0, hasOverlap: false }
+describe('assignIntervalLanes', () => {
+  const T = (h, m = 0) =>
+    new Date(`2024-01-15T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000Z`).getTime()
+
+  function lane(items) {
+    return assignIntervalLanes(items, (item) => item.start, (item) => item.end)
   }
 
-  const T = (h, m = 0) => new Date(`2024-01-15T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000Z`).getTime()
+  it('gives three mutually overlapping items lanes 0, 1 and 2 with laneCount 3', () => {
+    const result = lane([
+      { start: T(9), end: T(12) },
+      { start: T(10), end: T(13) },
+      { start: T(11), end: T(14) },
+    ])
 
-  it('leaves non-overlapping blocks unchanged', () => {
-    const blocks = [makeBlock(T(9), T(10)), makeBlock(T(11), T(12))]
-    const result = assignOverlapLanes(blocks)
-    expect(result.every((b) => !b.hasOverlap)).toBe(true)
-    expect(result.every((b) => b.lane === 0)).toBe(true)
+    expect(result.map((entry) => entry.lane)).toEqual([0, 1, 2])
+    expect(result.every((entry) => entry.laneCount === 3)).toBe(true)
   })
 
-  it('marks both blocks when they overlap', () => {
-    const blocks = [makeBlock(T(9), T(11)), makeBlock(T(10), T(12))]
-    const result = assignOverlapLanes(blocks)
-    expect(result.every((b) => b.hasOverlap)).toBe(true)
-    const lanes = result.map((b) => b.lane).sort()
-    expect(lanes).toEqual([0, 1])
+  it('shares lane 0 for back-to-back items with laneCount 1', () => {
+    const result = lane([
+      { start: T(9), end: T(10) },
+      { start: T(10), end: T(11) },
+    ])
+
+    expect(result.map((entry) => entry.lane)).toEqual([0, 0])
+    expect(result.every((entry) => entry.laneCount === 1)).toBe(true)
   })
 
-  it('does not treat adjacent (touching) blocks as overlapping', () => {
-    // A ends exactly when B starts
-    const blocks = [makeBlock(T(9), T(10)), makeBlock(T(10), T(11))]
-    const result = assignOverlapLanes(blocks)
-    expect(result.every((b) => !b.hasOverlap)).toBe(true)
+  it('gives separate clusters independent lane counts', () => {
+    const result = lane([
+      { start: T(9), end: T(10) },
+      { start: T(9, 30), end: T(11) },
+      { start: T(13), end: T(14) },
+      { start: T(13, 30), end: T(15) },
+    ])
+
+    expect(result.map((entry) => entry.lane)).toEqual([0, 1, 0, 1])
+    expect(result.map((entry) => entry.laneCount)).toEqual([2, 2, 2, 2])
   })
 
-  it('keeps a non-overlapping third block on lane 0', () => {
-    const blocks = [
-      makeBlock(T(9), T(11)),   // overlaps with second
-      makeBlock(T(10), T(12)),  // overlaps with first
-      makeBlock(T(13), T(14)),  // no overlap
-    ]
-    const result = assignOverlapLanes(blocks)
-    const isolated = result.find((b) => b.startMs === T(13))
-    expect(isolated.hasOverlap).toBe(false)
-    expect(isolated.lane).toBe(0)
-  })
+  it('gives a long item overlapping two sequential shorts lanes 0/1/1 with laneCount 2', () => {
+    const result = lane([
+      { start: T(9), end: T(12) },
+      { start: T(9, 30), end: T(10, 30) },
+      { start: T(10, 30), end: T(11, 30) },
+    ])
 
-  it('does not mutate the original array', () => {
-    const blocks = [makeBlock(T(9), T(11)), makeBlock(T(10), T(12))]
-    const copy = blocks.map((b) => ({ ...b }))
-    assignOverlapLanes(blocks)
-    // Original objects' lane/hasOverlap ARE mutated (the fn modifies in place after sort)
-    // but the array reference itself should not be the same as the returned one
-    expect(assignOverlapLanes(copy)).not.toBe(copy)
+    expect(result.map((entry) => entry.lane)).toEqual([0, 1, 1])
+    expect(result.every((entry) => entry.laneCount === 2)).toBe(true)
   })
 })
 

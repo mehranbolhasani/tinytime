@@ -68,6 +68,7 @@ export default function ProjectsSection({
   const [formError, setFormError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const isEditing = Boolean(editingProject)
 
   const resetForm = () => {
@@ -141,9 +142,14 @@ export default function ProjectsSection({
     }
 
     setIsDeleting(true)
+    setDeleteError('')
     try {
       await deleteProject(projectToDelete.id)
       setProjectToDelete(null)
+    } catch (deleteFailure) {
+      setDeleteError(
+        deleteFailure instanceof Error ? deleteFailure.message : 'Unable to delete this project.'
+      )
     } finally {
       setIsDeleting(false)
     }
@@ -196,7 +202,10 @@ export default function ProjectsSection({
                   <DropdownMenuItem onClick={() => handleOpenEdit(project)}>Edit</DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
-                    onClick={() => setProjectToDelete(project)}
+                    onClick={() => {
+                      setDeleteError('')
+                      setProjectToDelete(project)
+                    }}
                   >
                     Delete
                   </DropdownMenuItem>
@@ -270,7 +279,15 @@ export default function ProjectsSection({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(projectToDelete)} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+      <Dialog
+        open={Boolean(projectToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setProjectToDelete(null)
+            setDeleteError('')
+          }
+        }}
+      >
         <DialogContent mobileFullscreen>
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">Delete {projectToDelete?.name}?</DialogTitle>
@@ -278,6 +295,14 @@ export default function ProjectsSection({
               This won&apos;t delete its time entries.
             </DialogDescription>
           </DialogHeader>
+          {deleteError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            >
+              {deleteError}
+            </p>
+          ) : null}
           <DialogFooter>
             <Button
               type="button"

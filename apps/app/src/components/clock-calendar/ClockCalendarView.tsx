@@ -4,6 +4,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, List, LoaderCircle, Trash2 } fr
 import ClockCreateBar from '@/components/clock-calendar/ClockCreateBar'
 import ClockDial from '@/components/clock-calendar/ClockDial'
 import DialTotal from '@/components/clock-calendar/DialTotal'
+import DragGhost from '@/components/clock-calendar/DragGhost'
 import MonthOverview from '@/components/clock-calendar/MonthOverview'
 import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
 import EntryDetailSheet from '@/components/calendar/EntryDetailSheet'
@@ -72,6 +73,14 @@ export default function ClockCalendarView({
 
   const svgRef = useRef<SVGSVGElement>(null)
   const binRef = useRef<HTMLDivElement>(null)
+  const ghostRef = useRef<HTMLDivElement>(null)
+
+  const handlePointerPosition = useCallback((x: number, y: number) => {
+    const element = ghostRef.current
+    if (element) {
+      element.style.transform = `translate3d(${x + 12}px, ${y + 12}px, 0)`
+    }
+  }, [])
 
   if (selectedDate.getTime() !== prevSelectedDate.getTime()) {
     setPrevSelectedDate(selectedDate)
@@ -141,10 +150,12 @@ export default function ClockCalendarView({
   }, [])
 
   const handleRequestDelete = useCallback((entry: TimeEntry) => {
+    setMutationError('')
     setEntryToDelete(entry)
   }, [])
 
   const handleArcDelete = useCallback((arc: DialArc) => {
+    setMutationError('')
     setEntryToDelete(arc.entry)
   }, [])
 
@@ -185,7 +196,14 @@ export default function ClockCalendarView({
     onCommitMove: handleCommitMove,
     onRequestDelete: handleRequestDelete,
     onActivate: handleActivate,
+    onPointerPosition: handlePointerPosition,
   })
+
+  const movingArc = gestures.hiddenEntryId
+    ? arcs.find((arc) => arc.entry.id === gestures.hiddenEntryId) ?? null
+    : null
+  const ghostVisible =
+    gestures.isMoving && (gestures.isDetached || gestures.isOverBin)
 
   const activeDraft: MinuteRange | null =
     gestures.draft ?? createRange ?? pendingMove
@@ -401,6 +419,7 @@ export default function ClockCalendarView({
               activeEntry={activeEntry}
               draft={activeDraft}
               draftColor={draftColor}
+              draftDetached={gestures.isDetached}
               hiddenEntryId={gestures.hiddenEntryId}
               focusedArcId={focusedArcId}
               interactive
@@ -430,8 +449,10 @@ export default function ClockCalendarView({
             exit={{ opacity: 0, y: -8 }}
             transition={presets.panelSwap.transition}
           >
-            <div
+            <motion.div
               ref={binRef}
+              animate={{ scale: gestures.isOverBin ? 1.1 : 1 }}
+              transition={presets.panelSwap.transition}
               className={
                 gestures.isOverBin
                   ? 'flex items-center justify-center gap-2 rounded-xl border border-dashed border-destructive bg-destructive/10 p-3 text-sm text-destructive'
@@ -439,10 +460,16 @@ export default function ClockCalendarView({
               }
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              <span>Drop to delete</span>
-            </div>
+              <span>
+                {gestures.isOverBin
+                  ? `Release to delete ${movingArc?.label ?? 'this entry'}`
+                  : 'Drop to delete'}
+              </span>
+            </motion.div>
             <span role="status" className="sr-only">
-              {gestures.isOverBin ? 'Release to delete this entry' : 'Drag over the bin to delete'}
+              {gestures.isOverBin
+                ? `Release to delete ${movingArc?.label ?? 'this entry'}`
+                : 'Drag over the bin to delete'}
             </span>
           </motion.div>
         ) : null}
@@ -508,6 +535,7 @@ export default function ClockCalendarView({
         onDuplicate={handleDuplicate}
         onDelete={(entry) => {
           setSheetEntry(null)
+          setMutationError('')
           setEntryToDelete(entry)
         }}
       />
@@ -520,6 +548,20 @@ export default function ClockCalendarView({
         }}
       />
 
+      {ghostVisible ? (
+        <DragGhost
+          ghostRef={ghostRef}
+          label={movingArc?.label ?? 'Entry'}
+          color={movingArc?.color ?? '#a8a29e'}
+          duration={
+            movingArc
+              ? formatDuration((movingArc.endMinute - movingArc.startMinute) * 60)
+              : ''
+          }
+          isOverBin={gestures.isOverBin}
+        />
+      ) : null}
+
       <DeleteEntryAlertDialog
         entry={entryToDelete}
         open={Boolean(entryToDelete)}
@@ -529,6 +571,7 @@ export default function ClockCalendarView({
         onConfirm={() => {
           void handleDeleteConfirm()
         }}
+        error={mutationError}
       />
     </section>
   )

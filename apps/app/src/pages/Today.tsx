@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import EntryList from '@/components/timer/EntryList'
 import FavouriteChips from '@/components/timer/FavouriteChips'
@@ -5,6 +6,7 @@ import TimerWidget from '@/components/timer/TimerWidget'
 import TodayDialCard from '@/components/timer/TodayDialCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useFavouriteEntries } from '@/hooks/useFavouriteEntries'
+import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { presets } from '@/lib/motion'
@@ -20,6 +22,28 @@ export default function Today() {
   const { deleteEntry } = useTimeEntryMutations({ entries })
   const { startTimer } = useTimerControlActions()
   const { favourites, addFavourite, removeFavourite, isFavourite } = useFavouriteEntries()
+  const { projects, isLoading: isLoadingProjects } = useProjects()
+
+  const resolvedFavourites = useMemo(
+    () =>
+      favourites.map((favourite) => {
+        if (!favourite.project_id) {
+          return favourite
+        }
+
+        const project = projects.find((item) => item.id === favourite.project_id)
+        if (project) {
+          return { ...favourite, projectName: project.name, projectColor: project.color }
+        }
+
+        if (isLoadingProjects) {
+          return favourite
+        }
+
+        return { ...favourite, project_id: null, projectName: null, projectColor: null }
+      }),
+    [favourites, isLoadingProjects, projects]
+  )
 
   const handleContinueEntry = (entry: TimeEntry) => {
     void startTimer({
@@ -61,7 +85,7 @@ export default function Today() {
       ) : null}
 
       <FavouriteChips
-        favourites={favourites}
+        favourites={resolvedFavourites}
         onSelect={handleSelectFavourite}
         onRemove={removeFavourite}
       />

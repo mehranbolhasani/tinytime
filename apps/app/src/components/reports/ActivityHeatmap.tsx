@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { distributeAcrossHours } from '@/lib/reports'
 import { formatDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
 
@@ -6,26 +7,25 @@ interface ActivityHeatmapProps {
   entries: TimeEntry[]
 }
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-function buildGrid(entries: TimeEntry[]): { grid: number[][]; maxSeconds: number; hasLateHours: boolean } {
+function buildGrid(entries: TimeEntry[]): {
+  grid: number[][]
+  maxSeconds: number
+  hasLateHours: boolean
+} {
   const grid: number[][] = Array.from({ length: 24 }, () => Array(7).fill(0))
   let hasLateHours = false
 
   for (const entry of entries) {
-    const seconds = entry.duration_seconds ?? 0
-    if (seconds <= 0) continue
+    const start = new Date(entry.started_at)
+    const end = entry.stopped_at ? new Date(entry.stopped_at) : new Date()
 
-    const date = new Date(entry.started_at)
-    if (Number.isNaN(date.getTime())) continue
-
-    const hour = date.getHours()
-    const day = date.getDay()
-
-    grid[hour][day] += seconds
-
-    if (hour >= 0 && hour <= 5) {
-      hasLateHours = true
+    for (const slice of distributeAcrossHours(start, end)) {
+      grid[slice.hour][slice.weekday] += slice.seconds
+      if (slice.hour <= 5) {
+        hasLateHours = true
+      }
     }
   }
 
@@ -39,7 +39,9 @@ export default function ActivityHeatmap({ entries }: ActivityHeatmapProps) {
 
   if (entries.length === 0) return null
 
-  const hours = hasLateHours ? Array.from({ length: 24 }, (_, i) => i) : Array.from({ length: 18 }, (_, i) => i + 6)
+  const hours = hasLateHours
+    ? Array.from({ length: 24 }, (_, i) => i)
+    : Array.from({ length: 18 }, (_, i) => i + 6)
 
   return (
     <div>
@@ -56,17 +58,20 @@ export default function ActivityHeatmap({ entries }: ActivityHeatmapProps) {
           <div className="text-right pr-1 text-[10px] text-muted-foreground/50 leading-4">
             {hour % 3 === 0 ? `${String(hour).padStart(2, '0')}` : ''}
           </div>
-          {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-            const seconds = grid[hour]?.[day] ?? 0
+          {DAYS.map((day, weekday) => {
+            const seconds = grid[hour]?.[weekday] ?? 0
             const intensity = maxSeconds > 0 ? seconds / maxSeconds : 0
+            const percent = Math.round((0.14 + intensity * 0.76) * 100)
             return (
               <div
                 key={day}
+                role={seconds > 0 ? 'img' : undefined}
+                aria-label={seconds > 0 ? `${day} ${hour}:00, ${formatDuration(seconds)}` : undefined}
                 className="h-4 rounded-[2px]"
                 style={{
                   backgroundColor:
                     intensity > 0
-                      ? `rgba(99,153,34,${(0.08 + intensity * 0.82).toFixed(2)})`
+                      ? `color-mix(in oklab, var(--primary) ${percent}%, transparent)`
                       : 'transparent',
                   border: '0.5px solid var(--color-border, rgba(0,0,0,0.06))',
                 }}

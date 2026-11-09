@@ -1,3 +1,4 @@
+import { assignIntervalLanes } from '@/lib/calendar'
 import { toSafeHexColor } from '@/lib/color'
 import type { NormalizedGoogleEvent, TimeEntry } from '@/types'
 
@@ -204,21 +205,11 @@ export interface DialEventArc {
 export function assignLanes<T extends { startMinute: number; endMinute: number }>(
   items: T[]
 ): Array<T & { lane: number }> {
-  const sorted = [...items].sort(
-    (a, b) => a.startMinute - b.startMinute || b.endMinute - a.endMinute
-  )
-  const laneEnds: number[] = []
-
-  return sorted.map((item) => {
-    let lane = laneEnds.findIndex((end) => end <= item.startMinute)
-    if (lane === -1) {
-      lane = laneEnds.length
-      laneEnds.push(item.endMinute)
-    } else {
-      laneEnds[lane] = item.endMinute
-    }
-    return { ...item, lane: Math.min(lane, MAX_LANES - 1) }
-  })
+  return assignIntervalLanes(
+    items,
+    (item) => item.startMinute,
+    (item) => item.endMinute
+  ).map(({ item, lane }) => ({ ...item, lane: Math.min(lane, MAX_LANES - 1) }))
 }
 
 function entryLabel(entry: TimeEntry): string {

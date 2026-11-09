@@ -14,9 +14,9 @@ interface GoogleEventBlockProps {
 
 export default function GoogleEventBlock({ block, event, onStartTimer, disableStart = false }: GoogleEventBlockProps) {
   const color = toSafeHexColor(event.calendarColor, '#60a5fa')
-  const hasOverlap = Boolean(block?.hasOverlap)
-  const width = hasOverlap ? 'calc(50% - 12px)' : 'calc(100% - 24px)'
-  const left = hasOverlap ? `${block.lane * 50}%` : '1%'
+  const laneCount = Math.max(1, block?.laneCount ?? 1)
+  const width = `calc((100% - 24px) / ${laneCount} - 4px)`
+  const left = `calc(12px + ((100% - 24px) / ${laneCount}) * ${block?.lane ?? 0})`
 
   return (
     <Popover>

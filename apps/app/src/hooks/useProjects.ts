@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { TIME_ENTRIES_QUERY_KEY } from '@/hooks/useTimeEntries'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import type { Project } from '@/types'
 
@@ -84,6 +85,7 @@ export function useProjects(): UseProjectsResult {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
     },
   })
 
@@ -99,6 +101,7 @@ export function useProjects(): UseProjectsResult {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY })
     },
   })
 

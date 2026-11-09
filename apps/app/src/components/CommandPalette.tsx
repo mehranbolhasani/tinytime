@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { BarChart3, Calendar, Clock, FolderOpen, Home, Play, Square, type LucideIcon } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
@@ -7,7 +8,7 @@ interface CommandItem {
   id: string
   label: string
   keywords: string[]
-  icon: string
+  icon: LucideIcon
   action: () => void
   meta?: string
 }
@@ -67,51 +68,70 @@ export default function CommandPalette({ open, onOpenChange, onNavigate, onToggl
         id: 'nav-today',
         label: 'Go to Today',
         keywords: ['today', 'home', 't'],
-        icon: 'ti-home',
+        icon: Home,
         action: () => onNavigate('/'),
       },
       {
         id: 'nav-calendar',
         label: 'Go to Calendar',
         keywords: ['calendar', 'c'],
-        icon: 'ti-calendar',
+        icon: Calendar,
         action: () => onNavigate('/calendar'),
       },
       {
         id: 'nav-reports',
         label: 'Go to Reports',
         keywords: ['reports', 'r'],
-        icon: 'ti-chart-bar',
+        icon: BarChart3,
         action: () => onNavigate('/reports'),
       },
       {
         id: 'nav-projects',
         label: 'Go to Projects',
         keywords: ['projects', 'p'],
-        icon: 'ti-folder',
+        icon: FolderOpen,
         action: () => onNavigate('/projects'),
       },
       {
         id: 'timer-toggle',
         label: isRunning ? 'Stop timer' : 'Start timer',
         keywords: ['timer', 'start', 'stop', 's'],
-        icon: isRunning ? 'ti-player-stop' : 'ti-player-play',
+        icon: isRunning ? Square : Play,
         action: onToggleTimer,
       },
     ]
 
-    for (const entry of recentEntries) {
-      const date = new Date(entry.started_at)
-      const desc = entry.description ?? 'No description'
+    const seen = new Set<string>()
+    const sortedEntries = [...recentEntries].sort(
+      (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    )
+
+    for (const entry of sortedEntries) {
+      if (items.length - 5 >= 15) {
+        break
+      }
+
+      const desc = entry.description?.trim() ?? ''
       const projectName = entry.projects?.name ?? ''
+      if (!desc && !projectName) {
+        continue
+      }
+
+      const dedupeKey = `${desc}|${entry.project_id ?? ''}`
+      if (seen.has(dedupeKey)) {
+        continue
+      }
+      seen.add(dedupeKey)
+
+      const date = new Date(entry.started_at)
       const dateLabel = formatDateLabel(date)
       const meta = projectName ? `${projectName} · ${dateLabel}` : dateLabel
 
       items.push({
         id: `entry-${entry.id}`,
-        label: desc,
+        label: desc || projectName,
         keywords: [desc, projectName].filter(Boolean),
-        icon: 'ti-clock',
+        icon: Clock,
         meta,
         action: () => {
           onNavigate(`/calendar?date=${toLocalDateKey(date)}`)
@@ -166,6 +186,10 @@ export default function CommandPalette({ open, onOpenChange, onNavigate, onToggl
     }
   }, [selectedIndex])
 
+  const activeDescendant = filteredItems[selectedIndex]
+    ? `command-option-${filteredItems[selectedIndex].id}`
+    : undefined
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -184,34 +208,48 @@ export default function CommandPalette({ open, onOpenChange, onNavigate, onToggl
           }}
           placeholder="Search or jump to…"
           aria-label="Command search"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="command-palette-list"
+          aria-activedescendant={activeDescendant}
           className="w-full rounded-t-2xl border-0 border-b border-border bg-transparent px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
         />
-        <div className="max-h-64 overflow-y-auto p-2 max-sm:max-h-none max-sm:flex-1">
+        <div
+          id="command-palette-list"
+          role="listbox"
+          className="max-h-64 overflow-y-auto p-2 max-sm:max-h-none max-sm:flex-1"
+        >
           {filteredItems.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground/60">
               No commands match.
             </p>
           ) : (
-            filteredItems.map((item, index) => (
-              <button
-                type="button"
-                key={item.id}
-                data-command-index={index}
-                onClick={() => {
-                  item.action()
-                  onOpenChange(false)
-                }}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none ${
-                  index === selectedIndex ? 'bg-secondary' : ''
-                }`}
-              >
-                <i className={`ti ${item.icon} text-muted-foreground`} style={{ fontSize: 16 }} aria-hidden="true" />
-                <span>{item.label}</span>
-                {item.meta ? (
-                  <span className="ml-auto text-xs text-muted-foreground/60">{item.meta}</span>
-                ) : null}
-              </button>
-            ))
+            filteredItems.map((item, index) => {
+              const Icon = item.icon
+              return (
+                <button
+                  type="button"
+                  key={item.id}
+                  id={`command-option-${item.id}`}
+                  role="option"
+                  aria-selected={index === selectedIndex}
+                  data-command-index={index}
+                  onClick={() => {
+                    item.action()
+                    onOpenChange(false)
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none ${
+                    index === selectedIndex ? 'bg-secondary' : ''
+                  }`}
+                >
+                  <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <span>{item.label}</span>
+                  {item.meta ? (
+                    <span className="ml-auto text-xs text-muted-foreground/60">{item.meta}</span>
+                  ) : null}
+                </button>
+              )
+            })
           )}
         </div>
       </DialogContent>

@@ -6,7 +6,7 @@ import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { computeDuration } from '@/lib/utils'
 import type { TimeEntry, DayRange } from '@/types'
 
-const TIME_ENTRIES_QUERY_KEY = ['time_entries']
+export const TIME_ENTRIES_QUERY_KEY = ['time_entries']
 export const ACTIVE_ENTRY_QUERY_KEY = ['time_entries', 'active'] as const
 const ENTRY_SELECT = '*, projects(id, name, color)'
 

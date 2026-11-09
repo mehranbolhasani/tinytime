@@ -75,6 +75,7 @@ function setup({ maxMinute = 1440 } = {}) {
   const onCommitMove = vi.fn()
   const onRequestDelete = vi.fn()
   const onActivate = vi.fn()
+  const onPointerPosition = vi.fn()
 
   const { result } = renderHook(() =>
     useClockGestures({
@@ -87,10 +88,32 @@ function setup({ maxMinute = 1440 } = {}) {
       onCommitMove,
       onRequestDelete,
       onActivate,
+      onPointerPosition,
     })
   )
 
-  return { result, svg, bin, onCreateDraft, onCommitMove, onRequestDelete, onActivate }
+  return {
+    result,
+    svg,
+    bin,
+    onCreateDraft,
+    onCommitMove,
+    onRequestDelete,
+    onActivate,
+    onPointerPosition,
+  }
+}
+
+function makeArc(entry, startMinute = 540, endMinute = 600) {
+  return {
+    entry,
+    startMinute,
+    endMinute,
+    lane: 0,
+    isRunning: false,
+    label: 'Work',
+    color: '#eab308',
+  }
 }
 
 afterEach(() => {
@@ -212,6 +235,79 @@ describe('useClockGestures', () => {
 
     expect(onRequestDelete).toHaveBeenCalledWith(entry)
     expect(onCommitMove).not.toHaveBeenCalled()
+  })
+
+  it('freezes the draft outside the dial and continues without a jump', () => {
+    const { result, svg } = setup()
+    const entry = { id: 'entry-detach' }
+    const arc = makeArc(entry)
+
+    act(() =>
+      result.current.onArcPointerDown(arc, 'body', pointerDownEvent(svg, pointAt(570)))
+    )
+    act(() => firePointer('pointermove', pointAt(600)))
+    expect(result.current.draft).toEqual({ startMinute: 570, endMinute: 630 })
+
+    // Outside the dial (radius fraction > 1.08), at the bottom angle (12:00).
+    act(() => firePointer('pointermove', { clientX: 200, clientY: 700 }))
+    expect(result.current.isDetached).toBe(true)
+    expect(result.current.draft).toEqual({ startMinute: 570, endMinute: 630 })
+
+    // Back inside at the same angle: no jump.
+    act(() => firePointer('pointermove', { clientX: 200, clientY: 350 }))
+    expect(result.current.isDetached).toBe(false)
+    expect(result.current.draft).toEqual({ startMinute: 570, endMinute: 630 })
+
+    // Continuing clockwise adds to the frozen sweep.
+    act(() => firePointer('pointermove', pointAt(750)))
+    expect(result.current.draft).toEqual({ startMinute: 600, endMinute: 660 })
+  })
+
+  it('cancels a move released outside the dial away from the bin', () => {
+    const { result, svg, onCommitMove, onRequestDelete } = setup()
+    const entry = { id: 'entry-cancel' }
+    const arc = makeArc(entry)
+
+    act(() =>
+      result.current.onArcPointerDown(arc, 'body', pointerDownEvent(svg, pointAt(570)))
+    )
+    act(() => firePointer('pointermove', pointAt(600)))
+    act(() => firePointer('pointermove', { clientX: 200, clientY: 700 }))
+    act(() => firePointer('pointerup', { clientX: 200, clientY: 700 }))
+
+    expect(onCommitMove).not.toHaveBeenCalled()
+    expect(onRequestDelete).not.toHaveBeenCalled()
+    expect(result.current.draft).toBeNull()
+  })
+
+  it('deletes when released over the bin while detached', () => {
+    const { result, svg, onRequestDelete } = setup()
+    const entry = { id: 'entry-bin-detached' }
+    const arc = makeArc(entry)
+
+    act(() =>
+      result.current.onArcPointerDown(arc, 'body', pointerDownEvent(svg, pointAt(570)))
+    )
+    act(() => firePointer('pointermove', pointAt(600)))
+    act(() => firePointer('pointermove', { clientX: 50, clientY: 450 }))
+    act(() => firePointer('pointerup', { clientX: 50, clientY: 450 }))
+
+    expect(onRequestDelete).toHaveBeenCalledWith(entry)
+  })
+
+  it('reports the pointer position on every move', () => {
+    const { result, svg, onPointerPosition } = setup()
+
+    act(() => result.current.onTrackPointerDown(pointerDownEvent(svg, pointAt(540))))
+    act(() => firePointer('pointermove', pointAt(545)))
+    act(() => firePointer('pointermove', pointAt(600)))
+    act(() => firePointer('pointermove', pointAt(630)))
+
+    expect(onPointerPosition).toHaveBeenCalledTimes(3)
+    expect(onPointerPosition).toHaveBeenLastCalledWith(
+      pointAt(630).clientX,
+      pointAt(630).clientY
+    )
   })
 
   it('reverts on pointercancel', () => {

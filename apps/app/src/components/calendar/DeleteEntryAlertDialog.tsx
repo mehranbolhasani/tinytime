@@ -15,6 +15,7 @@ interface DeleteEntryAlertDialogProps {
   onOpenChange: (open: boolean) => void
   entry: TimeEntry | null
   onConfirm: () => void
+  error?: string
 }
 
 export default function DeleteEntryAlertDialog({
@@ -22,6 +23,7 @@ export default function DeleteEntryAlertDialog({
   onOpenChange,
   entry,
   onConfirm,
+  error,
 }: DeleteEntryAlertDialogProps) {
   const entryLabel = entry?.description?.trim() || entry?.projects?.name || 'this time entry'
 
@@ -34,11 +36,23 @@ export default function DeleteEntryAlertDialog({
             This action permanently removes {entryLabel} from your calendar.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          >
+            {error}
+          </p>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            onClick={onConfirm}
+            onClick={(event) => {
+              // Keep the dialog open until the parent clears `entry` on success.
+              event.preventDefault()
+              onConfirm()
+            }}
           >
             Delete entry
           </AlertDialogAction>

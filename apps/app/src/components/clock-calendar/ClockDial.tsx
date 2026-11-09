@@ -34,6 +34,7 @@ interface ClockDialProps {
   activeEntry: TimeEntry | null
   draft?: DialDraft | null
   draftColor?: string
+  draftDetached?: boolean
   hiddenEntryId?: string | null
   focusedArcId?: string | null
   size?: 'full' | 'compact'
@@ -80,6 +81,7 @@ interface ClockDialStaticProps {
   eventArcs: DialEventArc[]
   draft: DialDraft | null
   draftColor: string
+  draftDetached: boolean
   hiddenEntryId: string | null
   focusedArcId: string | null
   compact: boolean
@@ -99,6 +101,7 @@ const ClockDialStatic = memo(function ClockDialStatic({
   eventArcs,
   draft,
   draftColor,
+  draftDetached,
   hiddenEntryId,
   focusedArcId,
   compact,
@@ -322,7 +325,8 @@ const ClockDialStatic = memo(function ClockDialStatic({
           stroke={draftColor}
           strokeWidth={arcStrokeWidth}
           strokeLinecap="round"
-          strokeOpacity={0.75}
+          strokeOpacity={draftDetached ? 0.35 : 0.75}
+          strokeDasharray={draftDetached ? '10 6' : undefined}
           aria-hidden="true"
         />
       ) : null}
@@ -451,6 +455,7 @@ export default function ClockDial({
   activeEntry,
   draft = null,
   draftColor = '#eab308',
+  draftDetached = false,
   hiddenEntryId = null,
   focusedArcId = null,
   size = 'full',
@@ -490,6 +495,7 @@ export default function ClockDial({
         eventArcs={eventArcs}
         draft={draft}
         draftColor={draftColor}
+        draftDetached={draftDetached}
         hiddenEntryId={hiddenEntryId}
         focusedArcId={focusedArcId}
         compact={compact}
