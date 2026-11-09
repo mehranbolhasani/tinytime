@@ -115,6 +115,7 @@ export default function DayView({
   const [createDraft, setCreateDraft] = useState<CreateDraft | null>(null)
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null)
   const [entryToDelete, setEntryToDelete] = useState<TimeEntry | null>(null)
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false)
   const [sheetEntry, setSheetEntry] = useState<TimeEntry | null>(null)
   const [menuState, setMenuState] = useState<MenuState | null>(null)
   const [mutationError, setMutationError] = useState('')
@@ -350,16 +351,19 @@ export default function DayView({
   }, [])
 
   const handleDeleteConfirm = async (): Promise<void> => {
-    if (!entryToDelete) {
+    if (!entryToDelete || isDeletingEntry) {
       return
     }
 
+    setIsDeletingEntry(true)
     try {
       setMutationError('')
       await deleteEntry(entryToDelete.id)
       setEntryToDelete(null)
     } catch (error) {
       setMutationError(error instanceof Error ? error.message : 'Unable to delete this entry.')
+    } finally {
+      setIsDeletingEntry(false)
     }
   }
 
@@ -717,6 +721,7 @@ export default function DayView({
         entry={entryToDelete}
         onConfirm={handleDeleteConfirm}
         error={mutationError}
+        isDeleting={isDeletingEntry}
       />
     </>
   )

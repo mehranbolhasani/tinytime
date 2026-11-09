@@ -16,6 +16,7 @@ interface DeleteEntryAlertDialogProps {
   entry: TimeEntry | null
   onConfirm: () => void
   error?: string
+  isDeleting?: boolean
 }
 
 export default function DeleteEntryAlertDialog({
@@ -24,11 +25,20 @@ export default function DeleteEntryAlertDialog({
   entry,
   onConfirm,
   error,
+  isDeleting = false,
 }: DeleteEntryAlertDialogProps) {
   const entryLabel = entry?.description?.trim() || entry?.projects?.name || 'this time entry'
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && isDeleting) {
+          return
+        }
+        onOpenChange(nextOpen)
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete time entry?</AlertDialogTitle>
@@ -45,16 +55,17 @@ export default function DeleteEntryAlertDialog({
           </p>
         ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={isDeleting}
             onClick={(event) => {
               // Keep the dialog open until the parent clears `entry` on success.
               event.preventDefault()
               onConfirm()
             }}
           >
-            Delete entry
+            {isDeleting ? 'Deleting…' : 'Delete entry'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

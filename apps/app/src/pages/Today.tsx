@@ -6,6 +6,7 @@ import TimerWidget from '@/components/timer/TimerWidget'
 import TodayDialCard from '@/components/timer/TodayDialCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useFavouriteEntries } from '@/hooks/useFavouriteEntries'
+import { useLocalDay } from '@/hooks/useLocalDay'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
@@ -15,7 +16,7 @@ import type { FavouriteEntry } from '@/hooks/useFavouriteEntries'
 import type { TimeEntry } from '@/types'
 
 export default function Today() {
-  const today = new Date()
+  const today = useLocalDay()
   const { from, to } = localDayRange(today)
 
   const { entries, isLoading, error } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })

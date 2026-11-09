@@ -61,7 +61,10 @@ export default function ClockCalendarView({
   const [viewMonth, setViewMonth] = useState(selectedDate.getMonth())
   const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate)
   const [createRange, setCreateRange] = useState<MinuteRange | null>(null)
-  const [pendingMove, setPendingMove] = useState<(MinuteRange & { color: string }) | null>(null)
+  const [pendingMove, setPendingMove] = useState<
+    (MinuteRange & { color: string; entryId: string }) | null
+  >(null)
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false)
   const [description, setDescription] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -164,6 +167,7 @@ export default function ClockCalendarView({
       const startedAt = dateFromDayMinute(dayStart, startMinute).toISOString()
       const stoppedAt = dateFromDayMinute(dayStart, endMinute).toISOString()
       setPendingMove({
+        entryId: entry.id,
         startMinute,
         endMinute,
         color: toSafeHexColor(entry.projects?.color, '#e76f51'),
@@ -258,10 +262,11 @@ export default function ClockCalendarView({
   }
 
   const handleDeleteConfirm = async () => {
-    if (!entryToDelete) {
+    if (!entryToDelete || isDeletingEntry) {
       return
     }
 
+    setIsDeletingEntry(true)
     setMutationError('')
 
     try {
@@ -271,6 +276,8 @@ export default function ClockCalendarView({
       setMutationError(
         deleteError instanceof Error ? deleteError.message : 'Unable to delete this entry.'
       )
+    } finally {
+      setIsDeletingEntry(false)
     }
   }
 
@@ -420,7 +427,7 @@ export default function ClockCalendarView({
               draft={activeDraft}
               draftColor={draftColor}
               draftDetached={gestures.isDetached}
-              hiddenEntryId={gestures.hiddenEntryId}
+              hiddenEntryId={gestures.hiddenEntryId ?? pendingMove?.entryId ?? null}
               focusedArcId={focusedArcId}
               interactive
               nowMinute={maxMinute}
@@ -572,6 +579,7 @@ export default function ClockCalendarView({
           void handleDeleteConfirm()
         }}
         error={mutationError}
+        isDeleting={isDeletingEntry}
       />
     </section>
   )

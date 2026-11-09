@@ -60,7 +60,13 @@ function toPlainText(html: string | undefined): string {
     return ''
   }
 
-  const text = new DOMParser().parseFromString(html, 'text/html').body.textContent ?? ''
+  const withBoundaries = html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<(p|div|li|tr|h[1-6])\b[^>]*>/gi, ' ')
+    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, ' ')
+
+  const text =
+    new DOMParser().parseFromString(withBoundaries, 'text/html').body.textContent ?? ''
   return text.replace(/\s+/g, ' ').trim()
 }
 

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import ClockDial from '@/components/clock-calendar/ClockDial'
 import DialTotal from '@/components/clock-calendar/DialTotal'
 import { useTimerContext } from '@/contexts/TimerContext'
+import { useLocalDay } from '@/hooks/useLocalDay'
 import { useMinuteNow } from '@/hooks/useMinuteNow'
-import { startOfDay } from '@/lib/calendar'
 import { entriesToDialArcs, maxDrawableMinute } from '@/lib/clockCalendar'
 import type { TimeEntry } from '@/types'
 
@@ -16,7 +16,7 @@ export default function TodayDialCard({ entries }: TodayDialCardProps) {
   const navigate = useNavigate()
   const { activeEntry } = useTimerContext()
   const minuteNow = useMinuteNow()
-  const dayStart = useMemo(() => startOfDay(new Date()), [])
+  const dayStart = useLocalDay()
 
   const completedEntries = useMemo(
     () => entries.filter((entry) => entry.stopped_at !== null),

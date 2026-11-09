@@ -14,6 +14,18 @@ describe('normalizeGoogleEvent — description', () => {
     expect(event?.description).toBe('Hello world Second line')
   })
 
+  it('keeps word breaks for <br> and block closings', () => {
+    const event = normalizeGoogleEvent({
+      status: 'confirmed',
+      summary: 'Standup',
+      description: 'Line one<br>Line two<p>Para</p><p>Next</p>',
+      start: { dateTime: '2026-07-27T09:00:00' },
+      end: { dateTime: '2026-07-27T10:00:00' },
+    })
+
+    expect(event?.description).toBe('Line one Line two Para Next')
+  })
+
   it('returns an empty description when missing', () => {
     const event = normalizeGoogleEvent({
       status: 'confirmed',
