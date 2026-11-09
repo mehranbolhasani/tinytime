@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
@@ -41,6 +41,49 @@ function formatDayLabel(date: Date): string {
     day: 'numeric',
     month: 'long',
   })
+}
+
+function parseDateParam(value: string | null): Date {
+  if (!value) {
+    return new Date()
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) {
+    return new Date()
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const date = new Date(year, month - 1, day)
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return new Date()
+  }
+
+  return date
+}
+
+function toDateParam(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function isTodayDate(date: Date): boolean {
+  const today = new Date()
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  )
 }
 
 function readViewMode(): CalendarViewMode {
@@ -89,7 +132,12 @@ function GoogleResultBanner() {
         size="icon"
         aria-label="Dismiss"
         className="h-5 w-5 shrink-0"
-        onClick={() => setSearchParams({}, { replace: true })}
+        onClick={() => {
+          const params = new URLSearchParams(searchParams)
+          params.delete('google')
+          params.delete('reason')
+          setSearchParams(params, { replace: true })
+        }}
       >
         <X className="h-4 w-4" aria-hidden="true" />
       </Button>
@@ -98,19 +146,25 @@ function GoogleResultBanner() {
 }
 
 export default function Calendar() {
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<CalendarViewMode>(readViewMode)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedDate = useMemo(() => parseDateParam(searchParams.get('date')), [searchParams])
+  const setSelectedDate = useCallback(
+    (next: Date | ((prev: Date) => Date)) => {
+      const current = parseDateParam(searchParams.get('date'))
+      const nextDate = typeof next === 'function' ? next(current) : next
+      const params = new URLSearchParams(searchParams)
 
-  useEffect(() => {
-    const raw = sessionStorage.getItem('tinytime:calendar-jump-date')
-    if (raw) {
-      sessionStorage.removeItem('tinytime:calendar-jump-date')
-      const date = new Date(raw)
-      if (!Number.isNaN(date.getTime())) {
-        setSelectedDate(date)
+      if (isTodayDate(nextDate)) {
+        params.delete('date')
+      } else {
+        params.set('date', toDateParam(nextDate))
       }
-    }
-  }, [])
+
+      setSearchParams(params, { replace: true })
+    },
+    [searchParams, setSearchParams]
+  )
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(readViewMode)
 
   const [zoomIndex, setZoomIndex] = useState(() => {
     if (typeof window === 'undefined') {
@@ -161,20 +215,23 @@ export default function Calendar() {
     }
   }
 
+  const selectedCalendarIdsKey = selectedCalendarIds.join(',')
+
   useEffect(() => {
     const ranges = [addDays(selectedDate, -1), addDays(selectedDate, 1)]
       .map((date) => localDayRange(date))
       .filter((range): range is { from: string; to: string } => Boolean(range.from && range.to))
+    const selectedIds = selectedCalendarIdsKey ? selectedCalendarIdsKey.split(',') : []
 
     for (const range of ranges) {
       queryClient.prefetchQuery(timeEntriesListQueryOptions(supabase, range))
 
-      if (connection.connected && !connection.needsReconnect && selectedCalendarIds.length > 0) {
+      if (connection.connected && !connection.needsReconnect && selectedIds.length > 0) {
         queryClient.prefetchQuery(
           googleEventsQueryOptions(supabase, {
             from: range.from,
             to: range.to,
-            selectedIds: selectedCalendarIds,
+            selectedIds,
           })
         )
       }
@@ -183,7 +240,7 @@ export default function Calendar() {
     connection.connected,
     connection.needsReconnect,
     queryClient,
-    selectedCalendarIds,
+    selectedCalendarIdsKey,
     selectedDate,
     supabase,
   ])
@@ -203,7 +260,7 @@ export default function Calendar() {
     return () => {
       window.removeEventListener(CALENDAR_SHORTCUT_EVENT, handleShortcutNavigation)
     }
-  }, [])
+  }, [setSelectedDate])
 
   if (viewMode === 'clock') {
     return (

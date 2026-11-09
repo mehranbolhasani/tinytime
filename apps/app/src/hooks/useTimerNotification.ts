@@ -55,10 +55,12 @@ export function useTimerNotification(): UseTimerNotificationResult {
   const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
     getNotificationPermission()
   )
+  const entryId = activeEntry?.id ?? null
+  const startedAt = activeEntry?.started_at ?? null
 
   useEffect(() => {
-    if (!activeEntry || thresholdMinutes <= 0 || permissionState !== 'granted') return
-    const startedMs = Date.parse(activeEntry.started_at)
+    if (!entryId || !startedAt || thresholdMinutes <= 0 || permissionState !== 'granted') return
+    const startedMs = Date.parse(startedAt)
     if (Number.isNaN(startedMs)) return
     const delay = startedMs + thresholdMinutes * 60_000 - Date.now()
     // Threshold passed more than a minute ago (e.g. page reload): don't nag again.
@@ -68,7 +70,7 @@ export function useTimerNotification(): UseTimerNotificationResult {
       if (!shown) setPermissionState('unsupported')
     }, Math.max(0, delay))
     return () => window.clearTimeout(id)
-  }, [activeEntry?.id, activeEntry?.started_at, thresholdMinutes, permissionState])
+  }, [entryId, startedAt, thresholdMinutes, permissionState])
 
   const setThreshold = useCallback(
     async (minutes: number) => {

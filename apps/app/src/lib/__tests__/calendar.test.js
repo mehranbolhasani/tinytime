@@ -3,7 +3,6 @@ import {
   HOUR_HEIGHT,
   MIN_ENTRY_HEIGHT,
   MINUTES_IN_DAY,
-  DRAG_SNAP_MINUTES,
   getGridHeight,
   startOfDay,
   addDays,

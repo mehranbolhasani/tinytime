@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from './database.types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
@@ -19,11 +20,11 @@ export const supabaseConfigError: string | null =
     ? `Missing required environment variable(s): ${missingVariables.join(', ')}.`
     : null
 
-export const supabase: SupabaseClient | null = supabaseConfigError
+export const supabase: SupabaseClient<Database> | null = supabaseConfigError
   ? null
-  : createClient(supabaseUrl!, supabaseAnonKey!)
+  : createClient<Database>(supabaseUrl!, supabaseAnonKey!)
 
-export function assertSupabaseClient(): SupabaseClient {
+export function assertSupabaseClient(): SupabaseClient<Database> {
   if (!supabase) {
     throw new Error(supabaseConfigError ?? 'Supabase client is not configured.')
   }

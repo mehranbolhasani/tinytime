@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  app:
+    name: App (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm --workspace apps/app run lint
+      - run: npm --workspace apps/app run typecheck
+      - run: npm --workspace apps/app run test
+      - run: npm --workspace apps/app run build
+      - run: bash scripts/check-context.sh
+
+  landing:
+    name: Landing (build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm --workspace apps/landing run build
+
+  edge-functions:
+    name: Edge functions (deno check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check apps/app/supabase/functions/google-oauth/index.ts apps/app/supabase/functions/google-calendar/index.ts

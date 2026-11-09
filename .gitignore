@@ -30,3 +30,8 @@ dist-ssr
 
 # Test output
 coverage
+
+# Supabase CLI and Vercel local state
+supabase/.temp/
+apps/app/supabase/.temp/
+.vercel

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FunctionsHttpError, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { normalizeGoogleEvents } from '@/lib/googleCalendar'
 import type { GoogleCalendar, GoogleCalendarConnection, NormalizedGoogleEvent } from '@/types'
@@ -282,7 +283,7 @@ interface UseGoogleEventsForRangeResult {
 type RawGoogleEvents = Parameters<typeof normalizeGoogleEvents>[0]
 
 export function googleEventsQueryOptions(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   {
     from,
     to,
@@ -293,15 +294,17 @@ export function googleEventsQueryOptions(
     selectedIds: string[]
   }
 ) {
+  const ids = toUniqueSortedIds(selectedIds)
+
   return queryOptions({
-    queryKey: [...GOOGLE_EVENTS_QUERY_KEY, { from, to, selectedIdsKey: selectedIds.join(',') }],
+    queryKey: [...GOOGLE_EVENTS_QUERY_KEY, { from, to, selectedIdsKey: ids.join(',') }],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('google-calendar', {
         body: {
           action: 'events',
           timeMin: from,
           timeMax: to,
-          calendarIds: selectedIds,
+          calendarIds: ids,
         },
       })
 
@@ -324,16 +327,15 @@ export function useGoogleEventsForRange({
   enabled,
 }: UseGoogleEventsForRangeOptions): UseGoogleEventsForRangeResult {
   const supabase = assertSupabaseClient()
-  const selectedIds = useMemo(() => toUniqueSortedIds(selectedCalendarIds), [selectedCalendarIds])
   const normalize = useCallback(
     (raw: RawGoogleEvents) => normalizeGoogleEvents(raw, calendars),
     [calendars]
   )
 
   const { data, isLoading, error } = useQuery({
-    ...googleEventsQueryOptions(supabase, { from, to, selectedIds }),
+    ...googleEventsQueryOptions(supabase, { from, to, selectedIds: selectedCalendarIds }),
     select: normalize,
-    enabled: Boolean(enabled && from && to && selectedIds.length > 0),
+    enabled: Boolean(enabled && from && to && selectedCalendarIds.length > 0),
   })
 
   return {

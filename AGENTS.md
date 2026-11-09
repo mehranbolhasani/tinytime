@@ -55,7 +55,7 @@ Copy `apps/app/.env.example` to `apps/app/.env` and fill:
 ## Important notes
 
 - **Tailwind CSS v4** uses CSS-based configuration (no `tailwind.config`). App tokens live in `apps/app/src/index.css`; landing tokens in `apps/landing/src/styles/global.css`. Keep them in sync when changing brand colors.
-- **Vite config is JS**: `apps/app/vite.config.js` (not `.ts`), but `tsconfig.json` includes it for type checking.
+- **Vite config is JS**: `apps/app/vite.config.js` (not `.ts`); it is not part of the TypeScript project.
 - **Test setup**: Vitest with jsdom, setup file at `src/test/setup.ts`. Unit tests go next to source (`src/lib/__tests__/`). E2E tests go in `tests/e2e/` (currently empty except `.gitkeep`). Playwright runs against `npm run preview` on port 4173.
 - **Coverage includes only**: `src/lib/**`, `src/hooks/**`, `src/contexts/**`.
 - **localStorage key prefix**: `tinytime:` to match existing convention.

@@ -18,19 +18,15 @@ import {
   snapMinutes,
   type ClockArc,
   type ClockPeriod,
+  type DraftRange,
 } from '@/lib/clockCalendar'
-import { computeDuration } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import type { NormalizedGoogleEvent, TimeEntry } from '@/types'
 
 type DragMode =
   | { type: 'create'; originMinute: number }
   | { type: 'resize'; entryId: string; edge: 'start' | 'end'; otherMinute: number }
   | { type: 'move'; entryId: string; duration: number; grabOffset: number }
-
-interface DraftRange {
-  startMinute: number
-  endMinute: number
-}
 
 interface ClockDayCanvasProps {
   selectedDate: Date
@@ -70,12 +66,12 @@ export default function ClockDayCanvas({
   const [size, setSize] = useState(360)
   const [drag, setDrag] = useState<DragMode | null>(null)
   const [faceSpin, setFaceSpin] = useState(0)
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const moveDidDragRef = useRef(false)
   const dragRef = useRef<DragMode | null>(null)
   const draftRef = useRef<DraftRange | null>(draft)
   const dayStart = useMemo(() => startOfDay(selectedDate), [selectedDate])
   const isToday = isSameDay(selectedDate, now)
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
   useEffect(() => {
     dragRef.current = drag
@@ -84,14 +80,6 @@ export default function ClockDayCanvas({
   useEffect(() => {
     draftRef.current = draft
   }, [draft])
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setPrefersReducedMotion(media.matches)
-    const onChange = () => setPrefersReducedMotion(media.matches)
-    media.addEventListener('change', onChange)
-    return () => media.removeEventListener('change', onChange)
-  }, [])
 
   useEffect(() => {
     if (!isToday) return
@@ -356,22 +344,4 @@ export default function ClockDayCanvas({
       </div>
     </div>
   )
-}
-
-export type { DraftRange }
-
-export function draftToIsoRange(
-  dayStart: Date,
-  period: ClockPeriod,
-  draft: DraftRange
-): { started_at: string; stopped_at: string; duration_seconds: number } {
-  const started = dateFromPeriodMinute(dayStart, period, draft.startMinute)
-  const stopped = dateFromPeriodMinute(dayStart, period, draft.endMinute)
-  const started_at = started.toISOString()
-  const stopped_at = stopped.toISOString()
-  return {
-    started_at,
-    stopped_at,
-    duration_seconds: computeDuration(started_at, stopped_at),
-  }
 }

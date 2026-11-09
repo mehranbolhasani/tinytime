@@ -48,7 +48,7 @@ tinytime is a single-user, browser-only time tracker.
 ### Data and Supabase boundaries
 - Feature UI components **must not** perform direct table queries/mutations.
 - Supabase data operations belong in hooks and `lib` helpers (`src/hooks`, `src/lib`).
-- Auth/session shell logic in `App.jsx` is an allowed exception.
+- Auth/session shell logic in `App.tsx` is an allowed exception.
 
 ### Local storage
 - All keys use the `tinytime:` prefix.
@@ -60,6 +60,7 @@ tinytime is a single-user, browser-only time tracker.
 - The running timer is derived only from the active-entry query (`ACTIVE_ENTRY_QUERY_KEY`). There is no local timer state. Start and stop are optimistic cache updates in `useTimerControlActions`, serialized by `lib/timerActionLock.ts`.
 - Live seconds come from `useElapsedSeconds` (shared ticker in `lib/ticker.ts`). Only leaf display components may call it. Contexts, layouts and pages must not hold ticking values.
 - `duration_seconds` must be persisted when stopping an entry.
+- The selected Calendar date lives in the URL (`?date=YYYY-MM-DD`), so palette jumps and back/forward navigation share one source of truth.
 - Clock calendar uses a **12-hour AM/PM period** dial; entries that cross noon/midnight are clipped per period (same idea as vertical day-grid clipping).
 
 ### TypeScript
@@ -67,6 +68,9 @@ tinytime is a single-user, browser-only time tracker.
 - `tsconfig.json` has `strict: true`; no `@ts-ignore` or `@ts-nocheck` suppressions.
 - Use `as unknown as T` only when bridging a known type mismatch (motion/react Easing, drag event spread). Document why.
 - Export named interfaces/types from the file that owns them; import with `import type` where possible.
+
+### Tooling and CI
+- Lint covers all TS/TSX; CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, the app and landing builds, the context guard and `deno check` for Edge Functions.
 
 ### Styling and UI primitives
 - Tailwind-first styling.
@@ -95,7 +99,7 @@ tinytime is a single-user, browser-only time tracker.
 
 ### Animation
 - Import animation APIs from `motion/react` in app code.
-- Reuse tokens from `src/lib/motion.js` for durations/easing/variants.
+- Reuse tokens from `src/lib/motion.ts` for durations/easing/variants.
 - Keep `tw-animate-css` for Radix state transitions (open/close overlays).
 - Respect reduced motion (`MotionConfig reducedMotion="user"`).
 
@@ -154,6 +158,9 @@ Components must not call `supabase.from(...)` directly. All Supabase access goes
 ---
 
 ## 5) Data Model and Migration Facts
+
+### Generated types
+- DB types are generated into `src/lib/database.types.ts` via `npm run gen:types`; regenerate after every migration.
 
 ### Active tables/views used by app
 - `projects`
@@ -226,7 +233,7 @@ Production domains:
 - Expandable month overview with per-day project-color arc indicators
 - Google Calendar event overlay on clock and list day views
 - Reports (date ranges, project filtering, summary stats as cards, per-project duration cards, entries table, CSV export)
-- Project CRUD (name/color/rate + delete behavior)
+- Project CRUD (name/color + delete behavior)
 - Idle detection + nudge (Page Visibility API, threshold configurable)
 - Command palette (Cmd+K) for navigation, timer control, and entry search
 

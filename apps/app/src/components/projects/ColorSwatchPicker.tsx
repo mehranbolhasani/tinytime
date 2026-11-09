@@ -14,15 +14,16 @@ interface ColorSwatchPickerProps {
 function CustomColorPicker({ value, onChange }: { value: string; onChange: (color: string) => void }) {
   const [hsv, setHsv] = useState<HSV>(() => hexToHsv(value))
   const [hexInput, setHexInput] = useState(value)
+  const [prevValue, setPrevValue] = useState(value)
   const satBriRef = useRef<HTMLDivElement>(null)
   const hueRef = useRef<HTMLDivElement>(null)
   const dragging = useRef<'satBri' | 'hue' | null>(null)
 
-  useEffect(() => {
-    const newHsv = hexToHsv(value)
-    setHsv(newHsv)
+  if (value !== prevValue) {
+    setPrevValue(value)
+    setHsv(hexToHsv(value))
     setHexInput(value)
-  }, [value])
+  }
 
   const updateFromSatBri = useCallback((clientX: number, clientY: number) => {
     const rect = satBriRef.current?.getBoundingClientRect()

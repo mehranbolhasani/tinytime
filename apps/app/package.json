@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "gen:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "size:initial": "node scripts/report-initial-js.mjs",
@@ -58,6 +59,7 @@
     "shadcn": "^4.3.0",
     "supabase": "^2.95.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.1",
     "vite": "^8.0.8",
     "vitest": "^4.1.5"
   }

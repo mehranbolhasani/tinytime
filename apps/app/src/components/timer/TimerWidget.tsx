@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,11 +33,16 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
   const [description, setDescription] = useState(activeEntry?.description ?? '')
   const [selectedProject, setSelectedProject] = useState(normalizeProjectValue(activeEntry?.project_id))
   const { isSubmitting, error, startTimer, stopTimer } = useTimerControlActions()
+  const syncKey = activeEntry
+    ? `${activeEntry.id}|${activeEntry.description ?? ''}|${activeEntry.project_id ?? ''}`
+    : 'idle'
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey)
 
-  useEffect(() => {
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey)
     setDescription(activeEntry?.description ?? '')
     setSelectedProject(normalizeProjectValue(activeEntry?.project_id))
-  }, [activeEntry])
+  }
 
   const selectedProjectId = useMemo(
     () => (selectedProject === NO_PROJECT_VALUE ? null : selectedProject),

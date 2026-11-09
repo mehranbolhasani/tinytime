@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, ChevronLeft, ChevronRight, List, LoaderCircle } from 'lucide-react'
 import ClockCreateBar from '@/components/clock-calendar/ClockCreateBar'
-import ClockDayCanvas, {
-  draftToIsoRange,
-  type DraftRange,
-} from '@/components/clock-calendar/ClockDayCanvas'
+import ClockDayCanvas from '@/components/clock-calendar/ClockDayCanvas'
 import MonthOverview from '@/components/clock-calendar/MonthOverview'
 import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
 import EntryDetailSheet from '@/components/calendar/EntryDetailSheet'
@@ -17,9 +14,11 @@ import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { addDays, isSameDay, startOfDay } from '@/lib/calendar'
 import {
+  draftToIsoRange,
   localMonthRange,
   periodFromDate,
   type ClockPeriod,
+  type DraftRange,
 } from '@/lib/clockCalendar'
 import { presets } from '@/lib/motion'
 import { computeDuration, groupEntriesByDay, localDayRange } from '@/lib/utils'

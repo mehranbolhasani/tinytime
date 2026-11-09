@@ -19,5 +19,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "playwright.config.ts"]
 }

@@ -1,5 +1,7 @@
+import { useCallback } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { computeDuration } from '@/lib/utils'
 import type { TimeEntry, DayRange } from '@/types'
@@ -79,7 +81,7 @@ interface UseTimeEntriesListResult {
   activeEntry: TimeEntry | null
 }
 
-export function timeEntriesListQueryOptions(supabase: SupabaseClient, range: Partial<DayRange>) {
+export function timeEntriesListQueryOptions(supabase: SupabaseClient<Database>, range: Partial<DayRange>) {
   return queryOptions({
     queryKey: [...TIME_ENTRIES_QUERY_KEY, { from: range.from, to: range.to }],
     queryFn: async () => {
@@ -94,7 +96,7 @@ export function timeEntriesListQueryOptions(supabase: SupabaseClient, range: Par
         throw new Error(getFriendlySupabaseError(error, 'Unable to load time entries.'))
       }
 
-      return (data ?? []) as TimeEntry[]
+      return data ?? []
     },
   })
 }
@@ -144,7 +146,7 @@ export function useActiveTimeEntry(): UseActiveTimeEntryResult {
         throw new Error(getFriendlySupabaseError(error, 'Unable to load active timer entry.'))
       }
 
-      return (data as TimeEntry | null) ?? null
+      return data ?? null
     },
   })
 
@@ -167,7 +169,9 @@ export type TimeEntryUpdate = Partial<
   Pick<TimeEntry, 'started_at' | 'stopped_at' | 'duration_seconds' | 'description' | 'project_id'>
 >
 
-function buildEntryUpdatePayload(updates: TimeEntryUpdate): Record<string, unknown> {
+function buildEntryUpdatePayload(
+  updates: TimeEntryUpdate
+): Database['public']['Tables']['time_entries']['Update'] {
   const payload: Record<string, unknown> = {}
   if ('started_at' in updates) payload.started_at = updates.started_at
   if ('stopped_at' in updates) payload.stopped_at = updates.stopped_at
@@ -215,7 +219,7 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
         throw new Error(getFriendlySupabaseError(error, 'Unable to create timer entry.'))
       }
 
-      return data as TimeEntry
+      return data
     },
     onSuccess: (createdEntry) => {
       if (createdEntry.stopped_at === null) {
@@ -267,7 +271,7 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
             throw new Error(getFriendlySupabaseError(entryByIdError, 'Unable to load timer entry details.'))
           }
 
-          startedAt = (entryById as { started_at: string } | null)?.started_at ?? null
+          startedAt = entryById?.started_at ?? null
         }
       }
 
@@ -302,10 +306,10 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
         if (!current) {
           throw new Error('This timer entry no longer exists.')
         }
-        return current as TimeEntry
+        return current
       }
 
-      return data as TimeEntry
+      return data
     },
     onSuccess: (stoppedEntry) => {
       const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY)
@@ -351,7 +355,7 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
         throw new Error(getFriendlySupabaseError(error, 'Unable to update timer entry.'))
       }
 
-      return data as TimeEntry
+      return data
     },
     onSuccess: (updatedEntry) => {
       updateEntryListCaches(queryClient, (cachedEntries, range) => {
@@ -401,11 +405,25 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
     },
   })
 
-  const createEntry = (input: CreateEntryInput) => createEntryMutation.mutateAsync(input)
-  const stopEntry = (id: string, stopped_at: string, startedAt?: string) =>
-    stopEntryMutation.mutateAsync({ id, stopped_at, started_at: startedAt })
-  const updateEntry = (id: string, updates: TimeEntryUpdate) => updateEntryMutation.mutateAsync({ id, updates })
-  const deleteEntry = (id: string) => deleteEntryMutation.mutateAsync(id)
+  const { mutateAsync: createEntryAsync } = createEntryMutation
+  const { mutateAsync: stopEntryAsync } = stopEntryMutation
+  const { mutateAsync: updateEntryAsync } = updateEntryMutation
+  const { mutateAsync: deleteEntryAsync } = deleteEntryMutation
+
+  const createEntry = useCallback(
+    (input: CreateEntryInput) => createEntryAsync(input),
+    [createEntryAsync]
+  )
+  const stopEntry = useCallback(
+    (id: string, stopped_at: string, startedAt?: string) =>
+      stopEntryAsync({ id, stopped_at, started_at: startedAt }),
+    [stopEntryAsync]
+  )
+  const updateEntry = useCallback(
+    (id: string, updates: TimeEntryUpdate) => updateEntryAsync({ id, updates }),
+    [updateEntryAsync]
+  )
+  const deleteEntry = useCallback((id: string) => deleteEntryAsync(id), [deleteEntryAsync])
 
   return {
     createEntry,

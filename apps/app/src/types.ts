@@ -18,7 +18,7 @@ export interface Project {
   id: string
   name: string
   color: string | null
-  created_at: string
+  created_at: string | null
 }
 
 export interface DayRange {

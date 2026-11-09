@@ -23,11 +23,27 @@ function formatDateLabel(date: Date): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default function CommandPalette({ open, onOpenChange, onNavigate, onToggleTimer }: CommandPaletteProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [prevOpen, setPrevOpen] = useState(open)
   const { isRunning } = useTimerContext()
+
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) {
+      setQuery('')
+      setSelectedIndex(0)
+    }
+  }
 
   const paletteRange = useMemo(() => {
     if (!open) return { from: undefined as string | undefined, to: undefined as string | undefined }
@@ -98,8 +114,7 @@ export default function CommandPalette({ open, onOpenChange, onNavigate, onToggl
         icon: 'ti-clock',
         meta,
         action: () => {
-          sessionStorage.setItem('tinytime:calendar-jump-date', date.toISOString())
-          onNavigate('/calendar')
+          onNavigate(`/calendar?date=${toLocalDateKey(date)}`)
         },
       })
     }
@@ -115,16 +130,6 @@ export default function CommandPalette({ open, onOpenChange, onNavigate, onToggl
       return item.keywords.some((kw) => kw.toLowerCase().includes(lower))
     })
   }, [allItems, query])
-
-  useEffect(() => {
-    setSelectedIndex(0)
-  }, [query])
-
-  useEffect(() => {
-    if (open) {
-      setQuery('')
-    }
-  }, [open])
 
   useEffect(() => {
     if (open) {
@@ -173,7 +178,10 @@ export default function CommandPalette({ open, onOpenChange, onNavigate, onToggl
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setSelectedIndex(0)
+          }}
           placeholder="Search or jump to…"
           aria-label="Command search"
           className="w-full rounded-t-2xl border-0 border-b border-border bg-transparent px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"

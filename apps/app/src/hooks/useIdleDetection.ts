@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 
 interface UseIdleDetectionOptions {
   isRunning: boolean
@@ -12,8 +12,7 @@ export function useIdleDetection({
   onIdleReturn,
 }: UseIdleDetectionOptions): void {
   const hiddenAtRef = useRef<Date | null>(null)
-  const onIdleReturnRef = useRef<typeof onIdleReturn>(onIdleReturn)
-  onIdleReturnRef.current = onIdleReturn
+  const handleIdleReturn = useEffectEvent(onIdleReturn)
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -27,7 +26,7 @@ export function useIdleDetection({
         if (hiddenAt && isRunning) {
           const idleSeconds = Math.round((Date.now() - hiddenAt.getTime()) / 1000)
           if (idleSeconds >= thresholdMinutes * 60) {
-            onIdleReturnRef.current(idleSeconds, hiddenAt)
+            handleIdleReturn(idleSeconds, hiddenAt)
           }
         }
       }

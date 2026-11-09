@@ -1,5 +1,6 @@
 import { DRAG_SNAP_MINUTES } from '@/lib/calendar'
 import { toSafeHexColor } from '@/lib/color'
+import { computeDuration } from '@/lib/utils'
 import type { NormalizedGoogleEvent, TimeEntry } from '@/types'
 
 /** 0 = midnight–noon (AM), 1 = noon–midnight (PM) */
@@ -46,6 +47,11 @@ export interface GoogleClockArc {
 export interface PolarPoint {
   x: number
   y: number
+}
+
+export interface DraftRange {
+  startMinute: number
+  endMinute: number
 }
 
 export function periodFromDate(date: Date): ClockPeriod {
@@ -369,6 +375,22 @@ export function handAnglesFromDate(date: Date): {
     hour: minutesToAngle((hours / 12) * MINUTES_IN_PERIOD),
     minute: minutesToAngle((minutes / 60) * MINUTES_IN_PERIOD),
     second: minutesToAngle((seconds / 60) * MINUTES_IN_PERIOD),
+  }
+}
+
+export function draftToIsoRange(
+  dayStart: Date,
+  period: ClockPeriod,
+  draft: DraftRange
+): { started_at: string; stopped_at: string; duration_seconds: number } {
+  const started = dateFromPeriodMinute(dayStart, period, draft.startMinute)
+  const stopped = dateFromPeriodMinute(dayStart, period, draft.endMinute)
+  const started_at = started.toISOString()
+  const stopped_at = stopped.toISOString()
+  return {
+    started_at,
+    stopped_at,
+    duration_seconds: computeDuration(started_at, stopped_at),
   }
 }
 

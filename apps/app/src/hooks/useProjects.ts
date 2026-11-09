@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import type { Project } from '@/types'
@@ -43,7 +44,7 @@ export function useProjects(): UseProjectsResult {
         throw new Error(getFriendlySupabaseError(error, 'Unable to load projects.'))
       }
 
-      return sortProjectsByName((data ?? []) as Project[])
+      return sortProjectsByName(data ?? [])
     },
   })
 
@@ -51,7 +52,7 @@ export function useProjects(): UseProjectsResult {
     mutationFn: async ({ name, color }) => {
       const { data, error } = await supabase
         .from('projects')
-        .insert({ name, color })
+        .insert({ name, color: color ?? undefined })
         .select('id, name, color, created_at')
         .single()
 
@@ -59,7 +60,7 @@ export function useProjects(): UseProjectsResult {
         throw new Error(getFriendlySupabaseError(error, 'Unable to create project.'))
       }
 
-      return data as Project
+      return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY })
@@ -70,7 +71,7 @@ export function useProjects(): UseProjectsResult {
     mutationFn: async ({ id, updates }) => {
       const { data, error } = await supabase
         .from('projects')
-        .update(updates)
+        .update({ name: updates.name, color: updates.color ?? undefined })
         .eq('id', id)
         .select('id, name, color, created_at')
         .single()
@@ -79,7 +80,7 @@ export function useProjects(): UseProjectsResult {
         throw new Error(getFriendlySupabaseError(error, 'Unable to update project.'))
       }
 
-      return data as Project
+      return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY })
@@ -101,10 +102,19 @@ export function useProjects(): UseProjectsResult {
     },
   })
 
-  const createProject = (input: CreateProjectInput) => createProjectMutation.mutateAsync(input)
-  const updateProject = (id: string, updates: UpdateProjectInput) =>
-    updateProjectMutation.mutateAsync({ id, updates })
-  const deleteProject = (id: string) => deleteProjectMutation.mutateAsync(id)
+  const { mutateAsync: createProjectAsync } = createProjectMutation
+  const { mutateAsync: updateProjectAsync } = updateProjectMutation
+  const { mutateAsync: deleteProjectAsync } = deleteProjectMutation
+
+  const createProject = useCallback(
+    (input: CreateProjectInput) => createProjectAsync(input),
+    [createProjectAsync]
+  )
+  const updateProject = useCallback(
+    (id: string, updates: UpdateProjectInput) => updateProjectAsync({ id, updates }),
+    [updateProjectAsync]
+  )
+  const deleteProject = useCallback((id: string) => deleteProjectAsync(id), [deleteProjectAsync])
 
   return {
     projects,
