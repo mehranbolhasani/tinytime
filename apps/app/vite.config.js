@@ -12,40 +12,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/test/setup.js'],
+    setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/lib/**', 'src/hooks/**', 'src/contexts/**'],
-    },
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            return undefined
-          }
-
-          if (
-            id.includes('/react/') ||
-            id.includes('/react-dom/') ||
-            id.includes('/react-router-dom/')
-          ) {
-            return 'react'
-          }
-
-          if (id.includes('/@supabase/supabase-js/')) {
-            return 'supabase'
-          }
-
-          if (id.includes('/@radix-ui/')) {
-            return 'radix'
-          }
-
-          return 'vendor'
-        },
-      },
     },
   },
   resolve: {

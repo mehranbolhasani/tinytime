@@ -73,6 +73,16 @@ tinytime is a single-user, browser-only time tracker.
 - Inline `style` is only allowed for truly dynamic values (e.g. block top/height, dynamic colors).
 - Reuse shadcn/Radix primitives for common controls.
 
+### Fonts
+- Geist and Doto are both self-hosted (Geist via `public/fonts`, Doto via `@fontsource-variable/doto`).
+- No third-party font requests are allowed (`fonts.googleapis.com` / `fonts.gstatic.com` must not appear).
+- `.font-pixel` fixes the Doto `ROND` axis at 100 to match the previous Google Fonts request.
+
+### Scripts and CSP
+- The theme bootstrap is `/public/theme-init.js`, loaded synchronously as the first script in `<head>`.
+- The app CSP has no `'unsafe-inline'` for scripts, and no third-party font domains.
+- Google Identity Services is injected on demand by `loadGisScript()` and only loads on the sign-in screen.
+
 ### Accessibility
 - Interactive elements must have an accessible label: visible text, `aria-label`, or `aria-labelledby`.
 - Error messages must use `role="alert"` so screen readers announce them immediately.
@@ -182,6 +192,7 @@ Components must not call `supabase.from(...)` directly. All Supabase access goes
 - Uses edge functions `google-oauth` and `google-calendar`.
 - Selected calendars persisted in `google_calendar_selections`.
 - Calendar overlay appears in clock and list day views when connected and selected.
+- Connection status is read directly from the `google_integration_status` view; the `google-calendar` function has no `status` action.
 - Connect flow:
   1. `start` (JWT) checks the request origin against `APP_ALLOWED_ORIGINS` and stores the random `state` plus PKCE verifier server-side in `google_oauth_requests`.
   2. The function's GET callback only redirects to `{app_origin}/google/callback` with `code` and `state`; it never exchanges the code or serves HTML.
@@ -227,7 +238,7 @@ Production domains:
 - Add test baseline (unit + smoke E2E).
 - ~~Accessibility pass (keyboard, focus order, contrast, semantics).~~ ✅ Done — aria-labels, role=alert/status, keyboard context menu.
 - Performance pass for heavy calendar/report states.
-- Cleanup stale leftovers after feature removals/dependency shifts (e.g. unused build chunking rules).
+- ~~Cleanup stale leftovers after feature removals/dependency shifts (e.g. unused build chunking rules).~~ ✅ Done — the app has no manual chunking; Vite splits by import graph.
 
 ---
 

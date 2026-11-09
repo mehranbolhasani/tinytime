@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Doto:wght,ROND@100..900,100&display=swap");
 
 @font-face {
   font-family: "Geist Sans";
@@ -26,7 +25,7 @@
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
-  --font-pixel: "Doto", "Geist Mono", ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+  --font-pixel: "Doto Variable", "Geist Mono", ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
 }
 
 :root {
@@ -95,9 +94,7 @@ body {
   text-decoration: underline;
 }
 
-:where(
-  .font-pixel
-) {
+.font-pixel {
   font-variation-settings: "ROND" 100;
 }
 

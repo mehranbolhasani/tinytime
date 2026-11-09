@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FunctionsHttpError } from '@supabase/supabase-js'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { FunctionsHttpError, type SupabaseClient } from '@supabase/supabase-js'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { normalizeGoogleEvents } from '@/lib/googleCalendar'
 import type { GoogleCalendar, GoogleCalendarConnection, NormalizedGoogleEvent } from '@/types'
@@ -51,15 +51,22 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
     useQuery<GoogleStatusResponse, Error>({
       queryKey: GOOGLE_STATUS_QUERY_KEY,
       queryFn: async () => {
-        const { data, error } = await supabase.functions.invoke('google-calendar', {
-          body: { action: 'status' },
-        })
+        const { data, error } = await supabase
+          .from('google_integration_status')
+          .select('connected, google_email, needs_reconnect')
+          .maybeSingle()
 
         if (error) {
           throw new Error(getFriendlySupabaseError(error, 'Unable to load Google Calendar connection status.'))
         }
 
-        return (data as GoogleStatusResponse) ?? defaultStatus
+        return data
+          ? {
+              connected: true,
+              google_email: data.google_email ?? null,
+              needs_reconnect: Boolean(data.needs_reconnect),
+            }
+          : defaultStatus
       },
     })
 
@@ -272,19 +279,22 @@ interface UseGoogleEventsForRangeResult {
   googleEventsError: Error | null
 }
 
-export function useGoogleEventsForRange({
-  from,
-  to,
-  selectedCalendarIds,
-  calendars,
-  enabled,
-}: UseGoogleEventsForRangeOptions): UseGoogleEventsForRangeResult {
-  const supabase = assertSupabaseClient()
-  const selectedIds = useMemo(() => toUniqueSortedIds(selectedCalendarIds), [selectedCalendarIds])
-  const selectedIdsKey = useMemo(() => selectedIds.join(','), [selectedIds])
+type RawGoogleEvents = Parameters<typeof normalizeGoogleEvents>[0]
 
-  const { data, isLoading, error } = useQuery<NormalizedGoogleEvent[], Error>({
-    queryKey: [...GOOGLE_EVENTS_QUERY_KEY, { from, to, selectedIdsKey }],
+export function googleEventsQueryOptions(
+  supabase: SupabaseClient,
+  {
+    from,
+    to,
+    selectedIds,
+  }: {
+    from: string | null | undefined
+    to: string | null | undefined
+    selectedIds: string[]
+  }
+) {
+  return queryOptions({
+    queryKey: [...GOOGLE_EVENTS_QUERY_KEY, { from, to, selectedIdsKey: selectedIds.join(',') }],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('google-calendar', {
         body: {
@@ -299,14 +309,31 @@ export function useGoogleEventsForRange({
         throw new Error(getFriendlySupabaseError(error, 'Unable to load Google Calendar events.'))
       }
 
-      return normalizeGoogleEvents(
-        ((data as { events?: unknown[] })?.events ?? []) as Parameters<typeof normalizeGoogleEvents>[0],
-        calendars
-      )
+      return ((data as { events?: unknown[] })?.events ?? []) as RawGoogleEvents
     },
-    enabled: Boolean(enabled && from && to && selectedIds.length > 0),
     staleTime: 60_000,
     retry: 2,
+  })
+}
+
+export function useGoogleEventsForRange({
+  from,
+  to,
+  selectedCalendarIds,
+  calendars,
+  enabled,
+}: UseGoogleEventsForRangeOptions): UseGoogleEventsForRangeResult {
+  const supabase = assertSupabaseClient()
+  const selectedIds = useMemo(() => toUniqueSortedIds(selectedCalendarIds), [selectedCalendarIds])
+  const normalize = useCallback(
+    (raw: RawGoogleEvents) => normalizeGoogleEvents(raw, calendars),
+    [calendars]
+  )
+
+  const { data, isLoading, error } = useQuery({
+    ...googleEventsQueryOptions(supabase, { from, to, selectedIds }),
+    select: normalize,
+    enabled: Boolean(enabled && from && to && selectedIds.length > 0),
   })
 
   return {

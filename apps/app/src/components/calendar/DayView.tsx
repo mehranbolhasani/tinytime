@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ActiveTimerBlock from '@/components/calendar/blocks/ActiveTimerBlock'
 import GoogleEventBlock from '@/components/calendar/blocks/GoogleEventBlock'
 import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
@@ -304,6 +304,41 @@ export default function DayView({
     return range
   }
 
+  const handleSelectEntry = useCallback((entry: TimeEntry) => {
+    if (isTouchViewport) {
+      setSheetEntry(entry)
+    } else {
+      setEditingEntry(entry)
+    }
+  }, [isTouchViewport])
+
+  const handleOpenMenu = useCallback((entry: TimeEntry, x: number, y: number) => {
+    setMenuState({ open: true, entry, x, y })
+  }, [])
+
+  const handleBlockDragStart = useCallback((event: React.DragEvent, entry: TimeEntry) => {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', entry.id)
+    hideNativeDragImage(event)
+    const targetRect = event.currentTarget.getBoundingClientRect()
+    const durationMinutes = Math.max(
+      1,
+      Math.round((entry.duration_seconds ?? (entry.stopped_at ? computeDuration(entry.started_at, entry.stopped_at) : 0)) / 60)
+    )
+    const rawOffset = ((event.clientY - targetRect.top) / hourHeight) * 60
+    const grabOffsetMinutes = Math.max(0, Math.min(durationMinutes, rawOffset))
+    setDraggingMove({
+      entryId: entry.id,
+      durationMinutes,
+      grabOffsetMinutes,
+    })
+  }, [hourHeight])
+
+  const handleBlockDragEnd = useCallback(() => {
+    setDraggingMove(null)
+    setPreviewBlock(null)
+  }, [])
+
   const handleDeleteConfirm = async (): Promise<void> => {
     if (!entryToDelete) {
       return
@@ -474,7 +509,14 @@ export default function DayView({
               }
               const rect = event.currentTarget.getBoundingClientRect()
               const currentMinutes = getDropStartMinutes(event.clientY, rect, 0, hourHeight)
-              setCreateDraft((previous) => (previous ? { ...previous, currentMinutes } : previous))
+              if (currentMinutes === createDraft.currentMinutes) {
+                return
+              }
+              setCreateDraft((previous) =>
+                previous && previous.currentMinutes !== currentMinutes
+                  ? { ...previous, currentMinutes }
+                  : previous
+              )
               updateCreatePreview(createDraft.startMinutes, currentMinutes)
             }}
             onPointerUp={async (event) => {
@@ -539,43 +581,10 @@ export default function DayView({
                 key={block.entry.id}
                 block={block}
                 isDragging={draggingMove?.entryId === block.entry.id}
-                onClick={() => {
-                  if (isTouchViewport) {
-                    setSheetEntry(block.entry)
-                  } else {
-                    setEditingEntry(block.entry)
-                  }
-                }}
-                onContextMenu={(event) => {
-                  event.preventDefault()
-                  setMenuState({
-                    open: true,
-                    entry: block.entry,
-                    x: event.clientX,
-                    y: event.clientY,
-                  })
-                }}
-                onDragStart={(event, entry) => {
-                  event.dataTransfer.effectAllowed = 'move'
-                  event.dataTransfer.setData('text/plain', entry.id)
-                  hideNativeDragImage(event)
-                  const targetRect = event.currentTarget.getBoundingClientRect()
-                  const durationMinutes = Math.max(
-                    1,
-                    Math.round((entry.duration_seconds ?? (entry.stopped_at ? computeDuration(entry.started_at, entry.stopped_at) : 0)) / 60)
-                  )
-                  const rawOffset = ((event.clientY - targetRect.top) / hourHeight) * 60
-                  const grabOffsetMinutes = Math.max(0, Math.min(durationMinutes, rawOffset))
-                  setDraggingMove({
-                    entryId: entry.id,
-                    durationMinutes,
-                    grabOffsetMinutes,
-                  })
-                }}
-                onDragEnd={() => {
-                  setDraggingMove(null)
-                  setPreviewBlock(null)
-                }}
+                onSelect={handleSelectEntry}
+                onOpenMenu={handleOpenMenu}
+                onDragStart={handleBlockDragStart}
+                onDragEnd={handleBlockDragEnd}
               />
             ))}
 

@@ -1,21 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script>
-      ;(() => {
-        try {
-          const storedTheme = localStorage.getItem('tinytime:theme')
-          const isDark =
-            storedTheme === 'dark' ||
-            ((storedTheme === 'system' || storedTheme === null) &&
-              window.matchMedia('(prefers-color-scheme: dark)').matches)
-          document.documentElement.classList.toggle('dark', isDark)
-          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
-        } catch (error) {
-          // Ignore theme bootstrap errors and use CSS defaults.
-        }
-      })()
-    </script>
+    <script src="/theme-init.js"></script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -25,14 +11,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Doto:wght,ROND@100..900,100&display=swap" rel="stylesheet">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <title>tinytime</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

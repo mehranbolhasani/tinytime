@@ -12,6 +12,18 @@ declare global {
 }
 
 const GIS_CLIENT_READY_TIMEOUT_MS = 10_000
+const GIS_SCRIPT_ID = 'google-gsi-client'
+const GIS_SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
+
+function ensureGisScriptTag(): void {
+  if (document.getElementById(GIS_SCRIPT_ID)) return
+  const script = document.createElement('script')
+  script.id = GIS_SCRIPT_ID
+  script.src = GIS_SCRIPT_SRC
+  script.async = true
+  script.defer = true
+  document.head.appendChild(script)
+}
 
 function bufferToBase64Url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
@@ -51,6 +63,7 @@ export function loadGisScript(): Promise<unknown> {
   }
 
   return new Promise((resolve, reject) => {
+    ensureGisScriptTag()
     const startedAt = Date.now()
 
     const check = () => {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import ClockCalendarView from '@/components/clock-calendar/ClockCalendarView'
@@ -7,11 +8,12 @@ import DayView from '@/components/calendar/DayView'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTimerContext } from '@/contexts/TimerContext'
-import { useGoogleCalendar, useGoogleEventsForRange } from '@/hooks/useGoogleCalendar'
-import { useTimeEntriesList } from '@/hooks/useTimeEntries'
+import { googleEventsQueryOptions, useGoogleCalendar, useGoogleEventsForRange } from '@/hooks/useGoogleCalendar'
+import { timeEntriesListQueryOptions, useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { HOUR_HEIGHT } from '@/lib/calendar'
 import { CALENDAR_SHORTCUT_EVENT, type CalendarShortcutDirection } from '@/lib/keyboardShortcuts'
 import { presets } from '@/lib/motion'
+import { assertSupabaseClient } from '@/lib/supabase'
 import { localDayRange } from '@/lib/utils'
 
 const ZOOM_STORAGE_KEY = 'tinytime.calendar.zoom-index'
@@ -125,6 +127,8 @@ export default function Calendar() {
 
   const { from, to } = useMemo(() => localDayRange(selectedDate), [selectedDate])
 
+  const queryClient = useQueryClient()
+  const supabase = assertSupabaseClient()
   const { activeEntry } = useTimerContext()
   const { entries, isLoading, error } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })
   const { connection, calendars, selectedCalendarIds } = useGoogleCalendar()
@@ -156,6 +160,33 @@ export default function Calendar() {
       window.localStorage.setItem(VIEW_STORAGE_KEY, mode)
     }
   }
+
+  useEffect(() => {
+    const ranges = [addDays(selectedDate, -1), addDays(selectedDate, 1)]
+      .map((date) => localDayRange(date))
+      .filter((range): range is { from: string; to: string } => Boolean(range.from && range.to))
+
+    for (const range of ranges) {
+      queryClient.prefetchQuery(timeEntriesListQueryOptions(supabase, range))
+
+      if (connection.connected && !connection.needsReconnect && selectedCalendarIds.length > 0) {
+        queryClient.prefetchQuery(
+          googleEventsQueryOptions(supabase, {
+            from: range.from,
+            to: range.to,
+            selectedIds: selectedCalendarIds,
+          })
+        )
+      }
+    }
+  }, [
+    connection.connected,
+    connection.needsReconnect,
+    queryClient,
+    selectedCalendarIds,
+    selectedDate,
+    supabase,
+  ])
 
   useEffect(() => {
     const handleShortcutNavigation = (event: Event) => {

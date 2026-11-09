@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { computeDuration } from '@/lib/utils'
 import type { TimeEntry, DayRange } from '@/types'
@@ -78,17 +79,15 @@ interface UseTimeEntriesListResult {
   activeEntry: TimeEntry | null
 }
 
-export function useTimeEntriesList({ from, to }: Partial<DayRange>): UseTimeEntriesListResult {
-  const supabase = assertSupabaseClient()
-
-  const { data: entries = [], isLoading, error } = useQuery<TimeEntry[], Error>({
-    queryKey: [...TIME_ENTRIES_QUERY_KEY, { from, to }],
+export function timeEntriesListQueryOptions(supabase: SupabaseClient, range: Partial<DayRange>) {
+  return queryOptions({
+    queryKey: [...TIME_ENTRIES_QUERY_KEY, { from: range.from, to: range.to }],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('time_entries')
         .select(ENTRY_SELECT)
-        .gte('started_at', from!)
-        .lt('started_at', to!)
+        .gte('started_at', range.from!)
+        .lt('started_at', range.to!)
         .order('started_at', { ascending: true })
 
       if (error) {
@@ -97,6 +96,14 @@ export function useTimeEntriesList({ from, to }: Partial<DayRange>): UseTimeEntr
 
       return (data ?? []) as TimeEntry[]
     },
+  })
+}
+
+export function useTimeEntriesList({ from, to }: Partial<DayRange>): UseTimeEntriesListResult {
+  const supabase = assertSupabaseClient()
+
+  const { data: entries = [], isLoading, error } = useQuery({
+    ...timeEntriesListQueryOptions(supabase, { from, to }),
     enabled: Boolean(from && to),
     placeholderData: (previousData) => previousData,
   })

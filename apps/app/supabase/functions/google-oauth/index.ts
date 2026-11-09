@@ -269,6 +269,13 @@ async function handleComplete(request: Request) {
 
   const scopes = tokenData.scope ?? ''
   if (!scopes.includes(CALENDAR_READONLY_SCOPE)) {
+    const tokenToRevoke = tokenData.refresh_token ?? tokenData.access_token
+    if (tokenToRevoke) {
+      await fetch(`${GOOGLE_REVOKE_URL}?token=${encodeURIComponent(tokenToRevoke)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      }).catch(() => null)
+    }
     return errorResponse('scope_missing', 400)
   }
 
@@ -367,20 +374,20 @@ Deno.serve(async (request) => {
       const action = body?.action
 
       if (action === 'start') {
-        return handleStart(request)
+        return await handleStart(request)
       }
 
       if (action === 'complete') {
-        return handleComplete(request)
+        return await handleComplete(request)
       }
 
       if (action === 'disconnect') {
-        return handleDisconnect(request)
+        return await handleDisconnect(request)
       }
     }
 
     if (request.method === 'GET' && (pathname.endsWith('/callback') || pathname.endsWith('/google-oauth'))) {
-      return handleCallback(request)
+      return await handleCallback(request)
     }
 
     return errorResponse('not_found', 404)

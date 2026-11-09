@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'motion/react'
 import { hexToRgba, toSafeHexColor } from '@/lib/color'
 import { easings } from '@/lib/motion'
@@ -6,17 +7,17 @@ import type { CalendarBlock, TimeEntry } from '@/types'
 
 interface EntryBlockProps {
   block: CalendarBlock
-  onClick: () => void
-  onContextMenu: (event: React.MouseEvent) => void
+  onSelect: (entry: TimeEntry) => void
+  onOpenMenu: (entry: TimeEntry, x: number, y: number) => void
   onDragStart?: (event: React.DragEvent, entry: TimeEntry) => void
   onDragEnd?: () => void
   isDragging?: boolean
 }
 
-export default function EntryBlock({
+function EntryBlock({
   block,
-  onClick,
-  onContextMenu,
+  onSelect,
+  onOpenMenu,
   onDragStart,
   onDragEnd,
   isDragging = false,
@@ -32,13 +33,16 @@ export default function EntryBlock({
       data-entry-block
       type="button"
       aria-label={label}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
+      onClick={() => onSelect(block.entry)}
+      onContextMenu={(event) => {
+        event.preventDefault()
+        onOpenMenu(block.entry, event.clientX, event.clientY)
+      }}
       onKeyDown={(event) => {
         if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
           event.preventDefault()
           const rect = event.currentTarget.getBoundingClientRect()
-          onContextMenu({ clientX: rect.left + 8, clientY: rect.bottom, preventDefault: () => {} } as React.MouseEvent)
+          onOpenMenu(block.entry, rect.left + 8, rect.bottom)
         }
       }}
       onDragStart={(event) => onDragStart?.(event as unknown as React.DragEvent, block.entry)}
@@ -69,3 +73,5 @@ export default function EntryBlock({
     </motion.button>
   )
 }
+
+export default memo(EntryBlock)
