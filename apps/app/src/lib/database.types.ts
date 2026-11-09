@@ -108,26 +108,23 @@ export type Database = {
         Row: {
           color: string
           created_at: string | null
-          hourly_rate: number | null
           id: string
           name: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color?: string
           created_at?: string | null
-          hourly_rate?: number | null
           id?: string
           name: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           color?: string
           created_at?: string | null
-          hourly_rate?: number | null
           id?: string
           name?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -164,7 +161,7 @@ export type Database = {
           project_id: string | null
           started_at: string
           stopped_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -174,7 +171,7 @@ export type Database = {
           project_id?: string | null
           started_at: string
           stopped_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           created_at?: string | null
@@ -184,7 +181,7 @@ export type Database = {
           project_id?: string | null
           started_at?: string
           stopped_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {

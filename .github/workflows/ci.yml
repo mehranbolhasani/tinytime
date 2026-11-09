@@ -11,8 +11,8 @@ jobs:
     name: App (lint, typecheck, test, build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -27,8 +27,8 @@ jobs:
     name: Landing (build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -39,8 +39,8 @@ jobs:
     name: Edge functions (deno check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno check apps/app/supabase/functions/google-oauth/index.ts apps/app/supabase/functions/google-calendar/index.ts
+      - run: deno check --node-modules-dir=none apps/app/supabase/functions/google-oauth/index.ts apps/app/supabase/functions/google-calendar/index.ts

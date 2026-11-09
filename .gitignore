@@ -34,4 +34,6 @@ coverage
 # Supabase CLI and Vercel local state
 supabase/.temp/
 apps/app/supabase/.temp/
+supabase/.branches/
+apps/app/supabase/.branches/
 .vercel
