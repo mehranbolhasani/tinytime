@@ -24,7 +24,7 @@ bash scripts/check-context.sh
 - **Data flow**: Components must NOT call `supabase.from()` directly. All DB access goes through `hooks/` or `lib/`.
 - **Duration unit**: Seconds. Never use `duration_minutes`.
 - **Calendar**: Primary day view is the radial clock (`components/clock-calendar/`); vertical `DayView` is a list escape hatch.
-- **Animation**: Import from `motion/react`, not `framer-motion`. Use tokens from `src/lib/motion.ts`.
+- **Animation**: CSS only (no animation library in the app). See CONTEXT.md.
 - **TypeScript**: Strict mode, no `@ts-ignore`. All source files must be `.ts`/`.tsx`.
 
 ## CI gate enforces
@@ -32,7 +32,7 @@ bash scripts/check-context.sh
 The `scripts/check-context.sh` script (runs automatically on PR) checks:
 - No `.js`/`.jsx` files in `apps/app/src/` (excluding `__tests__/`)
 - No direct `supabase.from()` in `components/`
-- No `framer-motion` imports (use `motion/react`)
+- No animation libraries in `apps/app`
 - No `duration_minutes` references
 - Required directories and files exist
 - `tsc --noEmit` passes

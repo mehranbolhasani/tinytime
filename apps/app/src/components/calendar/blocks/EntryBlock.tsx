@@ -1,7 +1,5 @@
 import { memo } from 'react'
-import { motion } from 'motion/react'
 import { hexToRgba, toSafeHexColor } from '@/lib/color'
-import { easings } from '@/lib/motion'
 import { cn, formatDuration } from '@/lib/utils'
 import type { CalendarBlock, TimeEntry } from '@/types'
 
@@ -35,7 +33,7 @@ function EntryBlock({
   const label = `${block.entry.description || 'Untitled'} — ${block.entry.projects?.name ?? 'No project'}`
 
   return (
-    <motion.button
+    <button
       data-entry-block
       type="button"
       aria-label={label}
@@ -51,11 +49,9 @@ function EntryBlock({
           onOpenMenu(block.entry, rect.left + 8, rect.bottom, event.currentTarget)
         }
       }}
-      onDragStart={(event) => onDragStart?.(event as unknown as React.DragEvent, block.entry)}
+      onDragStart={(event) => onDragStart?.(event, block.entry)}
       onDragEnd={onDragEnd}
       draggable
-      layout
-      transition={easings.spring}
       className={cn(
         'absolute cursor-grab overflow-hidden rounded-r-lg border-l-2 px-2 py-2 text-left text-[11px] transition-shadow duration-150 hover:shadow-sm active:cursor-grabbing flex flex-col gap-0',
         isDragging ? 'opacity-0 ring-0' : null
@@ -76,7 +72,7 @@ function EntryBlock({
       <p className="truncate text-[11px] text-muted-foreground">
         {formatDuration(block.entry.duration_seconds ?? 0)}
       </p>
-    </motion.button>
+    </button>
   )
 }
 

@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, ChevronLeft, ChevronRight, List, LoaderCircle, Trash2 } from 'lucide-react'
 import ClockCreateBar from '@/components/clock-calendar/ClockCreateBar'
 import ClockDial from '@/components/clock-calendar/ClockDial'
@@ -26,7 +25,6 @@ import {
   type DialArc,
 } from '@/lib/clockCalendar'
 import { toSafeHexColor } from '@/lib/color'
-import { presets } from '@/lib/motion'
 import {
   computeDuration,
   formatDuration,
@@ -367,34 +365,24 @@ export default function ClockCalendarView({
         </div>
       </header>
 
-      <AnimatePresence initial={false}>
-        {monthOpen ? (
-          <motion.div
-            key="month-overview"
-            variants={presets.panelSwap.variants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={presets.panelSwap.transition}
-            className="rounded-xl border border-border bg-card p-3"
-          >
-            <MonthOverview
-              selectedDate={selectedDate}
-              viewYear={viewYear}
-              viewMonth={viewMonth}
-              entriesByDay={entriesByDay}
-              onSelectDate={(date) => {
-                onSelectedDateChange(startOfDay(date))
-                setMonthOpen(false)
-              }}
-              onViewMonthChange={(year, month) => {
-                setViewYear(year)
-                setViewMonth(month)
-              }}
-            />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {monthOpen ? (
+        <div className="rounded-xl border border-border bg-card p-3">
+          <MonthOverview
+            selectedDate={selectedDate}
+            viewYear={viewYear}
+            viewMonth={viewMonth}
+            entriesByDay={entriesByDay}
+            onSelectDate={(date) => {
+              onSelectedDateChange(startOfDay(date))
+              setMonthOpen(false)
+            }}
+            onViewMonthChange={(year, month) => {
+              setViewYear(year)
+              setViewMonth(month)
+            }}
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -443,68 +431,48 @@ export default function ClockCalendarView({
         </div>
       )}
 
-      <AnimatePresence>
-        {gestures.isMoving ? (
-          <motion.div
-            key="dial-bin"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={presets.panelSwap.transition}
+      {gestures.isMoving ? (
+        <div>
+          <div
+            ref={binRef}
+            className={
+              gestures.isOverBin
+                ? 'flex scale-110 items-center justify-center gap-2 rounded-xl border border-dashed border-destructive bg-destructive/10 p-3 text-sm text-destructive transition-transform duration-150 motion-reduce:transition-none'
+                : 'flex scale-100 items-center justify-center gap-2 rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground transition-transform duration-150 motion-reduce:transition-none'
+            }
           >
-            <motion.div
-              ref={binRef}
-              animate={{ scale: gestures.isOverBin ? 1.1 : 1 }}
-              transition={presets.panelSwap.transition}
-              className={
-                gestures.isOverBin
-                  ? 'flex items-center justify-center gap-2 rounded-xl border border-dashed border-destructive bg-destructive/10 p-3 text-sm text-destructive'
-                  : 'flex items-center justify-center gap-2 rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground'
-              }
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              <span>
-                {gestures.isOverBin
-                  ? `Release to delete ${movingArc?.label ?? 'this entry'}`
-                  : 'Drop to delete'}
-              </span>
-            </motion.div>
-            <span role="status" className="sr-only">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            <span>
               {gestures.isOverBin
                 ? `Release to delete ${movingArc?.label ?? 'this entry'}`
-                : 'Drag over the bin to delete'}
+                : 'Drop to delete'}
             </span>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+          </div>
+          <span role="status" className="sr-only">
+            {gestures.isOverBin
+              ? `Release to delete ${movingArc?.label ?? 'this entry'}`
+              : 'Drag over the bin to delete'}
+          </span>
+        </div>
+      ) : null}
 
-      <AnimatePresence>
-        {createRange ? (
-          <motion.div
-            key="create-bar"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={presets.panelSwap.transition}
-          >
-            <ClockCreateBar
-              description={description}
-              projectId={projectId}
-              projects={projects}
-              canConfirm={Boolean(createRange)}
-              isSaving={isSaving}
-              onDescriptionChange={setDescription}
-              onProjectChange={setProjectId}
-              onConfirm={handleConfirmDraft}
-              onCancel={() => {
-                setCreateRange(null)
-                setDescription('')
-                setProjectId(null)
-              }}
-            />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {createRange ? (
+        <ClockCreateBar
+          description={description}
+          projectId={projectId}
+          projects={projects}
+          canConfirm={Boolean(createRange)}
+          isSaving={isSaving}
+          onDescriptionChange={setDescription}
+          onProjectChange={setProjectId}
+          onConfirm={handleConfirmDraft}
+          onCancel={() => {
+            setCreateRange(null)
+            setDescription('')
+            setProjectId(null)
+          }}
+        />
+      ) : null}
 
       <p className="text-center text-xs text-muted-foreground">
         {maxMinute > 0

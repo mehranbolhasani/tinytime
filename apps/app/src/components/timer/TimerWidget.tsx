@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { LoaderCircle, Play, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,7 +13,6 @@ import { useProjects } from '@/hooks/useProjects'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { toSafeHexColor } from '@/lib/color'
-import { presets } from '@/lib/motion'
 import { isOptimisticEntry } from '@/lib/timer'
 import { cn } from '@/lib/utils'
 
@@ -124,163 +122,147 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
         </div>
 
         <div className="min-h-auto">
-          <AnimatePresence mode="wait" initial={false}>
-            {timer.isRunning ? (
-              <motion.div
-                key="running"
-                className="flex items-stretch"
-                variants={presets.panelSwap.variants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={presets.panelSwap.transition}
-              >
-                <div className="flex min-w-0 flex-1 justify-center gap-2 px-4 py-3">
+          {timer.isRunning ? (
+            <div className="flex items-stretch">
+              <div className="flex min-w-0 flex-1 justify-center gap-2 px-4 py-3">
+                <input
+                  type="text"
+                  id="description"
+                  aria-label="Running entry description"
+                  placeholder="Untitled session"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  onBlur={handleDescriptionCommit}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      event.currentTarget.blur()
+                    } else if (event.key === 'Escape') {
+                      skipDescriptionCommitRef.current = true
+                      setDescription(activeEntry?.description ?? '')
+                      event.currentTarget.blur()
+                    }
+                  }}
+                  disabled={runningDisabled}
+                  className="w-full rounded-md border-0 bg-transparent px-1 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:bg-secondary/50 focus-visible:outline-none disabled:opacity-70"
+                />
+                <Select
+                  value={selectedProject}
+                  onValueChange={handleRunningProjectChange}
+                  disabled={runningDisabled || isLoadingProjects}
+                >
+                  <SelectTrigger
+                    aria-label="Running entry project"
+                    className="h-6 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className={cn(
+                          'h-2.5 w-2.5 rounded-full',
+                          !runningProjectColor && 'border border-border bg-transparent'
+                        )}
+                        style={
+                          runningProjectColor
+                            ? { backgroundColor: runningProjectColor }
+                            : undefined
+                        }
+                      />
+                      <SelectValue placeholder="No project" />
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid h-auto w-auto shrink-0 place-items-center p-1">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-4"
+                  onClick={handleStop}
+                  disabled={isSubmitting || isEntriesLoading}
+                  aria-label="Stop timer"
+                  aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
+                >
+                  {isSubmitting ? (
+                    <LoaderCircle className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Square className="fill-current" aria-hidden="true" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                handleStart()
+              }}
+              className="flex items-center bg-card p-1 rounded-xl"
+            >
+              <div className="flex flex-1 items-center">
+                <div className="w-full">
                   <input
                     type="text"
                     id="description"
-                    aria-label="Running entry description"
-                    placeholder="Untitled session"
+                    aria-label="Work description"
+                    placeholder="Describe your work"
                     value={description}
                     onChange={(event) => setDescription(event.target.value)}
-                    onBlur={handleDescriptionCommit}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault()
-                        event.currentTarget.blur()
-                      } else if (event.key === 'Escape') {
-                        skipDescriptionCommitRef.current = true
-                        setDescription(activeEntry?.description ?? '')
-                        event.currentTarget.blur()
-                      }
-                    }}
-                    disabled={runningDisabled}
-                    className="w-full rounded-md border-0 bg-transparent px-1 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:bg-secondary/50 focus-visible:outline-none disabled:opacity-70"
+                    disabled={isSubmitting || isEntriesLoading}
+                    className="h-12 w-full px-4 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none"
                   />
+                </div>
+                <div className="flex h-12 w-full min-w-0 items-stretch">
                   <Select
                     value={selectedProject}
-                    onValueChange={handleRunningProjectChange}
-                    disabled={runningDisabled || isLoadingProjects}
+                    onValueChange={setSelectedProject}
+                    disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
                   >
-                    <SelectTrigger
-                      aria-label="Running entry project"
-                      className="h-6 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          className={cn(
-                            'h-2.5 w-2.5 rounded-full',
-                            !runningProjectColor && 'border border-border bg-transparent'
-                          )}
-                          style={
-                            runningProjectColor
-                              ? { backgroundColor: runningProjectColor }
-                              : undefined
-                          }
-                        />
-                        <SelectValue placeholder="No project" />
-                      </span>
+                    <SelectTrigger className="h-full w-full rounded-none bg-card ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 data-[state=open]:ring-0">
+                      <SelectValue placeholder="No project" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
-                          {project.name}
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: toSafeHexColor(project.color) }}
+                            />
+                            <span>{project.name}</span>
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid h-auto w-auto shrink-0 place-items-center p-1">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-4"
-                    onClick={handleStop}
-                    disabled={isSubmitting || isEntriesLoading}
-                    aria-label="Stop timer"
-                    aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
-                  >
-                    {isSubmitting ? (
-                      <LoaderCircle className="animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Square className="fill-current" aria-hidden="true" />
-                    )}
-                  </Button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.form
-                key="idle"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  handleStart()
-                }}
-                className="flex items-center bg-card p-1 rounded-xl"
-                variants={presets.panelSwap.variants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={presets.panelSwap.transition}
-              >
-                <div className="flex flex-1 items-center">
-                  <div className="w-full">
-                    <input
-                      type="text"
-                      id="description"
-                      aria-label="Work description"
-                      placeholder="Describe your work"
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      disabled={isSubmitting || isEntriesLoading}
-                      className="h-12 w-full px-4 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none"
-                    />
-                  </div>
-                  <div className="flex h-12 w-full min-w-0 items-stretch">
-                    <Select
-                      value={selectedProject}
-                      onValueChange={setSelectedProject}
-                      disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
-                    >
-                      <SelectTrigger className="h-full w-full rounded-none bg-card ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 data-[state=open]:ring-0">
-                        <SelectValue placeholder="No project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            <span className="inline-flex items-center gap-2">
-                              <span
-                                className="h-2.5 w-2.5 rounded-full"
-                                style={{ backgroundColor: toSafeHexColor(project.color) }}
-                              />
-                              <span>{project.name}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid h-12 w-12 w-auto shrink-0 place-items-center p-1">
-                  <Button
-                    type="submit"
-                    variant="default"
-                    className="h-full w-full min-w-full rounded-md px-3 [&_svg]:size-4"
-                    disabled={isSubmitting || isEntriesLoading}
-                    aria-label="Start timer"
-                    aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
-                  >
-                    {isSubmitting ? (
-                      <LoaderCircle className="animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Play className="fill-current" aria-hidden="true" />
-                    )}
-                  </Button>
-                </div>
-              </motion.form>
-            )}
-          </AnimatePresence>
+              </div>
+              <div className="grid h-12 w-12 w-auto shrink-0 place-items-center p-1">
+                <Button
+                  type="submit"
+                  variant="default"
+                  className="h-full w-full min-w-full rounded-md px-3 [&_svg]:size-4"
+                  disabled={isSubmitting || isEntriesLoading}
+                  aria-label="Start timer"
+                  aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
+                >
+                  {isSubmitting ? (
+                    <LoaderCircle className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Play className="fill-current" aria-hidden="true" />
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
 

@@ -33,7 +33,7 @@ tinytime is a single-user, browser-only time tracker.
 - **Data**: Supabase (Auth + Postgres + Edge Functions)
 - **Fetching/cache**: TanStack Query v5
 - **Animation**:
-  - App: `motion/react` (tokens in `apps/app/src/lib/motion.ts`)
+  - App: CSS only (no animation library)
   - Landing: `motion` (vanilla in-view animation script)
 - **Language**: TypeScript strict mode throughout `apps/app/src/` (no `.js`/`.jsx` files)
 
@@ -69,7 +69,7 @@ tinytime is a single-user, browser-only time tracker.
 ### TypeScript
 - All source files under `apps/app/src/` must use `.ts` or `.tsx` extensions.
 - `tsconfig.json` has `strict: true`; no `@ts-ignore` or `@ts-nocheck` suppressions.
-- Use `as unknown as T` only when bridging a known type mismatch (motion/react Easing, drag event spread). Document why.
+- Use `as unknown as T` only when bridging a known type mismatch (for example mapping a Google event to a `TimeEntry`). Document why.
 - Export named interfaces/types from the file that owns them; import with `import type` where possible.
 
 ### Tooling and CI
@@ -107,10 +107,10 @@ tinytime is a single-user, browser-only time tracker.
 - Radix UI dialogs/menus handle focus trapping natively — do not reimplement it.
 
 ### Animation
-- Import animation APIs from `motion/react` in app code.
-- Reuse tokens from `src/lib/motion.ts` for durations/easing/variants.
-- Keep `tw-animate-css` for Radix state transitions (open/close overlays).
-- Respect reduced motion (`MotionConfig reducedMotion="user"`).
+- The app has no animation library. Don't add `motion`, `framer-motion` or GSAP without a decision; GSAP is the planned choice for later micro-interactions.
+- Radix open/close states use `tw-animate-css` classes in `components/ui/*`.
+- Use plain CSS transitions for state feedback only (hover, focus, the clock's drop bin). Add `motion-reduce:transition-none` where a transition moves or scales something.
+- A global `prefers-reduced-motion` rule in `src/index.css` shortens all CSS animations and transitions.
 
 ---
 
@@ -150,7 +150,6 @@ apps/
         color.ts
         googleSignIn.ts
         googleCalendar.ts
-        motion.ts
         ticker.ts              # Shared 1-second wall-clock ticker
         timer.ts               # Pure elapsed-seconds helper
         timerActionLock.ts     # App-wide single-flight guard for start/stop
@@ -229,7 +228,7 @@ Production domains:
 
 - Authenticated app shell uses centered `max-w-md` layout.
 - Bottom navigation is persistent.
-- Motion is used for route/state/list/layout transitions.
+- State feedback uses plain CSS transitions; there are no route, list or layout animations.
 - Avoid decorative animation that adds noise without improving state clarity.
 
 ---
@@ -281,7 +280,7 @@ Before merging, verify:
 - [ ] `scripts/check-context.sh` passes (runs automatically in CI).
 - [ ] No feature UI component performs direct table queries/mutations; data access stays in hooks/lib.
 - [ ] Duration/timer logic still uses seconds and preserves running-entry invariants.
-- [ ] New motion uses `motion/react` + shared tokens, and respects reduced motion.
+- [ ] New animation is CSS only and respects reduced motion.
 - [ ] UI changes reuse existing primitives (shadcn/Radix/Tailwind) instead of introducing parallel stacks.
 - [ ] Interactive elements have accessible labels; errors use `role="alert"`.
 - [ ] `CONTEXT.md` was updated if architecture/data flow/stack/domain rules changed.

@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import EntryList from '@/components/timer/EntryList'
 import FavouriteChips from '@/components/timer/FavouriteChips'
 import TimerWidget from '@/components/timer/TimerWidget'
@@ -10,7 +9,6 @@ import { useLocalDay } from '@/hooks/useLocalDay'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
-import { presets } from '@/lib/motion'
 import { localDayRange } from '@/lib/utils'
 import type { FavouriteEntry } from '@/hooks/useFavouriteEntries'
 import type { TimeEntry } from '@/types'
@@ -93,23 +91,13 @@ export default function Today() {
 
       {!isLoading ? <TodayDialCard entries={entries} /> : null}
 
-      <AnimatePresence mode="sync" initial={false}>
-        {isLoading ? (
-          <motion.div
-            key="today-loading"
-            variants={presets.panelSwap.variants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={presets.panelSwap.transition}
-            className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]"
-          >
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {isLoading ? (
+        <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : null}
 
       {!isLoading ? (
         <EntryList

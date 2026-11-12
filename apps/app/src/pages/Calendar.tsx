@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { AnimatePresence, motion } from 'motion/react'
 import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import ClockCalendarView from '@/components/clock-calendar/ClockCalendarView'
 import DayView from '@/components/calendar/DayView'
@@ -12,7 +11,6 @@ import { googleEventsQueryOptions, useGoogleCalendar, useGoogleEventsForRange } 
 import { timeEntriesListQueryOptions, useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { HOUR_HEIGHT } from '@/lib/calendar'
 import { CALENDAR_SHORTCUT_EVENT, type CalendarShortcutDirection } from '@/lib/keyboardShortcuts'
-import { presets } from '@/lib/motion'
 import { assertSupabaseClient } from '@/lib/supabase'
 import { localDayRange } from '@/lib/utils'
 
@@ -408,22 +406,12 @@ export default function Calendar() {
         </div>
       ) : null}
 
-      <AnimatePresence mode="sync" initial={false}>
-        {isLoading ? (
-          <motion.div
-            key="calendar-loading"
-            variants={presets.panelSwap.variants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={presets.panelSwap.transition}
-            className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]"
-          >
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-56 w-full" />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {isLoading ? (
+        <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-56 w-full" />
+        </div>
+      ) : null}
 
       {!isLoading ? (
         <DayView

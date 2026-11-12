@@ -1,5 +1,4 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Clock, CalendarDays, ClipboardList, Folder, Menu } from 'lucide-react'
@@ -29,7 +28,6 @@ import IdleDetectionDialog from '@/components/IdleDetectionDialog'
 import MiniTimerPill from '@/components/timer/MiniTimerPill'
 import Toaster from '@/components/ui/sonner'
 import { generateNonce, initGoogleSignIn, loadGisScript, renderGoogleButton } from '@/lib/googleSignIn'
-import { durations, easings, presets } from '@/lib/motion'
 import { assertSupabaseClient, getFriendlySupabaseError, supabaseConfigError } from '@/lib/supabase'
 import type { ThemePreference } from '@/types'
 
@@ -192,21 +190,6 @@ function ThemePreferenceToggle({ preference, options, onChange }: ThemePreferenc
   )
 }
 
-function RouteTransition({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      className="overflow-y-auto"
-      variants={presets.route.variants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      transition={presets.route.transition}
-    >
-      {children}
-    </motion.div>
-  )
-}
-
 function RouteLoadingFallback() {
   return (
     <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
@@ -297,54 +280,52 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   }, [pathname])
 
   const content = (
-    <AnimatePresence mode="wait" initial={false}>
-      <RouteTransition key={pathname}>
-        <ErrorBoundary key={pathname} scope={`route:${pathname}`}>
-          <Routes location={location}>
-            <Route
-              path="/"
-              element={(
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <Today />
-                </Suspense>
-              )}
-            />
-            <Route
-              path="/calendar"
-              element={(
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <Calendar />
-                </Suspense>
-              )}
-            />
-            <Route
-              path="/reports"
-              element={(
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <Reports />
-                </Suspense>
-              )}
-            />
-            <Route
-              path="/projects"
-              element={(
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <Projects />
-                </Suspense>
-              )}
-            />
-            <Route
-              path="/google/callback"
-              element={(
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <GoogleCallback />
-                </Suspense>
-              )}
-            />
-          </Routes>
-        </ErrorBoundary>
-      </RouteTransition>
-    </AnimatePresence>
+    <div className="overflow-y-auto">
+      <ErrorBoundary key={pathname} scope={`route:${pathname}`}>
+        <Routes location={location}>
+          <Route
+            path="/"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Today />
+              </Suspense>
+            )}
+          />
+          <Route
+            path="/calendar"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Calendar />
+              </Suspense>
+            )}
+          />
+          <Route
+            path="/reports"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Reports />
+              </Suspense>
+            )}
+          />
+          <Route
+            path="/projects"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Projects />
+              </Suspense>
+            )}
+          />
+          <Route
+            path="/google/callback"
+            element={(
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <GoogleCallback />
+              </Suspense>
+            )}
+          />
+        </Routes>
+      </ErrorBoundary>
+    </div>
   )
 
   const navLinks = NAV_ITEMS.map((item) => (
@@ -364,11 +345,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         {({ isActive }) => (
           <>
             {isActive ? (
-              <motion.span
-                layoutId="bottom-nav-pill"
-                className="absolute inset-0 rounded-md bg-primary/10"
-                transition={easings.spring}
-              />
+              <span className="absolute inset-0 rounded-md bg-primary/10" />
             ) : null}
             <item.icon className="relative z-10 h-5 w-5" />
           </>
@@ -474,20 +451,11 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         {content}
       </main>
 
-      <AnimatePresence initial={false}>
-        {isRunning ? (
-          <motion.div
-            key="mini-timer-pill"
-            initial={{ y: -8, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -8, opacity: 0 }}
-            transition={{ duration: durations.short, ease: easings.standard as unknown as import('motion/react').Easing }}
-            className="fixed left-1/2 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 -translate-x-1/2"
-          >
-            <MiniTimerPill onClick={handleMiniTimerClick} />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {isRunning ? (
+        <div className="fixed left-1/2 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 -translate-x-1/2">
+          <MiniTimerPill onClick={handleMiniTimerClick} />
+        </div>
+      ) : null}
 
 
       <IdleDetectionDialog
@@ -771,17 +739,15 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionUserProvider userId={session.user.id}>
-        <MotionConfig reducedMotion="user" transition={{ duration: durations.base, ease: easings.standard as unknown as import('motion/react').Easing }}>
-          <TimerProvider>
-            <BrowserRouter>
-              <AppLayout
-                userEmail={session.user?.email ?? 'signed-in user'}
-                onSignOut={handleSignOut}
-                isSigningOut={isSigningOut}
-              />
-            </BrowserRouter>
-          </TimerProvider>
-        </MotionConfig>
+        <TimerProvider>
+          <BrowserRouter>
+            <AppLayout
+              userEmail={session.user?.email ?? 'signed-in user'}
+              onSignOut={handleSignOut}
+              isSigningOut={isSigningOut}
+            />
+          </BrowserRouter>
+        </TimerProvider>
       </SessionUserProvider>
     </QueryClientProvider>
   )

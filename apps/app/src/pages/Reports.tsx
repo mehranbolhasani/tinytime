@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, ClipboardList } from 'lucide-react'
 import DateRangePicker, { type RangePreset } from '@/components/reports/DateRangePicker'
 import EntryTable from '@/components/reports/EntryTable'
@@ -11,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
-import { presets } from '@/lib/motion'
 import { cn, exportToCSV, localDateInputRange } from '@/lib/utils'
 import ActivityHeatmap from '@/components/reports/ActivityHeatmap'
 
@@ -147,91 +145,71 @@ export default function Reports() {
         </div>
       ) : null}
 
-      <AnimatePresence mode="sync" initial={false}>
-        {isLoading ? (
-          <motion.div
-            key="reports-loading"
-            variants={presets.panelSwap.variants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={presets.panelSwap.transition}
-            className="space-y-3"
-          >
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
-              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
-              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
-              <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+      {isLoading ? (
+        <div className="space-y-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+            <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+            <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+            <Skeleton className="h-[4.25rem] w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <SummaryBar entries={filteredEntries} />
+
+          <section className="rounded-xl bg-card p-4">
+            <h2 className="mb-3 text-sm font-medium text-muted-foreground">Daily activity</h2>
+            <DailyBarChart entries={filteredEntries} from={from} to={to} />
+          </section>
+
+          <section className="rounded-xl bg-card p-4">
+            <button
+              type="button"
+              onClick={() => setShowHeatmap(v => !v)}
+              className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground"
+              aria-expanded={showHeatmap}
+            >
+              <span>When do you work?</span>
+              <ChevronDown
+                className={cn('h-4 w-4 transition-transform', showHeatmap && 'rotate-180')}
+                aria-hidden="true"
+              />
+            </button>
+            {showHeatmap ? (
+              <div className="mt-3">
+                <ActivityHeatmap entries={filteredEntries} />
+              </div>
+            ) : null}
+          </section>
+
+          <section className="rounded-xl bg-card p-4">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-sm font-medium text-muted-foreground">Time by project</h2>
+              <FilterBar
+                projects={projects}
+                selectedProjectIds={selectedProjectIds}
+                onToggleProject={handleToggleProject}
+                onResetProjects={() => setSelectedProjectIds([])}
+              />
             </div>
-            <Skeleton className="h-24 w-full rounded-xl" />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="reports-content"
-            variants={presets.panelSwap.variants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={presets.panelSwap.transition}
-            className="space-y-3"
-          >
-            <motion.div className="space-y-3">
-              <SummaryBar entries={filteredEntries} />
+            <ProjectBreakdown entries={filteredEntries} />
+          </section>
 
-              <section className="rounded-xl bg-card p-4">
-                <h2 className="mb-3 text-sm font-medium text-muted-foreground">Daily activity</h2>
-                <DailyBarChart entries={filteredEntries} from={from} to={to} />
-              </section>
-
-              <section className="rounded-xl bg-card p-4">
-                <button
-                  type="button"
-                  onClick={() => setShowHeatmap(v => !v)}
-                  className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground"
-                  aria-expanded={showHeatmap}
-                >
-                  <span>When do you work?</span>
-                  <ChevronDown
-                    className={cn('h-4 w-4 transition-transform', showHeatmap && 'rotate-180')}
-                    aria-hidden="true"
-                  />
-                </button>
-                {showHeatmap ? (
-                  <div className="mt-3">
-                    <ActivityHeatmap entries={filteredEntries} />
-                  </div>
-                ) : null}
-              </section>
-
-              <section className="rounded-xl bg-card p-4">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-sm font-medium text-muted-foreground">Time by project</h2>
-                  <FilterBar
-                    projects={projects}
-                    selectedProjectIds={selectedProjectIds}
-                    onToggleProject={handleToggleProject}
-                    onResetProjects={() => setSelectedProjectIds([])}
-                  />
-                </div>
-                <ProjectBreakdown entries={filteredEntries} />
-              </section>
-            </motion.div>
-
-            <section className="space-y-3">
-              <h2 className="text-sm font-medium text-muted-foreground">Entries</h2>
-              {filteredEntries.length === 0 ? (
-                <div className="flex flex-col items-center py-12 text-center">
-                  <ClipboardList className="mb-2 h-8 w-8 text-muted-foreground/70" />
-                  <p className="text-sm text-muted-foreground/70">Nothing tracked in this period.</p>
-                </div>
-              ) : (
-                <EntryTable entries={filteredEntries} />
-              )}
-            </section>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium text-muted-foreground">Entries</h2>
+            {filteredEntries.length === 0 ? (
+              <div className="flex flex-col items-center py-12 text-center">
+                <ClipboardList className="mb-2 h-8 w-8 text-muted-foreground/70" />
+                <p className="text-sm text-muted-foreground/70">Nothing tracked in this period.</p>
+              </div>
+            ) : (
+              <EntryTable entries={filteredEntries} />
+            )}
+          </section>
+        </div>
+      )}
     </section>
   )
 }

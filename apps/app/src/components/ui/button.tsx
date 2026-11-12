@@ -1,10 +1,7 @@
 import * as React from "react"
-import { motion } from "motion/react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import type { Easing } from "motion/react"
-import { durations, easings } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -54,18 +51,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     if (asChild) {
       return <Slot className={classes} ref={ref} {...props} />
-    }
-
-    if (resolvedVariant === "default" || resolvedVariant === "destructive") {
-      return (
-        <motion.button
-          className={classes}
-          whileTap={props.disabled ? undefined : { scale: 0.98 }}
-          transition={{ duration: durations.short, ease: easings.standard as Easing }}
-          ref={ref}
-          {...(props as object)}
-        />
-      )
     }
 
     return <button className={classes} ref={ref} {...props} />

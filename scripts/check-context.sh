@@ -52,13 +52,14 @@ else
   pass "No direct supabase.from() calls in components/"
 fi
 
-# ── 3. motion/react used in app code (not framer-motion) ────────────────────
-framer=$(grep -rn "from 'framer-motion'" "$APP_SRC/" 2>/dev/null || true)
-if [ -n "$framer" ]; then
-  fail "framer-motion import found — use motion/react instead:"
-  echo "$framer" | sed 's/^/  /' >&2
+# ── 3. No animation library imports in app code ─────────────────────────────
+# The app uses CSS only; GSAP is the planned choice if motion returns.
+anim_imports=$(grep -rnE "from ['\"](motion|motion/react|framer-motion)['\"]" "$APP_SRC/" 2>/dev/null || true)
+if [ -n "$anim_imports" ]; then
+  fail "animation library import found — apps/app uses CSS only:"
+  echo "$anim_imports" | sed 's/^/  /' >&2
 else
-  pass "No framer-motion imports (motion/react used correctly)"
+  pass "No animation library imports in apps/app"
 fi
 
 # ── 4. Duration base unit is seconds (no duration_minutes) ──────────────────
@@ -104,7 +105,6 @@ fi
 required_files=(
   "types.ts"
   "lib/supabase.ts"
-  "lib/motion.ts"
   "lib/calendar.ts"
   "lib/clockCalendar.ts"
   "lib/utils.ts"
