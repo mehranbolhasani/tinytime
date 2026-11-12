@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { hexToRgba, toSafeHexColor } from '@/lib/color'
 import { cn, formatTime } from '@/lib/utils'
-import type { CalendarBlock, NormalizedGoogleEvent } from '@/types'
+import type { BlockGeometry } from '@/lib/calendar'
+import type { NormalizedGoogleEvent } from '@/types'
 
 interface GoogleEventBlockProps {
-  block: CalendarBlock
+  block: BlockGeometry & { lane: number; laneCount: number }
   event: NormalizedGoogleEvent
   onStartTimer: (event: NormalizedGoogleEvent) => void
   disableStart?: boolean

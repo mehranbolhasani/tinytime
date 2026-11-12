@@ -1,3 +1,4 @@
+import { computeDuration } from '@/lib/utils'
 import type { CalendarBlock, TimeEntry } from '@/types'
 
 export const HOURS: number[] = Array.from({ length: 24 }, (_, hour) => hour)
@@ -9,6 +10,99 @@ export const DEFAULT_CREATE_MINUTES = 30
 
 export function getGridHeight(hourHeight = HOUR_HEIGHT): number {
   return hourHeight * 24
+}
+
+/**
+ * Duration of an entry in seconds: the stored value, or the difference between
+ * its start and stop times, or 0 while it is still running.
+ */
+export function entryDurationSeconds(entry: TimeEntry): number {
+  return entry.duration_seconds ?? (entry.stopped_at ? computeDuration(entry.started_at, entry.stopped_at) : 0)
+}
+
+/**
+ * Builds the `createEntry` input for a copy of the entry. A stopped entry keeps
+ * its exact start and stop times; a running entry gets at least one minute.
+ */
+export function buildDuplicateInput(entry: TimeEntry) {
+  const startedAt = new Date(entry.started_at)
+  const stoppedAt = entry.stopped_at
+    ? new Date(entry.stopped_at)
+    : new Date(startedAt.getTime() + Math.max(60, entryDurationSeconds(entry)) * 1000)
+  const stoppedAtIso = stoppedAt.toISOString()
+
+  return {
+    project_id: entry.project_id,
+    description: entry.description,
+    started_at: entry.started_at,
+    stopped_at: stoppedAtIso,
+    duration_seconds: computeDuration(entry.started_at, stoppedAtIso),
+  }
+}
+
+/**
+ * Turns a drag's start and current minutes into a create range. A click (equal
+ * minutes) becomes a `DEFAULT_CREATE_MINUTES` block, extending backwards at the
+ * end of the day.
+ */
+export function getDraftRange(
+  startMinutes: number,
+  currentMinutes: number
+): { fromMinutes: number; toMinutes: number; durationMinutes: number } {
+  let fromMinutes = Math.min(startMinutes, currentMinutes)
+  let toMinutes = Math.max(startMinutes, currentMinutes)
+
+  if (fromMinutes === toMinutes) {
+    toMinutes = Math.min(MINUTES_IN_DAY, fromMinutes + DEFAULT_CREATE_MINUTES)
+    if (toMinutes === fromMinutes) {
+      fromMinutes = Math.max(0, fromMinutes - DEFAULT_CREATE_MINUTES)
+    }
+  }
+
+  return {
+    fromMinutes,
+    toMinutes,
+    durationMinutes: Math.max(1, toMinutes - fromMinutes),
+  }
+}
+
+export interface BlockGeometry {
+  top: number
+  height: number
+  startMs: number
+  endMs: number
+}
+
+/**
+ * Clips an interval to the visible day and converts it to top/height pixels.
+ * Returns null when no part of the interval falls inside the day.
+ */
+export function toBlockGeometry(
+  startMs: number,
+  endMs: number,
+  dayStart: Date,
+  dayEnd: Date,
+  minHeight = MIN_ENTRY_HEIGHT,
+  hourHeight = HOUR_HEIGHT
+): BlockGeometry | null {
+  const start = new Date(startMs)
+  const end = new Date(endMs)
+  const visibleStart = start > dayStart ? start : dayStart
+  const visibleEnd = end < dayEnd ? end : dayEnd
+
+  if (visibleEnd <= visibleStart) {
+    return null
+  }
+
+  const topMinutes = (visibleStart.getTime() - dayStart.getTime()) / 60000
+  const durationMinutes = (visibleEnd.getTime() - visibleStart.getTime()) / 60000
+
+  return {
+    top: (topMinutes / 60) * hourHeight,
+    height: Math.max((durationMinutes / 60) * hourHeight, minHeight),
+    startMs: visibleStart.getTime(),
+    endMs: visibleEnd.getTime(),
+  }
 }
 
 export function toBlock(
@@ -23,22 +117,22 @@ export function toBlock(
   const end = entry.stopped_at
     ? new Date(entry.stopped_at)
     : new Date(start.getTime() + durationSeconds * 1000)
-  const visibleStart = start > dayStart ? start : dayStart
-  const visibleEnd = end < dayEnd ? end : dayEnd
+  const geometry = toBlockGeometry(
+    start.getTime(),
+    end.getTime(),
+    dayStart,
+    dayEnd,
+    minHeight,
+    hourHeight
+  )
 
-  if (visibleEnd <= visibleStart) {
+  if (!geometry) {
     return null
   }
 
-  const topMinutes = (visibleStart.getTime() - dayStart.getTime()) / 60000
-  const durationMinutes = (visibleEnd.getTime() - visibleStart.getTime()) / 60000
-
   return {
     entry,
-    top: (topMinutes / 60) * hourHeight,
-    height: Math.max((durationMinutes / 60) * hourHeight, minHeight),
-    startMs: visibleStart.getTime(),
-    endMs: visibleEnd.getTime(),
+    ...geometry,
     lane: 0,
     laneCount: 1,
   }

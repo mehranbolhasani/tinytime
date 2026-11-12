@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import { entryDurationSeconds } from '@/lib/calendar'
 import { buildMonthGrid, describeArc, entriesToDialArcs } from '@/lib/clockCalendar'
 import { localDateKey, startOfDay } from '@/lib/dates'
-import { computeDuration, formatDuration } from '@/lib/utils'
+import { formatDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -128,10 +129,7 @@ export default function MonthOverview({
             if (!entry.stopped_at) {
               return sum
             }
-            return (
-              sum +
-              (entry.duration_seconds ?? computeDuration(entry.started_at, entry.stopped_at))
-            )
+            return sum + entryDurationSeconds(entry)
           }, 0)
 
           return (

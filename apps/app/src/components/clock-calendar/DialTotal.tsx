@@ -1,5 +1,6 @@
 import { useElapsedSeconds } from '@/hooks/useElapsedSeconds'
-import { computeDuration, formatDuration } from '@/lib/utils'
+import { entryDurationSeconds } from '@/lib/calendar'
+import { formatDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
 
 interface DialTotalProps {
@@ -14,10 +15,7 @@ export default function DialTotal({ entries, activeEntry }: DialTotalProps) {
     if (!entry.stopped_at) {
       return sum
     }
-    return (
-      sum +
-      (entry.duration_seconds ?? computeDuration(entry.started_at, entry.stopped_at))
-    )
+    return sum + entryDurationSeconds(entry)
   }, 0)
 
   return <>{formatDuration(completedSeconds + (activeEntry ? elapsed : 0))}</>

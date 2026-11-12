@@ -5,16 +5,14 @@ import ClockDial from '@/components/clock-calendar/ClockDial'
 import DialTotal from '@/components/clock-calendar/DialTotal'
 import DragGhost from '@/components/clock-calendar/DragGhost'
 import MonthOverview from '@/components/clock-calendar/MonthOverview'
-import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
-import EntryDetailSheet from '@/components/calendar/EntryDetailSheet'
-import EntryEditDialog from '@/components/calendar/EntryEditDialog'
+import EntryActionDialogs from '@/components/calendar/EntryActionDialogs'
 import { Button } from '@/components/ui/button'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useClockGestures } from '@/hooks/useClockGestures'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useEntryActions } from '@/hooks/useEntryActions'
 import { useMinuteNow } from '@/hooks/useMinuteNow'
 import { useProjects } from '@/hooks/useProjects'
-import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
+import { useTimeEntriesList } from '@/hooks/useTimeEntries'
 import {
   dateFromDayMinute,
   entriesToDialArcs,
@@ -61,15 +59,10 @@ export default function ClockCalendarView({
   const [pendingMove, setPendingMove] = useState<
     (MinuteRange & { color: string; entryId: string }) | null
   >(null)
-  const [isDeletingEntry, setIsDeletingEntry] = useState(false)
   const [description, setDescription] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [mutationError, setMutationError] = useState('')
   const [focusedArcId, setFocusedArcId] = useState<string | null>(null)
-  const [sheetEntry, setSheetEntry] = useState<TimeEntry | null>(null)
-  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
-  const [entryToDelete, setEntryToDelete] = useState<TimeEntry | null>(null)
 
   const svgRef = useRef<SVGSVGElement>(null)
   const binRef = useRef<HTMLDivElement>(null)
@@ -104,8 +97,7 @@ export default function ClockCalendarView({
   })
   const { projects } = useProjects()
   const { activeEntry } = useTimerContext()
-  const { createEntry, updateEntry, deleteEntry } = useTimeEntryMutations({ entries })
-  const isTouchViewport = useMediaQuery('(hover: none)')
+  const actions = useEntryActions({ entries })
   const minuteNow = useMinuteNow()
 
   const dayStart = useMemo(() => startOfDay(selectedDate), [selectedDate])
@@ -136,13 +128,9 @@ export default function ClockCalendarView({
 
   const handleActivate = useCallback(
     (arc: DialArc) => {
-      if (arc.isRunning || !isTouchViewport) {
-        setEditingEntry(arc.entry)
-      } else {
-        setSheetEntry(arc.entry)
-      }
+      actions.openEntry(arc.entry)
     },
-    [isTouchViewport]
+    [actions]
   )
 
   const handleCreateDraft = useCallback((range: MinuteRange) => {
@@ -150,14 +138,12 @@ export default function ClockCalendarView({
   }, [])
 
   const handleRequestDelete = useCallback((entry: TimeEntry) => {
-    setMutationError('')
-    setEntryToDelete(entry)
-  }, [])
+    actions.requestDelete(entry)
+  }, [actions])
 
   const handleArcDelete = useCallback((arc: DialArc) => {
-    setMutationError('')
-    setEntryToDelete(arc.entry)
-  }, [])
+    actions.requestDelete(arc.entry)
+  }, [actions])
 
   const handleCommitMove = useCallback(
     (entry: TimeEntry, startMinute: number, endMinute: number) => {
@@ -169,14 +155,14 @@ export default function ClockCalendarView({
         endMinute,
         color: toSafeHexColor(entry.projects?.color, '#e76f51'),
       })
-      setMutationError('')
-      void updateEntry(entry.id, {
+      actions.clearError()
+      void actions.updateEntry(entry.id, {
         started_at: startedAt,
         stopped_at: stoppedAt,
         duration_seconds: computeDuration(startedAt, stoppedAt),
       })
         .catch((updateError: unknown) => {
-          setMutationError(
+          actions.setError(
             updateError instanceof Error ? updateError.message : 'Unable to move this entry.'
           )
         })
@@ -184,7 +170,7 @@ export default function ClockCalendarView({
           setPendingMove(null)
         })
     },
-    [dayStart, updateEntry]
+    [actions, dayStart]
   )
 
   const gestures = useClockGestures({
@@ -234,12 +220,12 @@ export default function ClockCalendarView({
     }
 
     setIsSaving(true)
-    setMutationError('')
+    actions.clearError()
 
     try {
       const startedAt = dateFromDayMinute(dayStart, createRange.startMinute).toISOString()
       const stoppedAt = dateFromDayMinute(dayStart, createRange.endMinute).toISOString()
-      await createEntry({
+      await actions.createEntry({
         description: description.trim() || null,
         project_id: projectId,
         started_at: startedAt,
@@ -250,49 +236,12 @@ export default function ClockCalendarView({
       setDescription('')
       setProjectId(null)
     } catch (createError) {
-      setMutationError(
+      actions.setError(
         createError instanceof Error ? createError.message : 'Unable to create entry.'
       )
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!entryToDelete || isDeletingEntry) {
-      return
-    }
-
-    setIsDeletingEntry(true)
-    setMutationError('')
-
-    try {
-      await deleteEntry(entryToDelete.id)
-      setEntryToDelete(null)
-    } catch (deleteError) {
-      setMutationError(
-        deleteError instanceof Error ? deleteError.message : 'Unable to delete this entry.'
-      )
-    } finally {
-      setIsDeletingEntry(false)
-    }
-  }
-
-  const handleDuplicate = async (entry: TimeEntry) => {
-    const startedAt = entry.started_at
-    const stoppedAt =
-      entry.stopped_at ??
-      new Date(
-        new Date(startedAt).getTime() + (entry.duration_seconds ?? 0) * 1000
-      ).toISOString()
-
-    await createEntry({
-      description: entry.description,
-      project_id: entry.project_id,
-      started_at: startedAt,
-      stopped_at: stoppedAt,
-      duration_seconds: entry.duration_seconds ?? computeDuration(startedAt, stoppedAt),
-    })
   }
 
   const headerLabel = useMemo(
@@ -388,9 +337,9 @@ export default function ClockCalendarView({
           {error.message}
         </div>
       ) : null}
-      {mutationError ? (
+      {actions.error ? (
         <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {mutationError}
+          {actions.error}
         </div>
       ) : null}
 
@@ -492,31 +441,7 @@ export default function ClockCalendarView({
         </div>
       ) : null}
 
-      <EntryDetailSheet
-        entry={sheetEntry}
-        open={Boolean(sheetEntry)}
-        onOpenChange={(open) => {
-          if (!open) setSheetEntry(null)
-        }}
-        onEdit={(entry) => {
-          setSheetEntry(null)
-          setEditingEntry(entry)
-        }}
-        onDuplicate={handleDuplicate}
-        onDelete={(entry) => {
-          setSheetEntry(null)
-          setMutationError('')
-          setEntryToDelete(entry)
-        }}
-      />
-
-      <EntryEditDialog
-        entry={editingEntry}
-        open={Boolean(editingEntry)}
-        onOpenChange={(open) => {
-          if (!open) setEditingEntry(null)
-        }}
-      />
+      <EntryActionDialogs actions={actions} />
 
       {ghostVisible ? (
         <DragGhost
@@ -531,19 +456,6 @@ export default function ClockCalendarView({
           isOverBin={gestures.isOverBin}
         />
       ) : null}
-
-      <DeleteEntryAlertDialog
-        entry={entryToDelete}
-        open={Boolean(entryToDelete)}
-        onOpenChange={(open) => {
-          if (!open) setEntryToDelete(null)
-        }}
-        onConfirm={() => {
-          void handleDeleteConfirm()
-        }}
-        error={mutationError}
-        isDeleting={isDeletingEntry}
-      />
     </section>
   )
 }

@@ -1,36 +1,39 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ActiveTimerBlock from '@/components/calendar/blocks/ActiveTimerBlock'
-import GoogleEventBlock from '@/components/calendar/blocks/GoogleEventBlock'
-import DeleteEntryAlertDialog from '@/components/calendar/DeleteEntryAlertDialog'
 import EntryBlock from '@/components/calendar/blocks/EntryBlock'
+import GoogleEventBlock from '@/components/calendar/blocks/GoogleEventBlock'
+import AllDayEvents from '@/components/calendar/AllDayEvents'
+import DragPreview from '@/components/calendar/DragPreview'
+import EntryActionDialogs from '@/components/calendar/EntryActionDialogs'
 import EntryContextMenu from '@/components/calendar/EntryContextMenu'
-import EntryDetailSheet from '@/components/calendar/EntryDetailSheet'
-import EntryEditDialog from '@/components/calendar/EntryEditDialog'
+import HourGutter from '@/components/calendar/HourGutter'
+import NowLine from '@/components/calendar/NowLine'
 import { useTimerContext } from '@/contexts/TimerContext'
+import { useDayViewDrag } from '@/hooks/useDayViewDrag'
+import { useEntryActions } from '@/hooks/useEntryActions'
+import { useLocalDay } from '@/hooks/useLocalDay'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import {
   assignIntervalLanes,
-  DEFAULT_CREATE_MINUTES,
-  getDropStartMinutes,
   getGridHeight,
-  getNowLinePosition,
   HOURS,
-  MINUTES_IN_DAY,
   MIN_ENTRY_HEIGHT,
-  minutesToHeight,
-  minutesToTop,
   toBlock,
+  toBlockGeometry,
+  type BlockGeometry,
 } from '@/lib/calendar'
 import { addDays, isSameDay, startOfDay } from '@/lib/dates'
 import { isOptimisticEntry } from '@/lib/timer'
-import { computeDuration } from '@/lib/utils'
 import type { CalendarBlock, NormalizedGoogleEvent, TimeEntry } from '@/types'
 
-type GoogleCalendarBlock = CalendarBlock & { event: NormalizedGoogleEvent }
+type GoogleCalendarBlock = BlockGeometry & {
+  event: NormalizedGoogleEvent
+  lane: number
+  laneCount: number
+}
 
-function withLanes<T extends CalendarBlock>(blocks: T[]): T[] {
+function withLanes<T extends { startMs: number; endMs: number }>(blocks: T[]): T[] {
   return assignIntervalLanes(
     blocks,
     (block) => block.startMs,
@@ -44,46 +47,6 @@ interface MenuState {
   x: number
   y: number
   returnFocusTo?: HTMLElement | null
-}
-
-interface DraggingMove {
-  entryId: string
-  durationMinutes: number
-  grabOffsetMinutes: number
-}
-
-interface PreviewBlock {
-  top: number
-  height: number
-  variant: 'create' | 'move'
-}
-
-interface CreateDraft {
-  startMinutes: number
-  currentMinutes: number
-}
-
-interface PendingMove {
-  entryId: string
-  startedAt: string
-  stoppedAt: string
-  startMs: number
-  stopMs: number
-  durationSeconds: number
-}
-
-function hideNativeDragImage(event: React.DragEvent): void {
-  const ghost = document.createElement('div')
-  ghost.style.position = 'fixed'
-  ghost.style.top = '-9999px'
-  ghost.style.left = '-9999px'
-  ghost.style.width = '1px'
-  ghost.style.height = '1px'
-  document.body.appendChild(ghost)
-  event.dataTransfer.setDragImage(ghost, 0, 0)
-  requestAnimationFrame(() => {
-    document.body.removeChild(ghost)
-  })
 }
 
 interface DayViewProps {
@@ -108,43 +71,35 @@ export default function DayView({
   onSwitchToClock,
 }: DayViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
-  const [draggingMove, setDraggingMove] = useState<DraggingMove | null>(null)
-  const [previewBlock, setPreviewBlock] = useState<PreviewBlock | null>(null)
-  const [createDraft, setCreateDraft] = useState<CreateDraft | null>(null)
-  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null)
-  const [entryToDelete, setEntryToDelete] = useState<TimeEntry | null>(null)
-  const [isDeletingEntry, setIsDeletingEntry] = useState(false)
-  const [sheetEntry, setSheetEntry] = useState<TimeEntry | null>(null)
   const [menuState, setMenuState] = useState<MenuState | null>(null)
-  const [mutationError, setMutationError] = useState('')
-  const [now, setNow] = useState(() => new Date())
   const { isRunning } = useTimerContext()
-  const { updateEntry, createEntry, deleteEntry } = useTimeEntryMutations({ entries })
+  const actions = useEntryActions({ entries })
   const { startTimer } = useTimerControlActions()
   const isTouchViewport = useMediaQuery('(hover: none)')
   const minEntryHeight = isTouchViewport ? 28 : MIN_ENTRY_HEIGHT
   const gridHeight = getGridHeight(hourHeight)
   const dayStart = useMemo(() => startOfDay(selectedDate), [selectedDate])
   const dayEnd = useMemo(() => addDays(dayStart, 1), [dayStart])
-  const isSelectedToday = isSameDay(selectedDate, now)
+  const today = useLocalDay()
+  const isSelectedToday = isSameDay(selectedDate, today)
 
-  const entriesForRendering = useMemo(() => {
-    if (!pendingMove) {
-      return entries
-    }
-
-    return entries.map((entry) =>
-      entry.id === pendingMove.entryId
-        ? {
-            ...entry,
-            started_at: pendingMove.startedAt,
-            stopped_at: pendingMove.stoppedAt,
-            duration_seconds: pendingMove.durationSeconds,
-          }
-        : entry
-    )
-  }, [entries, pendingMove])
+  const {
+    entriesForRendering,
+    previewBlock,
+    draggingEntryId,
+    blockDragHandlers,
+    gridHandlers,
+  } = useDayViewDrag({
+    entries,
+    dayStart,
+    hourHeight,
+    minEntryHeight,
+    updateEntry: actions.updateEntry,
+    createEntry: actions.createEntry,
+    onCreated: actions.openEdit,
+    onError: actions.setError,
+    clearError: actions.clearError,
+  })
 
   const completedBlocks = useMemo(() => {
     const blocks = entriesForRendering
@@ -173,35 +128,32 @@ export default function DayView({
   const googleBlocks = useMemo(() => {
     const blocks = timedGoogleEvents
       .map((event) => {
-        const block = toBlock(
-          { started_at: event.startedAt, stopped_at: event.stoppedAt } as unknown as TimeEntry,
+        const start = new Date(event.startedAt)
+        const end = new Date(event.stoppedAt)
+        const geometry = toBlockGeometry(
+          start.getTime(),
+          end.getTime(),
           dayStart,
           dayEnd,
-          0,
           minEntryHeight,
           hourHeight
         )
 
-        if (!block) {
+        if (!geometry) {
           return null
         }
 
-        return { ...block, event } as GoogleCalendarBlock
+        return {
+          ...geometry,
+          event,
+          lane: 0,
+          laneCount: 1,
+        }
       })
       .filter((b): b is GoogleCalendarBlock => b !== null)
 
     return withLanes(blocks)
   }, [dayEnd, dayStart, minEntryHeight, timedGoogleEvents, hourHeight])
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(new Date())
-    }, 60_000)
-
-    return () => {
-      window.clearInterval(intervalId)
-    }
-  }, [])
 
   useEffect(() => {
     const container = scrollRef.current
@@ -213,115 +165,6 @@ export default function DayView({
     container.scrollTop = targetHour * hourHeight
   }, [hourHeight])
 
-  useEffect(() => {
-    if (!pendingMove) {
-      return
-    }
-
-    const matched = entries.some((entry) => {
-      if (entry.id !== pendingMove.entryId || !entry.started_at || !entry.stopped_at) {
-        return false
-      }
-      const startMs = new Date(entry.started_at).getTime()
-      const stopMs = new Date(entry.stopped_at).getTime()
-      return startMs === pendingMove.startMs && stopMs === pendingMove.stopMs
-    })
-
-    if (matched) {
-      setPendingMove(null)
-    }
-  }, [entries, pendingMove])
-
-  const moveEntryToTime = async (entry: TimeEntry, targetMinutes: number): Promise<void> => {
-    const durationSeconds = Math.max(
-      60,
-      entry.duration_seconds ?? (entry.stopped_at ? computeDuration(entry.started_at, entry.stopped_at) : 0)
-    )
-    const startedAt = new Date(dayStart.getTime() + targetMinutes * 60_000)
-    const stoppedAt = new Date(startedAt.getTime() + durationSeconds * 1000)
-    await updateEntry(entry.id, {
-      started_at: startedAt.toISOString(),
-      stopped_at: stoppedAt.toISOString(),
-      duration_seconds: durationSeconds,
-    })
-  }
-
-  const duplicateEntry = async (entry: TimeEntry): Promise<void> => {
-    const durationSeconds = Math.max(
-      60,
-      entry.duration_seconds ?? (entry.stopped_at ? computeDuration(entry.started_at, entry.stopped_at) : 0)
-    )
-    const startedAt = new Date(entry.started_at)
-    const stoppedAt = new Date(startedAt.getTime() + durationSeconds * 1000)
-    await createEntry({
-      project_id: entry.project_id,
-      description: entry.description ?? '',
-      started_at: startedAt.toISOString(),
-      stopped_at: stoppedAt.toISOString(),
-      duration_seconds: durationSeconds,
-    })
-  }
-
-  const getRangeFromDraft = (
-    startMinutes: number,
-    currentMinutes: number
-  ): { fromMinutes: number; toMinutes: number; durationMinutes: number } => {
-    let fromMinutes = Math.min(startMinutes, currentMinutes)
-    let toMinutes = Math.max(startMinutes, currentMinutes)
-
-    if (fromMinutes === toMinutes) {
-      toMinutes = Math.min(MINUTES_IN_DAY, fromMinutes + DEFAULT_CREATE_MINUTES)
-      if (toMinutes === fromMinutes) {
-        fromMinutes = Math.max(0, fromMinutes - DEFAULT_CREATE_MINUTES)
-      }
-    }
-
-    return {
-      fromMinutes,
-      toMinutes,
-      durationMinutes: Math.max(1, toMinutes - fromMinutes),
-    }
-  }
-
-  const updateMovePreview = (
-    clientY: number,
-    containerRect: DOMRect
-  ): { startMinutes: number; durationMinutes: number } => {
-    if (!draggingMove) {
-      return { startMinutes: 0, durationMinutes: 0 }
-    }
-    const adjustedClientY = clientY - (draggingMove.grabOffsetMinutes / 60) * hourHeight
-    const durationMinutes = draggingMove.durationMinutes
-    const startMinutes = getDropStartMinutes(adjustedClientY, containerRect, durationMinutes, hourHeight)
-    setPreviewBlock({
-      top: minutesToTop(startMinutes, hourHeight),
-      height: minutesToHeight(durationMinutes, minEntryHeight, hourHeight),
-      variant: 'move',
-    })
-    return { startMinutes, durationMinutes }
-  }
-
-  const updateCreatePreview = (
-    startMinutes: number,
-    currentMinutes: number
-  ): { fromMinutes: number; toMinutes: number; durationMinutes: number } => {
-    const range = getRangeFromDraft(startMinutes, currentMinutes)
-    setPreviewBlock({
-      top: minutesToTop(range.fromMinutes, hourHeight),
-      height: minutesToHeight(range.durationMinutes, minEntryHeight, hourHeight),
-      variant: 'create',
-    })
-    return range
-  }
-
-  const handleSelectEntry = useCallback((entry: TimeEntry) => {
-    if (isTouchViewport) {
-      setSheetEntry(entry)
-    } else {
-      setEditingEntry(entry)
-    }
-  }, [isTouchViewport])
-
   const handleOpenMenu = useCallback(
     (entry: TimeEntry, x: number, y: number, returnFocusTo?: HTMLElement | null) => {
       setMenuState({ open: true, entry, x, y, returnFocusTo })
@@ -329,49 +172,9 @@ export default function DayView({
     []
   )
 
-  const handleBlockDragStart = useCallback((event: React.DragEvent, entry: TimeEntry) => {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', entry.id)
-    hideNativeDragImage(event)
-    const targetRect = event.currentTarget.getBoundingClientRect()
-    const durationMinutes = Math.max(
-      1,
-      Math.round((entry.duration_seconds ?? (entry.stopped_at ? computeDuration(entry.started_at, entry.stopped_at) : 0)) / 60)
-    )
-    const rawOffset = ((event.clientY - targetRect.top) / hourHeight) * 60
-    const grabOffsetMinutes = Math.max(0, Math.min(durationMinutes, rawOffset))
-    setDraggingMove({
-      entryId: entry.id,
-      durationMinutes,
-      grabOffsetMinutes,
-    })
-  }, [hourHeight])
-
-  const handleBlockDragEnd = useCallback(() => {
-    setDraggingMove(null)
-    setPreviewBlock(null)
-  }, [])
-
-  const handleDeleteConfirm = async (): Promise<void> => {
-    if (!entryToDelete || isDeletingEntry) {
-      return
-    }
-
-    setIsDeletingEntry(true)
-    try {
-      setMutationError('')
-      await deleteEntry(entryToDelete.id)
-      setEntryToDelete(null)
-    } catch (error) {
-      setMutationError(error instanceof Error ? error.message : 'Unable to delete this entry.')
-    } finally {
-      setIsDeletingEntry(false)
-    }
-  }
-
   const handleStartFromGoogleEvent = async (event: NormalizedGoogleEvent): Promise<void> => {
     if (isRunning) {
-      setMutationError('Stop the active timer before starting one from a Google event.')
+      actions.setError('Stop the active timer before starting one from a Google event.')
       return
     }
 
@@ -380,12 +183,12 @@ export default function DayView({
     const nowDate = new Date()
 
     if (Number.isNaN(eventStart.getTime()) || Number.isNaN(eventStop.getTime())) {
-      setMutationError('Unable to start timer from an event with invalid dates.')
+      actions.setError('Unable to start timer from an event with invalid dates.')
       return
     }
 
     try {
-      setMutationError('')
+      actions.clearError()
 
       if (eventStop.getTime() > nowDate.getTime()) {
         await startTimer({ description: event.title ?? '' })
@@ -394,7 +197,7 @@ export default function DayView({
 
       const durationSeconds = Math.max(60, Math.round((eventStop.getTime() - eventStart.getTime()) / 1000))
 
-      await createEntry({
+      await actions.createEntry({
         project_id: null,
         description: event.title ?? '',
         started_at: eventStart.toISOString(),
@@ -402,15 +205,15 @@ export default function DayView({
         duration_seconds: durationSeconds,
       })
     } catch (error) {
-      setMutationError(error instanceof Error ? error.message : 'Unable to create a timer entry from this event.')
+      actions.setError(error instanceof Error ? error.message : 'Unable to create a timer entry from this event.')
     }
   }
 
   return (
     <>
-      {mutationError ? (
+      {actions.error ? (
         <div role="alert" className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {mutationError}
+          {actions.error}
         </div>
       ) : null}
       <div
@@ -418,155 +221,18 @@ export default function DayView({
         className="overflow-y-auto overflow-x-hidden rounded-xl bg-card"
         style={{ height: viewportHeight }}
       >
-        {allDayGoogleEvents.length > 0 ? (
-          <div role="group" aria-label="All-day events" className="border-b border-border bg-secondary/40 px-3 py-2">
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">All-day events</p>
-            <div className="flex flex-wrap gap-1.5">
-              {allDayGoogleEvents.map((event) => (
-                <button
-                  key={event.id}
-                  type="button"
-                  onClick={() => handleStartFromGoogleEvent(event)}
-                  disabled={isRunning}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: event.calendarColor }} />
-                  <span className="max-w-[180px] truncate">{event.title}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        <AllDayEvents
+          events={allDayGoogleEvents}
+          onStart={handleStartFromGoogleEvent}
+          disabled={isRunning}
+        />
         <div className="grid grid-cols-[56px_1fr]">
-          <div className="relative border-r border-border bg-secondary/50" style={{ height: gridHeight }}>
-            {HOURS.map((hour) => (
-              <div
-                key={hour}
-                className="absolute inset-x-0 border-t border-border px-2 text-right text-xs tabular-nums text-muted-foreground/70"
-                style={{ top: hour * hourHeight, height: hourHeight, lineHeight: `${hourHeight}px` }}
-              >
-                {String(hour).padStart(2, '0')}
-              </div>
-            ))}
-          </div>
+          <HourGutter hourHeight={hourHeight} gridHeight={gridHeight} />
 
           <div
             className="relative"
             style={{ height: gridHeight }}
-            onDragOver={(event) => {
-              event.preventDefault()
-              const entry = completedBlocks.find((block) => block.entry.id === draggingMove?.entryId)?.entry
-              if (!entry) {
-                return
-              }
-              const rect = event.currentTarget.getBoundingClientRect()
-              updateMovePreview(event.clientY, rect)
-            }}
-            onDragLeave={(event) => {
-              if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                return
-              }
-              if (!createDraft) {
-                setPreviewBlock(null)
-              }
-            }}
-            onDrop={async (event) => {
-              event.preventDefault()
-              const entry = completedBlocks.find((block) => block.entry.id === draggingMove?.entryId)?.entry
-              setPreviewBlock(null)
-              if (!entry) {
-                setDraggingMove(null)
-                return
-              }
-
-              try {
-                setMutationError('')
-                const rect = event.currentTarget.getBoundingClientRect()
-                const { startMinutes: nextStartMinutes } = updateMovePreview(event.clientY, rect)
-                const durationSeconds = Math.max(
-                  60,
-                  entry.duration_seconds ?? (entry.stopped_at ? computeDuration(entry.started_at, entry.stopped_at) : 0)
-                )
-                const startedAt = new Date(dayStart.getTime() + nextStartMinutes * 60_000)
-                const stoppedAt = new Date(startedAt.getTime() + durationSeconds * 1000)
-                setPendingMove({
-                  entryId: entry.id,
-                  startedAt: startedAt.toISOString(),
-                  stoppedAt: stoppedAt.toISOString(),
-                  startMs: startedAt.getTime(),
-                  stopMs: stoppedAt.getTime(),
-                  durationSeconds,
-                })
-                await moveEntryToTime(entry, nextStartMinutes)
-              } catch (error) {
-                setPendingMove(null)
-                setMutationError(error instanceof Error ? error.message : 'Unable to move this entry.')
-              } finally {
-                setDraggingMove(null)
-              }
-            }}
-            onPointerDown={(event) => {
-              if (event.pointerType === 'touch' || event.button !== 0 || draggingMove) {
-                return
-              }
-              const target = event.target
-              if (target instanceof Element && target.closest('[data-entry-block]')) {
-                return
-              }
-              const rect = event.currentTarget.getBoundingClientRect()
-              const startMinutes = getDropStartMinutes(event.clientY, rect, 0, hourHeight)
-              setCreateDraft({ startMinutes, currentMinutes: startMinutes })
-              updateCreatePreview(startMinutes, startMinutes)
-              event.currentTarget.setPointerCapture(event.pointerId)
-            }}
-            onPointerCancel={(event) => {
-              if (!createDraft) {
-                return
-              }
-              event.currentTarget.releasePointerCapture?.(event.pointerId)
-              setCreateDraft(null)
-              setPreviewBlock(null)
-            }}
-            onPointerMove={(event) => {
-              if (!createDraft) {
-                return
-              }
-              const rect = event.currentTarget.getBoundingClientRect()
-              const currentMinutes = getDropStartMinutes(event.clientY, rect, 0, hourHeight)
-              if (currentMinutes === createDraft.currentMinutes) {
-                return
-              }
-              setCreateDraft((previous) =>
-                previous && previous.currentMinutes !== currentMinutes
-                  ? { ...previous, currentMinutes }
-                  : previous
-              )
-              updateCreatePreview(createDraft.startMinutes, currentMinutes)
-            }}
-            onPointerUp={async (event) => {
-              if (!createDraft) {
-                return
-              }
-              event.currentTarget.releasePointerCapture(event.pointerId)
-              const range = getRangeFromDraft(createDraft.startMinutes, createDraft.currentMinutes)
-              setCreateDraft(null)
-              setPreviewBlock(null)
-              try {
-                setMutationError('')
-                const startedAt = new Date(dayStart.getTime() + range.fromMinutes * 60_000)
-                const stoppedAt = new Date(dayStart.getTime() + range.toMinutes * 60_000)
-                const created = await createEntry({
-                  project_id: null,
-                  description: '',
-                  started_at: startedAt.toISOString(),
-                  stopped_at: stoppedAt.toISOString(),
-                  duration_seconds: Math.round((stoppedAt.getTime() - startedAt.getTime()) / 1000),
-                })
-                setEditingEntry(created)
-              } catch (error) {
-                setMutationError(error instanceof Error ? error.message : 'Unable to create this entry.')
-              }
-            }}
+            {...gridHandlers}
           >
             {HOURS.map((hour) => (
               <div
@@ -576,19 +242,7 @@ export default function DayView({
               />
             ))}
 
-            {previewBlock ? (
-              <div
-                className={
-                  previewBlock.variant === 'create'
-                    ? 'pointer-events-none absolute inset-x-3 z-20 rounded-lg border border-primary/60 bg-primary/15'
-                    : 'pointer-events-none absolute inset-x-3 z-20 rounded-lg border border-dashed border-primary/70 bg-primary/10'
-                }
-                style={{
-                  top: previewBlock.top,
-                  height: previewBlock.height,
-                }}
-              />
-            ) : null}
+            <DragPreview previewBlock={previewBlock} />
 
             {googleBlocks.map((block) => (
               <GoogleEventBlock
@@ -604,11 +258,11 @@ export default function DayView({
               <EntryBlock
                 key={block.entry.id}
                 block={block}
-                isDragging={draggingMove?.entryId === block.entry.id}
-                onSelect={handleSelectEntry}
+                isDragging={draggingEntryId === block.entry.id}
+                onSelect={actions.openEntry}
                 onOpenMenu={handleOpenMenu}
-                onDragStart={handleBlockDragStart}
-                onDragEnd={handleBlockDragEnd}
+                onDragStart={blockDragHandlers.onDragStart}
+                onDragEnd={blockDragHandlers.onDragEnd}
               />
             ))}
 
@@ -621,21 +275,13 @@ export default function DayView({
                 minEntryHeight={minEntryHeight}
                 onClick={() => {
                   if (!isOptimisticEntry(activeEntry)) {
-                    setEditingEntry(activeEntry)
+                    actions.openEdit(activeEntry)
                   }
                 }}
               />
             ) : null}
 
-            {isSelectedToday ? (
-              <div
-                className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
-                style={{ top: getNowLinePosition(now, hourHeight) }}
-              >
-                <span className="h-2 w-2 -translate-x-1 rounded-full bg-primary" />
-                <div className="flex-1 border-t border-primary" />
-              </div>
-            ) : null}
+            {isSelectedToday ? <NowLine hourHeight={hourHeight} /> : null}
           </div>
         </div>
         {isLoadingGoogleEvents ? (
@@ -661,69 +307,13 @@ export default function DayView({
         </p>
       ) : null}
 
-      <EntryEditDialog
-        entry={editingEntry}
-        open={Boolean(editingEntry)}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            setEditingEntry(null)
-          }
-        }}
-      />
+      <EntryActionDialogs actions={actions} />
       <EntryContextMenu
         menuState={menuState}
         onClose={() => setMenuState(null)}
-        onEdit={(entry) => setEditingEntry(entry)}
-        onDuplicate={async (entry) => {
-          try {
-            setMutationError('')
-            await duplicateEntry(entry)
-          } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Unable to duplicate this entry.')
-          }
-        }}
-        onDelete={(entry) => {
-          setMutationError('')
-          setEntryToDelete(entry)
-        }}
-      />
-      <EntryDetailSheet
-        entry={sheetEntry}
-        open={Boolean(sheetEntry)}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            setSheetEntry(null)
-          }
-        }}
-        onEdit={(entry) => {
-          setSheetEntry(null)
-          setEditingEntry(entry)
-        }}
-        onDuplicate={async (entry) => {
-          try {
-            setMutationError('')
-            await duplicateEntry(entry)
-          } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Unable to duplicate this entry.')
-          }
-        }}
-        onDelete={(entry) => {
-          setSheetEntry(null)
-          setMutationError('')
-          setEntryToDelete(entry)
-        }}
-      />
-      <DeleteEntryAlertDialog
-        open={Boolean(entryToDelete)}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            setEntryToDelete(null)
-          }
-        }}
-        entry={entryToDelete}
-        onConfirm={handleDeleteConfirm}
-        error={mutationError}
-        isDeleting={isDeletingEntry}
+        onEdit={actions.openEdit}
+        onDuplicate={actions.duplicateAndReport}
+        onDelete={actions.requestDelete}
       />
     </>
   )

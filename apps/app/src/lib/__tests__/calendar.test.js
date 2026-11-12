@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import {
+  DEFAULT_CREATE_MINUTES,
   HOUR_HEIGHT,
   MIN_ENTRY_HEIGHT,
   MINUTES_IN_DAY,
+  buildDuplicateInput,
+  entryDurationSeconds,
+  getDraftRange,
   getGridHeight,
   toBlock,
+  toBlockGeometry,
   assignIntervalLanes,
   getNowLinePosition,
   getDropStartMinutes,
@@ -277,5 +282,159 @@ describe('minutesToHeight', () => {
 
   it('scales with a custom hourHeight', () => {
     expect(minutesToHeight(60, MIN_ENTRY_HEIGHT, 64)).toBe(64)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// entryDurationSeconds
+// ---------------------------------------------------------------------------
+describe('entryDurationSeconds', () => {
+  it('uses the stored duration when present', () => {
+    expect(
+      entryDurationSeconds({ started_at: '2024-01-15T09:00:00Z', stopped_at: null, duration_seconds: 90 })
+    ).toBe(90)
+  })
+
+  it('derives the duration from start and stop times', () => {
+    expect(
+      entryDurationSeconds({
+        started_at: '2024-01-15T09:00:00Z',
+        stopped_at: '2024-01-15T10:00:00Z',
+        duration_seconds: null,
+      })
+    ).toBe(3600)
+  })
+
+  it('returns 0 for a running entry without a stored duration', () => {
+    expect(
+      entryDurationSeconds({ started_at: '2024-01-15T09:00:00Z', stopped_at: null, duration_seconds: null })
+    ).toBe(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildDuplicateInput
+// ---------------------------------------------------------------------------
+describe('buildDuplicateInput', () => {
+  it('keeps the exact start and stop times of a stopped entry', () => {
+    const input = buildDuplicateInput({
+      started_at: '2024-01-15T09:00:00.000Z',
+      stopped_at: '2024-01-15T10:30:00.000Z',
+      duration_seconds: 5400,
+      description: 'Deep work',
+      project_id: 'p1',
+    })
+
+    expect(input.started_at).toBe('2024-01-15T09:00:00.000Z')
+    expect(input.stopped_at).toBe('2024-01-15T10:30:00.000Z')
+    expect(input.duration_seconds).toBe(5400)
+    expect(input.description).toBe('Deep work')
+    expect(input.project_id).toBe('p1')
+  })
+
+  it('gives a running entry a minimum 60-second copy', () => {
+    const input = buildDuplicateInput({
+      started_at: '2024-01-15T09:00:00.000Z',
+      stopped_at: null,
+      duration_seconds: 30,
+      description: null,
+      project_id: null,
+    })
+
+    expect(input.stopped_at).toBe('2024-01-15T09:01:00.000Z')
+    expect(input.duration_seconds).toBe(60)
+    expect(input.description).toBeNull()
+    expect(input.project_id).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getDraftRange
+// ---------------------------------------------------------------------------
+describe('getDraftRange', () => {
+  it('returns a forward drag range', () => {
+    expect(getDraftRange(600, 660)).toEqual({
+      fromMinutes: 600,
+      toMinutes: 660,
+      durationMinutes: 60,
+    })
+  })
+
+  it('swaps the minutes for a backward drag', () => {
+    expect(getDraftRange(660, 600)).toEqual({
+      fromMinutes: 600,
+      toMinutes: 660,
+      durationMinutes: 60,
+    })
+  })
+
+  it('gives a click the default create duration', () => {
+    expect(getDraftRange(600, 600)).toEqual({
+      fromMinutes: 600,
+      toMinutes: 600 + DEFAULT_CREATE_MINUTES,
+      durationMinutes: DEFAULT_CREATE_MINUTES,
+    })
+  })
+
+  it('extends backwards when clicking at the end of the day', () => {
+    expect(getDraftRange(MINUTES_IN_DAY, MINUTES_IN_DAY)).toEqual({
+      fromMinutes: MINUTES_IN_DAY - DEFAULT_CREATE_MINUTES,
+      toMinutes: MINUTES_IN_DAY,
+      durationMinutes: DEFAULT_CREATE_MINUTES,
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// toBlockGeometry
+// ---------------------------------------------------------------------------
+describe('toBlockGeometry', () => {
+  it('clips an interval that crosses midnight to the day', () => {
+    const geometry = toBlockGeometry(
+      DAY_START.getTime() - 60 * 60 * 1000,
+      DAY_START.getTime() + 60 * 60 * 1000,
+      DAY_START,
+      DAY_END,
+      MIN_ENTRY_HEIGHT,
+      HOUR_HEIGHT
+    )
+
+    expect(geometry).not.toBeNull()
+    expect(geometry.startMs).toBe(DAY_START.getTime())
+    expect(geometry.endMs).toBe(DAY_START.getTime() + 60 * 60 * 1000)
+    expect(geometry.top).toBe(0)
+  })
+
+  it('returns null for an interval fully outside the day', () => {
+    expect(
+      toBlockGeometry(
+        DAY_START.getTime() - 60 * 60 * 1000,
+        DAY_START.getTime() - 30 * 60 * 1000,
+        DAY_START,
+        DAY_END
+      )
+    ).toBeNull()
+
+    expect(
+      toBlockGeometry(
+        DAY_END.getTime() + 30 * 60 * 1000,
+        DAY_END.getTime() + 60 * 60 * 1000,
+        DAY_START,
+        DAY_END
+      )
+    ).toBeNull()
+  })
+
+  it('applies the minimum height to a very short interval', () => {
+    const geometry = toBlockGeometry(
+      DAY_START.getTime(),
+      DAY_START.getTime() + 1000,
+      DAY_START,
+      DAY_END,
+      MIN_ENTRY_HEIGHT,
+      HOUR_HEIGHT
+    )
+
+    expect(geometry.height).toBe(MIN_ENTRY_HEIGHT)
   })
 })
