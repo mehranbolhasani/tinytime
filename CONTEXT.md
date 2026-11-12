@@ -81,6 +81,10 @@ tinytime is a single-user, browser-only time tracker.
 - Inline `style` is only allowed for truly dynamic values (e.g. block top/height, dynamic colors).
 - Reuse shadcn/Radix primitives for common controls.
 - Context menus use Radix `DropdownMenu`, anchored at the pointer (or focused block) with keyboard navigation and focus return.
+- **Controls:** buttons, inputs and select triggers follow Kumo's look — a ring instead of a border, `bg-control` / `ring-line` / `bg-tint` tokens, and a gradient on emphasis buttons via `btn-emphasis` and `--btn-accent`.
+- To hide a control's outline, use `ring-0`, not `border-0`.
+- Control sizes: `xs` 26px, `sm` 32px, `default` 36px, `lg` 40px, plus `icon`, `icon-sm`, `icon-xs`. Small sizes grow to 36px on coarse pointers.
+- Use `aria-invalid` for input errors.
 
 ### Fonts
 - SN Pro is the only typeface in the app, self-hosted via `@fontsource-variable/sn-pro` (variable `wght` axis, 200–900).

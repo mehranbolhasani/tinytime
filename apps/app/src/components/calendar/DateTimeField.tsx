@@ -198,7 +198,7 @@ export default function DateTimeField({ id, value, onChange, required, placehold
                 value={selectedDate ? String(selectedDate.getHours()).padStart(2, '0') : '00'}
                 onValueChange={handleHourChange}
               >
-                <SelectTrigger className="h-9 rounded-lg">
+                <SelectTrigger>
                   <SelectValue placeholder="Hour" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,7 +213,7 @@ export default function DateTimeField({ id, value, onChange, required, placehold
                 value={selectedDate ? String(selectedDate.getMinutes()).padStart(2, '0') : '00'}
                 onValueChange={handleMinuteChange}
               >
-                <SelectTrigger className="h-9 rounded-lg">
+                <SelectTrigger>
                   <SelectValue placeholder="Minute" />
                 </SelectTrigger>
                 <SelectContent>

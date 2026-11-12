@@ -56,7 +56,6 @@ export default function GoogleEventBlock({ block, event, onStartTimer, disableSt
           <Button
             type="button"
             size="sm"
-            className="h-8 rounded-md text-xs"
             onClick={() => onStartTimer(event)}
             disabled={disableStart}
           >

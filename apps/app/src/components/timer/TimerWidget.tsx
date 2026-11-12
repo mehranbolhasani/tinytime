@@ -123,21 +123,22 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
           <TimerDisplay />
         </div>
 
-        <div className="min-h-[132px]">
+        <div className="min-h-auto">
           <AnimatePresence mode="wait" initial={false}>
             {timer.isRunning ? (
               <motion.div
                 key="running"
-                className="flex min-h-[132px] items-stretch"
+                className="flex items-stretch"
                 variants={presets.panelSwap.variants}
                 initial="initial"
                 animate="animate"
                 exit="exit"
                 transition={presets.panelSwap.transition}
               >
-                <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 px-4 py-3">
+                <div className="flex min-w-0 flex-1 justify-center gap-2 px-4 py-3">
                   <input
                     type="text"
+                    id="description"
                     aria-label="Running entry description"
                     placeholder="Untitled session"
                     value={description}
@@ -163,7 +164,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   >
                     <SelectTrigger
                       aria-label="Running entry project"
-                      className="h-6 w-auto gap-1 border-0 bg-transparent p-0 text-sm text-muted-foreground shadow-none focus:ring-0 focus-visible:outline-none [&>span]:line-clamp-1"
+                      className="h-6 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
                     >
                       <span className="inline-flex items-center gap-2">
                         <span
@@ -190,11 +191,11 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid h-auto w-[120px] min-w-[120px] shrink-0 place-items-center p-1">
+                <div className="grid h-auto w-auto shrink-0 place-items-center p-1">
                   <Button
                     type="button"
                     variant="destructive"
-                    className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-6"
+                    className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-4"
                     onClick={handleStop}
                     disabled={isSubmitting || isEntriesLoading}
                     aria-label="Stop timer"
@@ -215,30 +216,33 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   event.preventDefault()
                   handleStart()
                 }}
-                className="flex min-h-[132px] items-stretch"
+                className="flex items-center bg-card p-1 rounded-xl"
                 variants={presets.panelSwap.variants}
                 initial="initial"
                 animate="animate"
                 exit="exit"
                 transition={presets.panelSwap.transition}
               >
-                <div className="flex flex-1 flex-col items-stretch">
-                  <input
-                    type="text"
-                    aria-label="Work description"
-                    placeholder="Describe your work"
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                    disabled={isSubmitting || isEntriesLoading}
-                    className="h-16 w-full border-b border-dotted border-border bg-card px-4 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none"
-                  />
-                  <div className="flex h-16 w-full min-w-0 items-stretch">
+                <div className="flex flex-1 items-center">
+                  <div className="w-full">
+                    <input
+                      type="text"
+                      id="description"
+                      aria-label="Work description"
+                      placeholder="Describe your work"
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
+                      disabled={isSubmitting || isEntriesLoading}
+                      className="h-12 w-full px-4 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none"
+                    />
+                  </div>
+                  <div className="flex h-12 w-full min-w-0 items-stretch">
                     <Select
                       value={selectedProject}
                       onValueChange={setSelectedProject}
                       disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
                     >
-                      <SelectTrigger className="h-full w-full border-none rounded-none bg-card text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-none focus:ring-0 focus:outline-none">
+                      <SelectTrigger className="h-full w-full rounded-none bg-card ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 data-[state=open]:ring-0">
                         <SelectValue placeholder="No project" />
                       </SelectTrigger>
                       <SelectContent>
@@ -258,11 +262,11 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                     </Select>
                   </div>
                 </div>
-                <div className="grid h-auto w-[120px] min-w-[120px] shrink-0 place-items-center p-1">
+                <div className="grid h-12 w-12 w-auto shrink-0 place-items-center p-1">
                   <Button
                     type="submit"
                     variant="default"
-                    className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-6"
+                    className="h-full w-full min-w-full rounded-md px-3 [&_svg]:size-4"
                     disabled={isSubmitting || isEntriesLoading}
                     aria-label="Start timer"
                     aria-keyshortcuts="Meta+Shift+S Control+Shift+S"

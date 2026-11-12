@@ -120,7 +120,6 @@ function AuthView({
               onChange={(event) => onEmailChange(event.target.value)}
               placeholder="you@example.com"
               required
-              className="w-full rounded-lg border-border bg-secondary focus:bg-background"
             />
             <Button
               type="submit"
@@ -149,7 +148,7 @@ function AuthView({
               variant="outline"
               onClick={onSignInWithGithub}
               disabled={isGithubSubmitting}
-              className="mt-3 w-[220px] rounded-full border-border bg-secondary hover:bg-border"
+              className="mt-3 w-[220px] rounded-full bg-secondary hover:bg-border"
             >
               <span className="inline-flex items-center justify-center gap-2">
                 <GitHubIcon className="h-4 w-4" />
@@ -183,7 +182,7 @@ function ThemePreferenceToggle({ preference, options, onChange }: ThemePreferenc
             variant={preference === option ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => onChange(option)}
-            className="h-auto rounded-lg px-2 py-2 text-xs capitalize"
+            className="h-auto px-2 py-2 text-xs capitalize"
           >
             {option}
           </Button>
@@ -196,7 +195,7 @@ function ThemePreferenceToggle({ preference, options, onChange }: ThemePreferenc
 function RouteTransition({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      className="min-h-[60vh]"
+      className="overflow-y-auto"
       variants={presets.route.variants}
       initial="initial"
       animate="animate"
@@ -355,7 +354,7 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         end={item.to === '/'}
         onPointerEnter={item.to === '/reports' ? handlePrefetchReports : undefined}
         className={({ isActive }) =>
-          `relative inline-flex items-center rounded-lg w-12 h-12 justify-center text-sm font-normal transition-colors duration-100 ${
+          `relative inline-flex items-center rounded-lg w-10 h-10 justify-center text-sm font-normal transition-colors duration-100 ${
             isActive
               ? 'text-primary'
               : 'text-muted-foreground hover:text-foreground'
@@ -379,8 +378,99 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   ))
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-start gap-4 bg-background px-4">
-      <main className="mx-auto flex w-full max-w-md flex-col justify-start pt-8 pb-24">
+    <div className="mx-auto flex h-screen max-h-screen w-full justify-center items-stretch gap-2 bg-background p-2 overflow-hidden">
+      <header className="h-full bg-card z-1 flex flex-col gap-4 w-16 items-center justify-between px-2 py-2 rounded-lg">
+        <div className="inline-flex items-center gap-0 w-10 h-10 justify-center bg-primary/10 rounded-lg aspect-square">
+          <span className="relative h-1.5 w-6 rounded-sm bg-primary" />
+        </div>
+
+        <nav className="">
+          <ul className="flex flex-col items-center justify-between gap-0 sm:gap-1">
+            {navLinks}
+          </ul>
+        </nav>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Open account options"
+              className="text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <Menu className="h-8 w-8" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="z-50 w-[280px] space-y-3 rounded-lg border-border p-3 shadow-sm">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Preferences</p>
+              <p className="text-xs text-muted-foreground">Theme and account actions.</p>
+            </div>
+            <div className="space-y-3">
+              <ThemePreferenceToggle
+                preference={preference}
+                options={options}
+                onChange={setThemePreference}
+              />
+              <GoogleCalendarSection />
+              <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 space-y-2">
+                <p className="text-xs font-medium text-foreground">Timer notifications</p>
+                {notification.permissionState === 'unsupported' ? (
+                  <p className="text-xs text-muted-foreground">Not supported in this browser.</p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={String(notification.thresholdMinutes)}
+                      onValueChange={(value) => notification.setThreshold(Number(value))}
+                    >
+                      <SelectTrigger
+                        aria-label="Notify after"
+                        size="sm"
+                        className="w-[120px]"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Off</SelectItem>
+                        <SelectItem value="60">After 1 h</SelectItem>
+                        <SelectItem value="90">After 1.5 h</SelectItem>
+                        <SelectItem value="120">After 2 h</SelectItem>
+                        <SelectItem value="180">After 3 h</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {notification.permissionState === 'denied' ? (
+                      <p className="text-xs text-destructive">Permission denied in browser settings.</p>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+              <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2">
+                <p className="text-xs font-medium text-foreground">Keyboard shortcuts</p>
+                <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                  <li>Cmd/Ctrl + K: open command palette</li>
+                  <li>g then t/c/r/p: navigate views</li>
+                  <li>Cmd/Ctrl + Shift + S: start or stop timer</li>
+                  <li>Alt + Left/Right: previous or next day in Calendar</li>
+                </ul>
+              </div>
+              <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onSignOut}
+                disabled={isSigningOut}
+                className="w-full bg-secondary"
+              >
+                {isSigningOut ? 'Signing out...' : 'Sign out'}
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-full max-h-screen flex-col justify-start flex-1 bg-card rounded-lg overflow-hidden">
         {content}
       </main>
 
@@ -399,94 +489,6 @@ function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
         ) : null}
       </AnimatePresence>
 
-        <header className="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4 w-auto items-center justify-between px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          <div className="inline-flex items-center gap-0 w-12 h-12 justify-center bg-primary/10 rounded-lg aspect-square">
-            <span className="relative h-1.5 w-6 rounded-sm bg-primary" />
-          </div>
-
-          <nav className="">
-            <ul className="flex flex-col items-center justify-between gap-0 sm:gap-1">
-              {navLinks}
-            </ul>
-          </nav>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Open account options"
-                className="h-8 w-8 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
-              >
-                <Menu className="h-8 w-8" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="z-50 w-[280px] space-y-3 rounded-lg border-border p-3 shadow-sm">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">Preferences</p>
-                <p className="text-xs text-muted-foreground">Theme and account actions.</p>
-              </div>
-              <div className="space-y-3">
-                <ThemePreferenceToggle
-                  preference={preference}
-                  options={options}
-                  onChange={setThemePreference}
-                />
-                <GoogleCalendarSection />
-                <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 space-y-2">
-                  <p className="text-xs font-medium text-foreground">Timer notifications</p>
-                  {notification.permissionState === 'unsupported' ? (
-                    <p className="text-xs text-muted-foreground">Not supported in this browser.</p>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={String(notification.thresholdMinutes)}
-                        onValueChange={(value) => notification.setThreshold(Number(value))}
-                      >
-                        <SelectTrigger
-                          aria-label="Notify after"
-                          className="h-8 w-[120px] text-xs"
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">Off</SelectItem>
-                          <SelectItem value="60">After 1 h</SelectItem>
-                          <SelectItem value="90">After 1.5 h</SelectItem>
-                          <SelectItem value="120">After 2 h</SelectItem>
-                          <SelectItem value="180">After 3 h</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {notification.permissionState === 'denied' ? (
-                        <p className="text-xs text-destructive">Permission denied in browser settings.</p>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-                <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2">
-                  <p className="text-xs font-medium text-foreground">Keyboard shortcuts</p>
-                  <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                    <li>Cmd/Ctrl + K: open command palette</li>
-                    <li>g then t/c/r/p: navigate views</li>
-                    <li>Cmd/Ctrl + Shift + S: start or stop timer</li>
-                    <li>Alt + Left/Right: previous or next day in Calendar</li>
-                  </ul>
-                </div>
-                <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onSignOut}
-                  disabled={isSigningOut}
-                  className="h-8 w-full rounded-md border-border bg-secondary text-sm"
-                >
-                  {isSigningOut ? 'Signing out...' : 'Sign out'}
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </header>
 
       <IdleDetectionDialog
         open={Boolean(idleState)}

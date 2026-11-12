@@ -216,8 +216,9 @@ export default function ProjectsSection({
         )}
 
         <Button
+          size="sm"
           onClick={handleOpenCreate}
-          className="h-8 w-full rounded-md text-sm transition-colors duration-150 sm:w-auto mt-6"
+          className="w-full sm:w-auto mt-6"
         >
           New project
         </Button>
@@ -243,7 +244,6 @@ export default function ProjectsSection({
                 onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Project name"
                 required
-                className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
               />
               {nameError ? <p className="text-sm text-destructive">{nameError}</p> : null}
             </div>
@@ -263,15 +263,11 @@ export default function ProjectsSection({
                 type="button"
                 variant="outline"
                 onClick={() => handleFormCloseChange(false)}
-                className="rounded-lg bg-secondary text-foreground hover:bg-border"
+                className="bg-secondary hover:bg-border"
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSaving}
-                className="rounded-lg"
-              >
+              <Button type="submit" disabled={isSaving}>
                 {isSaving ? 'Saving...' : isEditing ? 'Save changes' : 'Create project'}
               </Button>
             </DialogFooter>
@@ -308,7 +304,7 @@ export default function ProjectsSection({
               type="button"
               variant="outline"
               onClick={() => setProjectToDelete(null)}
-              className="rounded-lg bg-secondary text-foreground hover:bg-border"
+              className="bg-secondary hover:bg-border"
             >
               Cancel
             </Button>
@@ -317,7 +313,6 @@ export default function ProjectsSection({
               variant="destructive"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="rounded-lg"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>

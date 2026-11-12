@@ -40,9 +40,10 @@ export default function GoogleCalendarSection() {
       {connection.needsReconnect ? (
         <Button
           type="button"
+          size="sm"
           onClick={() => connect()}
           disabled={isConnecting || isLoadingConnection}
-          className="h-8 w-full rounded-md text-sm"
+          className="w-full"
         >
           {isConnecting ? 'Connecting...' : 'Reconnect'}
         </Button>
@@ -52,18 +53,20 @@ export default function GoogleCalendarSection() {
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() => disconnect()}
           disabled={isDisconnecting || isLoadingConnection}
-          className="h-8 w-full rounded-md border-border bg-secondary text-sm"
+          className="w-full bg-secondary"
         >
           {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
         </Button>
       ) : (
         <Button
           type="button"
+          size="sm"
           onClick={() => connect()}
           disabled={isConnecting || isLoadingConnection}
-          className="h-8 w-full rounded-md text-sm"
+          className="w-full"
         >
           {isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
         </Button>

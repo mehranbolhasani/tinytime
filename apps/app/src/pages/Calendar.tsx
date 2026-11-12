@@ -307,9 +307,9 @@ export default function Calendar() {
             <Button
               type="button"
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               aria-label="Previous day"
-              className="h-8 w-8 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
+              className="text-muted-foreground hover:bg-secondary hover:text-foreground"
               onClick={() => setSelectedDate((prev) => addDays(prev, -1))}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -318,9 +318,9 @@ export default function Calendar() {
             <Button
               type="button"
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               aria-label="Next day"
-              className="h-8 w-8 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
+              className="text-muted-foreground hover:bg-secondary hover:text-foreground"
               onClick={() => setSelectedDate((prev) => addDays(prev, 1))}
             >
               <ChevronRight className="h-4 w-4" />
@@ -329,7 +329,7 @@ export default function Calendar() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              className="h-8 rounded-md border-border text-sm transition-colors duration-150"
+              size="sm"
               onClick={() => setSelectedDate(new Date())}
             >
               Today
@@ -337,8 +337,7 @@ export default function Calendar() {
             <Button
               type="button"
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              size="icon-sm"
               aria-label="Switch to clock calendar view"
               onClick={() => changeViewMode('clock')}
             >
@@ -357,7 +356,7 @@ export default function Calendar() {
             variant="ghost"
             size="icon"
             aria-label="Zoom out calendar"
-            className="h-6 w-6 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
+            className="h-6 w-6 text-muted-foreground hover:bg-secondary hover:text-foreground"
             onClick={() => changeZoom(Math.max(0, zoomIndex - 1))}
             disabled={zoomIndex === 0}
           >
@@ -368,7 +367,7 @@ export default function Calendar() {
             variant="ghost"
             size="icon"
             aria-label="Zoom in calendar"
-            className="h-6 w-6 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
+            className="h-6 w-6 text-muted-foreground hover:bg-secondary hover:text-foreground"
             onClick={() => changeZoom(Math.min(ZOOM_STEPS.length - 1, zoomIndex + 1))}
             disabled={zoomIndex === ZOOM_STEPS.length - 1}
           >
@@ -378,7 +377,7 @@ export default function Calendar() {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-6 w-6 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
+            className="h-6 w-6 text-muted-foreground hover:bg-secondary hover:text-foreground"
             onClick={() => changeZoom(DEFAULT_ZOOM_INDEX)}
             disabled={zoomIndex === DEFAULT_ZOOM_INDEX}
             aria-label="Reset calendar zoom"
@@ -389,7 +388,7 @@ export default function Calendar() {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-6 w-6 rounded-md text-muted-foreground"
+            className="h-6 w-6 text-muted-foreground"
             aria-label="List view active"
             disabled
           >

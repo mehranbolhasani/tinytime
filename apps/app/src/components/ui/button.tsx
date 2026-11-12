@@ -8,23 +8,30 @@ import { durations, easings } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer",
+  "inline-flex items-center justify-center whitespace-nowrap font-medium select-none border-0 cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-white hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        gradient: "bg-gradient-to-b from-primary to-indigo-900 text-primary-foreground hover:from-primary/90 hover:to-primary/90",
+        default:
+          "btn-emphasis [--btn-accent:var(--primary)] text-white bg-linear-to-b from-(--btn-from) to-(--btn-to) ring ring-(--btn-ring) shadow-[inset_0_1px_0_0_var(--btn-bg),0_1px_2px_0_rgb(0_0_0/0.05)] not-disabled:hover:from-(--btn-bg) disabled:opacity-50",
+        destructive:
+          "btn-emphasis [--btn-accent:var(--destructive-emphasis)] text-white bg-linear-to-b from-(--btn-from) to-(--btn-to) ring ring-(--btn-ring) shadow-[inset_0_1px_0_0_var(--btn-bg),0_1px_2px_0_rgb(0_0_0/0.05)] not-disabled:hover:from-(--btn-bg) disabled:opacity-50",
+        secondary:
+          "bg-card text-foreground ring ring-line shadow-xs not-disabled:hover:bg-tint data-[state=open]:bg-card disabled:bg-card/50 disabled:text-foreground/70",
+        outline:
+          "bg-transparent text-foreground ring ring-line shadow-none not-disabled:hover:ring-control-focus/25 disabled:text-muted-foreground",
+        ghost:
+          "bg-transparent text-foreground shadow-none not-disabled:hover:bg-tint disabled:text-muted-foreground",
+        link: "text-primary underline-offset-4 shadow-none hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-2",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        xs: "h-6.5 gap-1 rounded-md px-2 text-xs [&_svg]:size-3.5 pointer-coarse:h-9",
+        sm: "h-8 gap-1.5 rounded-md px-2.5 text-[13px] leading-5 [&_svg]:size-4 pointer-coarse:h-9",
+        default: "h-9 gap-1.5 rounded-lg px-3 text-sm leading-5 [&_svg]:size-4",
+        lg: "h-10 gap-2 rounded-lg px-4 text-sm leading-5 [&_svg]:size-4",
+        icon: "size-9 rounded-lg p-0 [&_svg]:size-4",
+        "icon-sm": "size-8 rounded-md p-0 [&_svg]:size-4 pointer-coarse:size-9",
+        "icon-xs": "size-6.5 rounded-md p-0 [&_svg]:size-3.5 pointer-coarse:size-9",
       },
     },
     defaultVariants: {
@@ -53,7 +60,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return (
         <motion.button
           className={classes}
-          whileTap={{ scale: 0.98 }}
+          whileTap={props.disabled ? undefined : { scale: 0.98 }}
           transition={{ duration: durations.short, ease: easings.standard as Easing }}
           ref={ref}
           {...(props as object)}

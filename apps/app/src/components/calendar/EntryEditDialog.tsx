@@ -187,7 +187,6 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
               value={formData.description}
               onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
               placeholder="What are you working on?"
-              className="rounded-lg border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40"
             />
           </div>
 
@@ -199,7 +198,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
               value={formData.projectId}
               onValueChange={(value) => setFormData((prev) => ({ ...prev, projectId: value }))}
             >
-              <SelectTrigger id="entry-project" className="rounded-lg border-border">
+              <SelectTrigger id="entry-project">
                 <SelectValue placeholder="No project" />
               </SelectTrigger>
               <SelectContent>
@@ -252,11 +251,11 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
               type="button"
               variant="outline"
               onClick={() => handleClose(false)}
-              className="rounded-lg bg-secondary text-foreground hover:bg-border"
+              className="bg-secondary hover:bg-border"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving} className="rounded-lg">
+            <Button type="submit" disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Save changes'}
             </Button>
           </DialogFooter>

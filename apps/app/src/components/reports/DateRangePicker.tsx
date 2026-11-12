@@ -42,8 +42,8 @@ export default function DateRangePicker({
             variant={range === preset.id ? 'default' : 'secondary'}
             size="sm"
             className={cn(
-              'h-8 rounded-md px-2 text-sm font-normal transition-colors duration-150',
-              range === preset.id ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'text-muted-foreground hover:bg-secondary'
+              'font-normal',
+              range === preset.id ? null : 'text-muted-foreground'
             )}
             onClick={() => onRangeChange(preset.id)}
           >
@@ -55,10 +55,8 @@ export default function DateRangePicker({
           variant={range === 'custom' ? 'default' : 'secondary'}
           size="sm"
           className={cn(
-            'h-8 rounded-md px-3 text-sm font-normal transition-colors duration-150',
-            range === 'custom'
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-              : 'text-muted-foreground hover:bg-secondary'
+            'px-3 font-normal',
+            range === 'custom' ? null : 'text-muted-foreground'
           )}
           onClick={() => onRangeChange('custom')}
         >
@@ -78,7 +76,8 @@ export default function DateRangePicker({
                 type="date"
                 value={draftFrom}
                 onChange={(event) => setDraftFrom(event.target.value)}
-                className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
+                className="sm:w-[180px]"
+                size="sm"
               />
             </div>
             <div className="w-full space-y-1 sm:w-auto">
@@ -90,14 +89,15 @@ export default function DateRangePicker({
                 type="date"
                 value={draftTo}
                 onChange={(event) => setDraftTo(event.target.value)}
-                className="w-full rounded-md border-border bg-secondary focus:bg-background focus:ring-1 focus:ring-ring/40 sm:w-[180px]"
+                className="sm:w-[180px]"
+                size="sm"
               />
             </div>
             <Button
               type="button"
+              size="sm"
               onClick={() => onApplyCustom(draftFrom || null, draftTo || null)}
               disabled={!draftFrom || !draftTo || isInvalidRange}
-              className="h-8 rounded-md"
             >
               Apply
             </Button>

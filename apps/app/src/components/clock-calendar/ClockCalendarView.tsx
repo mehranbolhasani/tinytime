@@ -314,8 +314,7 @@ export default function ClockCalendarView({
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="h-8 w-8"
+            size="icon-sm"
             aria-label="Previous day"
             onClick={() => onSelectedDateChange(addDays(selectedDate, -1))}
           >
@@ -337,8 +336,7 @@ export default function ClockCalendarView({
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="h-8 w-8"
+            size="icon-sm"
             aria-label="Next day"
             onClick={() => onSelectedDateChange(addDays(selectedDate, 1))}
           >
@@ -351,7 +349,6 @@ export default function ClockCalendarView({
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 rounded-md"
             onClick={() => onSelectedDateChange(new Date())}
           >
             Today
@@ -360,8 +357,7 @@ export default function ClockCalendarView({
             <Button
               type="button"
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              size="icon-sm"
               aria-label="Switch to list calendar view"
               onClick={onSwitchToList}
             >
@@ -521,7 +517,7 @@ export default function ClockCalendarView({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-muted-foreground"
+            className="text-xs text-muted-foreground"
             onClick={onSwitchToList}
           >
             Prefer typing? Use the list view

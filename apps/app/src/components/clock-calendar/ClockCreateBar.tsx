@@ -53,7 +53,7 @@ export default function ClockCreateBar({
         onChange={(event) => onDescriptionChange(event.target.value)}
         placeholder="Description"
         aria-label="Entry description"
-        className="h-10 flex-1 rounded-xl border-border bg-background"
+        className="h-10 flex-1 rounded-xl"
         autoFocus
       />
 

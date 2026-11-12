@@ -125,9 +125,9 @@ export default function Reports() {
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() => exportToCSV(filteredEntries, from ?? '', to ? new Date(new Date(to).getTime() - 1) : '')}
           disabled={!canExport}
-          className="h-8 rounded-md border-border text-sm transition-colors duration-150"
         >
           Export CSV
         </Button>

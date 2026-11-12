@@ -22,6 +22,11 @@
     --color-success: var(--success);
     --color-input: var(--input);
     --color-border: var(--border);
+    --color-control: var(--control);
+    --color-line: var(--line);
+    --color-tint: var(--tint);
+    --color-control-focus: var(--control-focus);
+    --color-destructive-emphasis: var(--destructive-emphasis);
     --color-destructive: var(--destructive);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
@@ -46,12 +51,19 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@utility btn-emphasis {
+    --btn-bg:   color-mix(in oklch, var(--btn-accent), white 30%);
+    --btn-ring: color-mix(in oklch, var(--btn-accent), black 10%);
+    --btn-from: color-mix(in oklch, var(--btn-accent), white 15%);
+    --btn-to:   var(--btn-accent);
+}
+
 :root {
     font-family: 'SN Pro Variable', ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: 'liga' 1, 'calt' 1;
 
     /* shadcn variable overrides — warm palette */
-    --background: var(--color-neutral-100);
+    --background: var(--color-indigo-50);
     --foreground: #0a0a0a;
     --card: #ffffff;
     --card-foreground: #1c1917;
@@ -70,6 +82,11 @@
     --success-foreground: #ffffff;
     --border: #e5e5e5;
     --input: #e5e5e5;
+    --control: #ffffff;
+    --line: oklch(0.145 0 0 / 0.1);
+    --tint: #f5f5f5;
+    --control-focus: #171717;
+    --destructive-emphasis: #b91c1c;
     --ring: oklch(0.655 0.187 29.82);
     --overlay: rgb(0 0 0 / 0.4);
     --radius: 0.625rem;
@@ -84,7 +101,7 @@
 }
 
 .dark {
-    --color-bg:         #1c1917;
+    --color-bg:         oklch(20.8% 0.042 265.755);
     --color-surface:    #292524;
     --color-surface-2:  #3a3532;
     --color-border-warm:#44403c;
@@ -94,9 +111,9 @@
     --color-accent-warm:#e76f51;
     --color-accent-2:   #f4a261;
 
-    --background: #1c1917;
+    --background: oklch(20.8% 0.042 265.755);
     --foreground: #f5f3f0;
-    --card: #292524;
+    --card: oklch(27.9% 0.041 260.031);
     --card-foreground: #f5f3f0;
     --popover: #292524;
     --popover-foreground: #f5f3f0;
@@ -113,6 +130,10 @@
     --success-foreground: #1c1917;
     --border: #44403c;
     --input: #44403c;
+    --control: #302b28;
+    --line: rgb(245 243 240 / 0.12);
+    --tint: #3a3532;
+    --control-focus: #f5f3f0;
     --ring: oklch(0.51 0.274 267.287);
     --overlay: rgb(0 0 0 / 0.6);
     --sidebar: #292524;
