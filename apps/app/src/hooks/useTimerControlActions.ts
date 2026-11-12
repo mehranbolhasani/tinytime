@@ -34,7 +34,7 @@ interface UseTimerControlActionsResult {
   startTimer: (input?: StartTimerInput) => Promise<void>
   stopTimer: (options?: StopTimerOptions) => Promise<void>
   toggleTimer: (input?: StartTimerInput) => Promise<void>
-  updateRunningEntry: (updates: UpdateRunningEntryInput) => Promise<void>
+  updateRunningEntry: (updates: UpdateRunningEntryInput) => Promise<boolean>
 }
 
 interface UseTimerControlActionsOptions {
@@ -137,10 +137,10 @@ export function useTimerControlActions({
   }, [queryClient, startTimer, stopTimer])
 
   const updateRunningEntry = useCallback(
-    async (updates: UpdateRunningEntryInput) => {
+    async (updates: UpdateRunningEntryInput): Promise<boolean> => {
       const current = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY) ?? null
       if (!current || isOptimisticEntry(current) || isTimerActionPending()) {
-        return
+        return false
       }
 
       const payload: { description?: string; project_id?: string | null } = {}
@@ -152,7 +152,7 @@ export function useTimerControlActions({
       }
 
       if (Object.keys(payload).length === 0) {
-        return
+        return false
       }
 
       const promise = updateEntry(current.id, payload)
@@ -160,8 +160,10 @@ export function useTimerControlActions({
 
       try {
         await promise
+        return true
       } catch (updateError) {
         reportError((updateError as Error)?.message ?? 'Unable to update this entry.')
+        return false
       }
     },
     [queryClient, reportError, updateEntry]

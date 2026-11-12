@@ -1,16 +1,8 @@
 import { Check, Trash2 } from 'lucide-react'
+import ProjectSelect from '@/components/projects/ProjectSelect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { Project } from '@/types'
-
-const NO_PROJECT = '__none__'
 
 interface ClockCreateBarProps {
   description: string
@@ -57,22 +49,14 @@ export default function ClockCreateBar({
         autoFocus
       />
 
-      <Select
-        value={projectId ?? NO_PROJECT}
-        onValueChange={(value) => onProjectChange(value === NO_PROJECT ? null : value)}
-      >
-        <SelectTrigger className="h-10 w-[7.5rem] shrink-0 rounded-xl" aria-label="Project">
-          <SelectValue placeholder="Project" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={NO_PROJECT}>No project</SelectItem>
-          {projects.map((project) => (
-            <SelectItem key={project.id} value={project.id}>
-              {project.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <ProjectSelect
+        value={projectId}
+        onChange={onProjectChange}
+        projects={projects}
+        aria-label="Project"
+        placeholder="Project"
+        triggerClassName="h-10 w-[7.5rem] shrink-0 rounded-xl"
+      />
 
       <Button
         type="button"

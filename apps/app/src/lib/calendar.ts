@@ -2,34 +2,13 @@ import type { CalendarBlock, TimeEntry } from '@/types'
 
 export const HOURS: number[] = Array.from({ length: 24 }, (_, hour) => hour)
 export const HOUR_HEIGHT = 32
-export const TIME_COLUMN_WIDTH = 56
 export const MIN_ENTRY_HEIGHT = 20
 export const MINUTES_IN_DAY = 24 * 60
-export const DRAG_SNAP_MINUTES = 15
+const DRAG_SNAP_MINUTES = 15
 export const DEFAULT_CREATE_MINUTES = 30
 
 export function getGridHeight(hourHeight = HOUR_HEIGHT): number {
   return hourHeight * 24
-}
-
-export function startOfDay(date: Date): Date {
-  const next = new Date(date)
-  next.setHours(0, 0, 0, 0)
-  return next
-}
-
-export function addDays(date: Date, days: number): Date {
-  const next = new Date(date)
-  next.setDate(next.getDate() + days)
-  return next
-}
-
-export function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
 }
 
 export function toBlock(
@@ -65,7 +44,7 @@ export function toBlock(
   }
 }
 
-export interface LaneAssignment<T> {
+interface LaneAssignment<T> {
   item: T
   lane: number
   laneCount: number

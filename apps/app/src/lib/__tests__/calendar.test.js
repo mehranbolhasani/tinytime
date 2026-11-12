@@ -4,9 +4,6 @@ import {
   MIN_ENTRY_HEIGHT,
   MINUTES_IN_DAY,
   getGridHeight,
-  startOfDay,
-  addDays,
-  isSameDay,
   toBlock,
   assignIntervalLanes,
   getNowLinePosition,
@@ -33,73 +30,6 @@ describe('getGridHeight', () => {
 
   it('scales with a custom hourHeight', () => {
     expect(getGridHeight(64)).toBe(64 * 24)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// startOfDay
-// ---------------------------------------------------------------------------
-describe('startOfDay', () => {
-  it('sets the time to local midnight', () => {
-    const d = new Date('2024-06-15T14:30:45.123')
-    const result = startOfDay(d)
-    expect(result.getHours()).toBe(0)
-    expect(result.getMinutes()).toBe(0)
-    expect(result.getSeconds()).toBe(0)
-    expect(result.getMilliseconds()).toBe(0)
-  })
-
-  it('preserves the original date unchanged', () => {
-    const d = new Date('2024-06-15T14:30:00')
-    const original = d.getTime()
-    startOfDay(d)
-    expect(d.getTime()).toBe(original)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// addDays
-// ---------------------------------------------------------------------------
-describe('addDays', () => {
-  it('advances a date by the given number of days', () => {
-    const d = new Date('2024-01-15T00:00:00')
-    const result = addDays(d, 3)
-    expect(result.getDate()).toBe(18)
-  })
-
-  it('goes backwards with negative values', () => {
-    const d = new Date('2024-01-15T00:00:00')
-    const result = addDays(d, -1)
-    expect(result.getDate()).toBe(14)
-  })
-
-  it('preserves the original date unchanged', () => {
-    const d = new Date('2024-01-15T00:00:00')
-    addDays(d, 5)
-    expect(d.getDate()).toBe(15)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// isSameDay
-// ---------------------------------------------------------------------------
-describe('isSameDay', () => {
-  it('returns true for the same date at different times', () => {
-    const a = new Date('2024-01-15T09:00:00')
-    const b = new Date('2024-01-15T23:59:59')
-    expect(isSameDay(a, b)).toBe(true)
-  })
-
-  it('returns false for different dates', () => {
-    const a = new Date('2024-01-15T23:59:59')
-    const b = new Date('2024-01-16T00:00:00')
-    expect(isSameDay(a, b)).toBe(false)
-  })
-
-  it('returns false for same day but different month', () => {
-    const a = new Date('2024-01-15')
-    const b = new Date('2024-02-15')
-    expect(isSameDay(a, b)).toBe(false)
   })
 })
 

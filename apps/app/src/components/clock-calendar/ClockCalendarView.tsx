@@ -15,7 +15,6 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useMinuteNow } from '@/hooks/useMinuteNow'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
-import { addDays, startOfDay } from '@/lib/calendar'
 import {
   dateFromDayMinute,
   entriesToDialArcs,
@@ -25,12 +24,12 @@ import {
   type DialArc,
 } from '@/lib/clockCalendar'
 import { toSafeHexColor } from '@/lib/color'
+import { addDays, localDayRange, startOfDay } from '@/lib/dates'
 import {
   computeDuration,
   formatDuration,
   formatTime,
   groupEntriesByDay,
-  localDayRange,
 } from '@/lib/utils'
 import type { NormalizedGoogleEvent, TimeEntry } from '@/types'
 

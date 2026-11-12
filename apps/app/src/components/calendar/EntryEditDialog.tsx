@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 import DateTimeField from '@/components/calendar/DateTimeField'
+import ProjectSelect from '@/components/projects/ProjectSelect'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -10,20 +11,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
-import { toSafeHexColor } from '@/lib/color'
 import { computeDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
-
-const NO_PROJECT_VALUE = '__no_project__'
 
 function toDateTimeInputValue(dateString: string): string {
   const date = new Date(dateString)
@@ -54,7 +45,7 @@ function fromDateTimeInputValue(value: string): string | null {
 
 interface FormState {
   description: string
-  projectId: string
+  projectId: string | null
   startedAt: string
   stoppedAt: string
 }
@@ -62,7 +53,7 @@ interface FormState {
 function createInitialFormState(entry: TimeEntry | null): FormState {
   return {
     description: entry?.description ?? '',
-    projectId: entry?.project_id ?? NO_PROJECT_VALUE,
+    projectId: entry?.project_id ?? null,
     startedAt: entry?.started_at ? toDateTimeInputValue(entry.started_at) : '',
     stoppedAt: entry?.stopped_at ? toDateTimeInputValue(entry.stopped_at) : '',
   }
@@ -113,7 +104,7 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
     try {
       const started_at = fromDateTimeInputValue(formData.startedAt)
       const stopped_at = fromDateTimeInputValue(formData.stoppedAt)
-      const project_id = formData.projectId === NO_PROJECT_VALUE ? null : formData.projectId
+      const project_id = formData.projectId
 
       if (!started_at) {
         setError('Please provide a valid start datetime.')
@@ -194,28 +185,12 @@ export default function EntryEditDialog({ entry, open, onOpenChange }: EntryEdit
             <label htmlFor="entry-project" className="text-sm font-medium text-muted-foreground">
               Project
             </label>
-            <Select
+            <ProjectSelect
+              id="entry-project"
               value={formData.projectId}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, projectId: value }))}
-            >
-              <SelectTrigger id="entry-project">
-                <SelectValue placeholder="No project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: toSafeHexColor(project.color) }}
-                      />
-                      <span>{project.name}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(projectId) => setFormData((prev) => ({ ...prev, projectId }))}
+              projects={projects}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

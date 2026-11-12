@@ -80,6 +80,7 @@ tinytime is a single-user, browser-only time tracker.
 - Tailwind-first styling.
 - Inline `style` is only allowed for truly dynamic values (e.g. block top/height, dynamic colors).
 - Reuse shadcn/Radix primitives for common controls.
+- Project pickers use `components/projects/ProjectSelect`. It takes `string | null`; never pass a sentinel value.
 - Context menus use Radix `DropdownMenu`, anchored at the pointer (or focused block) with keyboard navigation and focus return.
 - **Controls:** buttons, inputs and select triggers follow Kumo's look — a ring instead of a border, `bg-control` / `ring-line` / `bg-tint` tokens, and a gradient on emphasis buttons via `btn-emphasis` and `--btn-accent`.
 - To hide a control's outline, use `ring-0`, not `border-0`.
@@ -147,6 +148,7 @@ apps/
         utils.ts
         calendar.ts            # Vertical day-grid geometry
         clockCalendar.ts       # 24-hour dial maths (angles, cumulative sweep, lanes, month grid)
+        dates.ts               # Local date arithmetic and day ranges; the only place for these helpers
         color.ts
         googleSignIn.ts
         googleCalendar.ts

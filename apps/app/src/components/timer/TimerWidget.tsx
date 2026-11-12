@@ -1,26 +1,12 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LoaderCircle, Play, Square } from 'lucide-react'
+import ProjectSelect from '@/components/projects/ProjectSelect'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import TimerDisplay from '@/components/timer/TimerDisplay'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTimerContext } from '@/contexts/TimerContext'
-import { toSafeHexColor } from '@/lib/color'
 import { isOptimisticEntry } from '@/lib/timer'
-import { cn } from '@/lib/utils'
-
-const NO_PROJECT_VALUE = '__no_project__'
-
-function normalizeProjectValue(projectId: string | null | undefined): string {
-  return projectId ?? NO_PROJECT_VALUE
-}
 
 interface TimerWidgetProps {
   isEntriesLoading?: boolean
@@ -31,24 +17,25 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
   const timer = useTimerContext()
   const activeEntry = timer.activeEntry
   const [description, setDescription] = useState(activeEntry?.description ?? '')
-  const [selectedProject, setSelectedProject] = useState(normalizeProjectValue(activeEntry?.project_id))
+  const [selectedProject, setSelectedProject] = useState(activeEntry?.project_id ?? null)
   const { isSubmitting, error, startTimer, stopTimer, updateRunningEntry } = useTimerControlActions()
   const skipDescriptionCommitRef = useRef(false)
+  const activeEntryRef = useRef(activeEntry)
   const syncKey = activeEntry
     ? `${activeEntry.id}|${activeEntry.description ?? ''}|${activeEntry.project_id ?? ''}`
     : 'idle'
   const [prevSyncKey, setPrevSyncKey] = useState(syncKey)
 
+  useEffect(() => {
+    activeEntryRef.current = activeEntry
+  }, [activeEntry])
+
   if (syncKey !== prevSyncKey) {
     setPrevSyncKey(syncKey)
     setDescription(activeEntry?.description ?? '')
-    setSelectedProject(normalizeProjectValue(activeEntry?.project_id))
+    setSelectedProject(activeEntry?.project_id ?? null)
   }
 
-  const selectedProjectId = useMemo(
-    () => (selectedProject === NO_PROJECT_VALUE ? null : selectedProject),
-    [selectedProject]
-  )
   const isOptimistic = activeEntry ? isOptimisticEntry(activeEntry) : false
   const runningDisabled = isSubmitting || isEntriesLoading || isOptimistic
 
@@ -58,7 +45,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
     }
 
     void startTimer({
-      projectId: selectedProjectId,
+      projectId: selectedProject,
       description,
     })
   }
@@ -87,32 +74,30 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
       return
     }
 
-    void updateRunningEntry({ description: nextDescription })
+    void updateRunningEntry({ description: nextDescription }).then((saved) => {
+      if (!saved) {
+        setDescription(activeEntryRef.current?.description ?? '')
+      }
+    })
   }
 
-  const handleRunningProjectChange = (value: string) => {
-    setSelectedProject(value)
+  const handleRunningProjectChange = (projectId: string | null) => {
+    setSelectedProject(projectId)
 
     if (!activeEntry || runningDisabled) {
       return
     }
 
-    const projectId = value === NO_PROJECT_VALUE ? null : value
     if (projectId === (activeEntry.project_id ?? null)) {
       return
     }
 
-    void updateRunningEntry({ projectId })
+    void updateRunningEntry({ projectId }).then((saved) => {
+      if (!saved) {
+        setSelectedProject(activeEntryRef.current?.project_id ?? null)
+      }
+    })
   }
-
-  const selectedProjectMeta =
-    selectedProject === NO_PROJECT_VALUE
-      ? null
-      : projects.find((project) => project.id === selectedProject) ??
-        (activeEntry?.project_id === selectedProject ? activeEntry.projects : null)
-  const runningProjectColor = selectedProjectMeta?.color
-    ? toSafeHexColor(selectedProjectMeta.color)
-    : null
 
   return (
     <section className="flex flex-col gap-4">
@@ -146,39 +131,14 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   disabled={runningDisabled}
                   className="w-full rounded-md border-0 bg-transparent px-1 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:bg-secondary/50 focus-visible:outline-none disabled:opacity-70"
                 />
-                <Select
+                <ProjectSelect
                   value={selectedProject}
-                  onValueChange={handleRunningProjectChange}
+                  onChange={handleRunningProjectChange}
+                  projects={projects}
                   disabled={runningDisabled || isLoadingProjects}
-                >
-                  <SelectTrigger
-                    aria-label="Running entry project"
-                    className="h-6 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className={cn(
-                          'h-2.5 w-2.5 rounded-full',
-                          !runningProjectColor && 'border border-border bg-transparent'
-                        )}
-                        style={
-                          runningProjectColor
-                            ? { backgroundColor: runningProjectColor }
-                            : undefined
-                        }
-                      />
-                      <SelectValue placeholder="No project" />
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  aria-label="Running entry project"
+                  triggerClassName="h-6 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
+                />
               </div>
               <div className="grid h-auto w-auto shrink-0 place-items-center p-1">
                 <Button
@@ -220,29 +180,13 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   />
                 </div>
                 <div className="flex h-12 w-full min-w-0 items-stretch">
-                  <Select
+                  <ProjectSelect
                     value={selectedProject}
-                    onValueChange={setSelectedProject}
+                    onChange={setSelectedProject}
+                    projects={projects}
                     disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
-                  >
-                    <SelectTrigger className="h-full w-full rounded-none bg-card ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 data-[state=open]:ring-0">
-                      <SelectValue placeholder="No project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          <span className="inline-flex items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 rounded-full"
-                              style={{ backgroundColor: toSafeHexColor(project.color) }}
-                            />
-                            <span>{project.name}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    triggerClassName="h-full w-full rounded-none bg-card ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 data-[state=open]:ring-0"
+                  />
                 </div>
               </div>
               <div className="grid h-12 w-12 w-auto shrink-0 place-items-center p-1">

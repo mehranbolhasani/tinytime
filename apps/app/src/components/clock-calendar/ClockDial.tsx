@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { useElapsedSeconds } from '@/hooks/useElapsedSeconds'
-import { isSameDay } from '@/lib/calendar'
+import { isSameDay } from '@/lib/dates'
 import {
   DIAL,
   MINUTES_IN_DAY,

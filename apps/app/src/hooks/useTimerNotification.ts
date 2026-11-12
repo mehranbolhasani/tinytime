@@ -43,7 +43,7 @@ function getNotificationPermission(): NotificationPermission | 'unsupported' {
   return Notification.permission
 }
 
-export interface UseTimerNotificationResult {
+interface UseTimerNotificationResult {
   thresholdMinutes: number
   setThreshold: (minutes: number) => void
   permissionState: NotificationPermission | 'unsupported'

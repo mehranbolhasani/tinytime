@@ -47,15 +47,6 @@ export default function EntryList({ entries, deleteEntry, onContinueEntry, onPin
     }
   }
 
-  const formatTimeWithSeconds = (dateString: string) => {
-    const formatted = formatTime(dateString)
-    if (!formatted) {
-      return '00:00:00'
-    }
-
-    return `${formatted}:00`
-  }
-
   return (
     <section className="flex flex-col gap-2">
       {entries.length === 0 ? (
@@ -77,7 +68,7 @@ export default function EntryList({ entries, deleteEntry, onContinueEntry, onPin
                   <div className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-hidden">
                     <span className="truncate text-sm tabular-nums text-foreground">
                       {entry.description ? `${entry.description} - ` : ''}
-                      {formatTimeWithSeconds(entry.started_at)}
+                      {formatTime(entry.started_at)}
                     </span>
                     <span className="shrink-0 text-sm tabular-nums text-[#9ca3af]">
                       {formatDurationHMS(entry.duration_seconds ?? 0)}

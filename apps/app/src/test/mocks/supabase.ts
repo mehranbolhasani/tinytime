@@ -5,7 +5,7 @@ interface MockResolved<T = unknown> {
   error: unknown
 }
 
-export function createMockSupabaseChain<T = unknown>(resolved: MockResolved<T> = { data: null, error: null }) {
+function createMockSupabaseChain<T = unknown>(resolved: MockResolved<T> = { data: null, error: null }) {
   const chain = {
     select: vi.fn(() => chain),
     insert: vi.fn(() => chain),

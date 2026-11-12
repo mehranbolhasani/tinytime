@@ -5,8 +5,6 @@ import {
   formatDurationHMS,
   computeDuration,
   groupEntriesByDay,
-  localDayRange,
-  localDateInputRange,
   exportToCSV,
   toCsvCell,
 } from '../utils.js'
@@ -171,63 +169,6 @@ describe('groupEntriesByDay', () => {
     ]
     const result = groupEntriesByDay(entries)
     expect(result['2024-01-15'].map((e) => e.id)).toEqual(['a', 'b'])
-  })
-})
-
-// ---------------------------------------------------------------------------
-// localDayRange
-// ---------------------------------------------------------------------------
-describe('localDayRange', () => {
-  it('returns from at local midnight and to exactly 24 hours later', () => {
-    const { from, to } = localDayRange('2024-01-15T12:34:56')
-    const fromDate = new Date(from)
-    const toDate = new Date(to)
-    expect(fromDate.getHours()).toBe(0)
-    expect(fromDate.getMinutes()).toBe(0)
-    expect(fromDate.getSeconds()).toBe(0)
-    expect(fromDate.getMilliseconds()).toBe(0)
-    expect(toDate.getTime() - fromDate.getTime()).toBe(24 * 60 * 60 * 1000)
-  })
-
-  it('returns ISO strings', () => {
-    const { from, to } = localDayRange('2024-06-01')
-    expect(() => new Date(from)).not.toThrow()
-    expect(() => new Date(to)).not.toThrow()
-  })
-
-  it('returns null values for an invalid date input', () => {
-    expect(localDayRange('not-a-date')).toEqual({ from: null, to: null })
-  })
-})
-
-// ---------------------------------------------------------------------------
-// localDateInputRange
-// ---------------------------------------------------------------------------
-describe('localDateInputRange', () => {
-  it('includes the end date by ending at local midnight the day after to', () => {
-    const { from, to } = localDateInputRange('2024-01-01', '2024-01-07')
-    expect(from).toBe(new Date(2024, 0, 1).toISOString())
-    expect(to).toBe(new Date(2024, 0, 8).toISOString())
-  })
-
-  it('returns a one-day range when from and to are the same day', () => {
-    const { from, to } = localDateInputRange('2024-01-07', '2024-01-07')
-    expect(from).toBe(new Date(2024, 0, 7).toISOString())
-    expect(new Date(to).getTime() - new Date(from).getTime()).toBe(24 * 60 * 60 * 1000)
-  })
-
-  it('returns nulls when from is after to', () => {
-    expect(localDateInputRange('2024-01-08', '2024-01-07')).toEqual({ from: null, to: null })
-  })
-
-  it('returns nulls for garbage input', () => {
-    expect(localDateInputRange('not-a-date', '2024-01-07')).toEqual({ from: null, to: null })
-    expect(localDateInputRange('2024-1-1', '2024-01-07')).toEqual({ from: null, to: null })
-  })
-
-  it('returns nulls when either value is null', () => {
-    expect(localDateInputRange(null, '2024-01-07')).toEqual({ from: null, to: null })
-    expect(localDateInputRange('2024-01-01', null)).toEqual({ from: null, to: null })
   })
 })
 

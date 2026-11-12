@@ -100,7 +100,7 @@ function AuthView({
     <main className="mx-auto flex min-h-screen w-full items-center justify-center bg-background px-4 py-10 sm:p-6">
       <div className="w-full max-w-sm flex flex-col items-center justify-center">
         <div>
-          <div className="flex w-12 h-12 rounded-xl aspect-square items-center justify-center mx-auto bg-primary/10 mb-6 anim anim-scale anim-duration-700">
+          <div className="flex w-12 h-12 rounded-xl aspect-square items-center justify-center mx-auto bg-primary/10 mb-6">
             <span className="h-2 w-6 rounded-sm bg-primary" />
           </div>
         </div>

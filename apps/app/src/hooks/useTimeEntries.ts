@@ -165,7 +165,7 @@ interface CreateEntryInput {
   duration_seconds?: number | null
 }
 
-export type TimeEntryUpdate = Partial<
+type TimeEntryUpdate = Partial<
   Pick<TimeEntry, 'started_at' | 'stopped_at' | 'duration_seconds' | 'description' | 'project_id'>
 >
 
@@ -430,15 +430,5 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
     stopEntry,
     updateEntry,
     deleteEntry,
-  }
-}
-
-export function useTimeEntries({ from, to }: Partial<DayRange>) {
-  const list = useTimeEntriesList({ from, to })
-  const mutations = useTimeEntryMutations({ entries: list.entries })
-
-  return {
-    ...list,
-    ...mutations,
   }
 }

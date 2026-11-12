@@ -198,33 +198,58 @@ describe('useTimerControlActions', () => {
     updateEntryMock.mockResolvedValue(current)
 
     const { result } = renderActions(queryClient)
+    let firstSaved
+    let secondSaved
 
     await act(async () => {
-      await result.current.updateRunningEntry({ description: 'New' })
+      firstSaved = await result.current.updateRunningEntry({ description: 'New' })
     })
 
     expect(updateEntryMock).toHaveBeenLastCalledWith('current', { description: 'New' })
+    expect(firstSaved).toBe(true)
 
     await act(async () => {
-      await result.current.updateRunningEntry({ projectId: null })
+      secondSaved = await result.current.updateRunningEntry({ projectId: null })
     })
 
     expect(updateEntryMock).toHaveBeenLastCalledWith('current', { project_id: null })
+    expect(secondSaved).toBe(true)
+  })
+
+  it('returns false and reports the error when the update fails', async () => {
+    const queryClient = makeQueryClient()
+    const current = makeEntry({ id: 'current', description: 'Old' })
+    queryClient.setQueryData(ACTIVE_KEY, current)
+    updateEntryMock.mockRejectedValue(new Error('nope'))
+
+    const { result } = renderActions(queryClient)
+    let saved
+
+    await act(async () => {
+      saved = await result.current.updateRunningEntry({ description: 'New' })
+    })
+
+    expect(saved).toBe(false)
+    expect(updateEntryMock).toHaveBeenLastCalledWith('current', { description: 'New' })
+    expect(result.current.error).toBe('nope')
   })
 
   it('does nothing when there is no active entry or it is optimistic', async () => {
     const queryClient = makeQueryClient()
     const { result } = renderActions(queryClient)
+    let saved
 
     await act(async () => {
-      await result.current.updateRunningEntry({ description: 'New' })
+      saved = await result.current.updateRunningEntry({ description: 'New' })
     })
+    expect(saved).toBe(false)
     expect(updateEntryMock).not.toHaveBeenCalled()
 
     queryClient.setQueryData(ACTIVE_KEY, makeEntry({ id: 'optimistic-1' }))
     await act(async () => {
-      await result.current.updateRunningEntry({ description: 'New' })
+      saved = await result.current.updateRunningEntry({ description: 'New' })
     })
+    expect(saved).toBe(false)
     expect(updateEntryMock).not.toHaveBeenCalled()
   })
 

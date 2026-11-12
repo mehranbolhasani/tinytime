@@ -56,7 +56,7 @@ interface UseClockGesturesOptions {
   onPointerPosition?: (x: number, y: number) => void
 }
 
-export interface UseClockGesturesResult {
+interface UseClockGesturesResult {
   draft: MinuteRange | null
   draftColor: string
   hiddenEntryId: string | null

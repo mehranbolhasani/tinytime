@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { startOfDay } from '@/lib/calendar'
 import { buildMonthGrid, describeArc, entriesToDialArcs } from '@/lib/clockCalendar'
+import { localDateKey, startOfDay } from '@/lib/dates'
 import { computeDuration, formatDuration } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
 
@@ -17,13 +17,6 @@ interface MonthOverviewProps {
   entriesByDay: Record<string, TimeEntry[]>
   onSelectDate: (date: Date) => void
   onViewMonthChange: (year: number, month: number) => void
-}
-
-function localDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 function MiniDial({ date, entries }: { date: Date; entries: TimeEntry[] }) {

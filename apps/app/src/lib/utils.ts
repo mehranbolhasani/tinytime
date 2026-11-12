@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { localDateKey } from '@/lib/dates'
 import type { TimeEntry } from '@/types'
 
 export function cn(...inputs: ClassValue[]): string {
@@ -66,21 +67,13 @@ export function formatDate(dateString: string): string {
   })
 }
 
-function getLocalDateKey(dateInput: string | Date): string {
-  const date = new Date(dateInput)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 export function groupEntriesByDay(entries: TimeEntry[]): Record<string, TimeEntry[]> {
   return entries.reduce<Record<string, TimeEntry[]>>((groups, entry) => {
     if (!entry?.started_at) {
       return groups
     }
 
-    const dateKey = getLocalDateKey(entry.started_at)
+    const dateKey = localDateKey(new Date(entry.started_at))
 
     if (!groups[dateKey]) {
       groups[dateKey] = []
@@ -152,57 +145,6 @@ export function toCsvCell(value: string | number | null): string {
   const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
   const escaped = guarded.replace(/"/g, '""')
   return /[",\n\r]/.test(escaped) ? `"${escaped}"` : escaped
-}
-
-export interface DayRangeResult {
-  from: string | null
-  to: string | null
-}
-
-export function localDayRange(dateInput: string | Date): DayRangeResult {
-  const dayStart = new Date(dateInput)
-  if (Number.isNaN(dayStart.getTime())) {
-    return {
-      from: null,
-      to: null,
-    }
-  }
-
-  dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(dayStart)
-  dayEnd.setDate(dayEnd.getDate() + 1)
-
-  return {
-    from: dayStart.toISOString(),
-    to: dayEnd.toISOString(),
-  }
-}
-
-/**
- * Converts inclusive `YYYY-MM-DD` date-input values into an ISO range
- * [local midnight of `from`, local midnight of the day after `to`).
- * Returns nulls for invalid input or when from > to.
- */
-export function localDateInputRange(
-  fromValue: string | null,
-  toValue: string | null
-): DayRangeResult {
-  const parse = (value: string | null): Date | null => {
-    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
-    const [year, month, day] = value.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
-    return Number.isNaN(date.getTime()) ? null : date
-  }
-
-  const fromDate = parse(fromValue)
-  const toDate = parse(toValue)
-  if (!fromDate || !toDate || fromDate.getTime() > toDate.getTime()) {
-    return { from: null, to: null }
-  }
-
-  const toExclusive = new Date(toDate)
-  toExclusive.setDate(toExclusive.getDate() + 1)
-  return { from: fromDate.toISOString(), to: toExclusive.toISOString() }
 }
 
 export function exportToCSV(entries: TimeEntry[], from: string | Date, to: string | Date): void {

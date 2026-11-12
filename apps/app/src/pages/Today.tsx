@@ -9,7 +9,7 @@ import { useLocalDay } from '@/hooks/useLocalDay'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList, useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
-import { localDayRange } from '@/lib/utils'
+import { localDayRange } from '@/lib/dates'
 import type { FavouriteEntry } from '@/hooks/useFavouriteEntries'
 import type { TimeEntry } from '@/types'
 

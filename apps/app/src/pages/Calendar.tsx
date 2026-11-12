@@ -10,9 +10,9 @@ import { useTimerContext } from '@/contexts/TimerContext'
 import { googleEventsQueryOptions, useGoogleCalendar, useGoogleEventsForRange } from '@/hooks/useGoogleCalendar'
 import { timeEntriesListQueryOptions, useTimeEntriesList } from '@/hooks/useTimeEntries'
 import { HOUR_HEIGHT } from '@/lib/calendar'
+import { addDays, localDayRange } from '@/lib/dates'
 import { CALENDAR_SHORTCUT_EVENT, type CalendarShortcutDirection } from '@/lib/keyboardShortcuts'
 import { assertSupabaseClient } from '@/lib/supabase'
-import { localDayRange } from '@/lib/utils'
 
 const ZOOM_STORAGE_KEY = 'tinytime:calendar.zoom-index'
 const LEGACY_ZOOM_STORAGE_KEY = 'tinytime.calendar.zoom-index'
@@ -27,12 +27,6 @@ const ZOOM_STEPS = [
   { hourHeight: HOUR_HEIGHT },
   { hourHeight: 44 },
 ]
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date)
-  next.setDate(next.getDate() + days)
-  return next
-}
 
 function formatDayLabel(date: Date): string {
   return date.toLocaleDateString([], {

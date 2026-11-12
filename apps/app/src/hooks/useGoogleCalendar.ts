@@ -231,7 +231,7 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
   }
 }
 
-export type GoogleConnectErrorCode =
+type GoogleConnectErrorCode =
   | 'expired' | 'wrong_account' | 'scope_missing' | 'denied' | 'google_error'
   | 'exchange_failed' | 'save_failed' | 'invalid_request' | 'unknown'
 

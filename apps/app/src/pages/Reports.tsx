@@ -10,31 +10,14 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
-import { cn, exportToCSV, localDateInputRange } from '@/lib/utils'
+import {
+  addDays,
+  localDateInputRange,
+  startOfMonth,
+  startOfWeek,
+} from '@/lib/dates'
+import { cn, exportToCSV } from '@/lib/utils'
 import ActivityHeatmap from '@/components/reports/ActivityHeatmap'
-
-function startOfDay(date: Date): Date {
-  const next = new Date(date)
-  next.setHours(0, 0, 0, 0)
-  return next
-}
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date)
-  next.setDate(next.getDate() + days)
-  return next
-}
-
-function startOfWeek(date: Date): Date {
-  const dayStart = startOfDay(date)
-  const day = dayStart.getDay()
-  const diff = (day + 6) % 7
-  return addDays(dayStart, -diff)
-}
-
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1)
-}
 
 function buildRange(
   range: RangePreset,

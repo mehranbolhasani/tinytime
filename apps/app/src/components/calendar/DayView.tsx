@@ -11,21 +11,19 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import {
-  addDays,
   assignIntervalLanes,
   DEFAULT_CREATE_MINUTES,
   getDropStartMinutes,
   getGridHeight,
   getNowLinePosition,
   HOURS,
-  isSameDay,
   MINUTES_IN_DAY,
   MIN_ENTRY_HEIGHT,
   minutesToHeight,
   minutesToTop,
-  startOfDay,
   toBlock,
 } from '@/lib/calendar'
+import { addDays, isSameDay, startOfDay } from '@/lib/dates'
 import { isOptimisticEntry } from '@/lib/timer'
 import { computeDuration } from '@/lib/utils'
 import type { CalendarBlock, NormalizedGoogleEvent, TimeEntry } from '@/types'

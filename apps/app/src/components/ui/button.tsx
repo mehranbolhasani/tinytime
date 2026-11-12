@@ -46,8 +46,7 @@ interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const resolvedVariant = variant ?? "default"
-    const classes = cn(buttonVariants({ variant: resolvedVariant, size, className }))
+    const classes = cn(buttonVariants({ variant, size, className }))
 
     if (asChild) {
       return <Slot className={classes} ref={ref} {...props} />

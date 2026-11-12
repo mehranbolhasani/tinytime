@@ -1,7 +1,7 @@
 export const GO_TO_SHORTCUT_TIMEOUT_MS = 1000
 export const CALENDAR_SHORTCUT_EVENT = 'tinytime:calendar-nav'
 
-export const GO_TO_ROUTE_BY_KEY = {
+const GO_TO_ROUTE_BY_KEY = {
   t: '/',
   c: '/calendar',
   r: '/reports',
@@ -9,14 +9,14 @@ export const GO_TO_ROUTE_BY_KEY = {
 } as const
 
 type GoToRouteKey = keyof typeof GO_TO_ROUTE_BY_KEY
-export type AppRoute = (typeof GO_TO_ROUTE_BY_KEY)[GoToRouteKey]
+type AppRoute = (typeof GO_TO_ROUTE_BY_KEY)[GoToRouteKey]
 export type CalendarShortcutDirection = 'previous' | 'next'
 
 export interface KeyboardShortcutState {
   goPrefixAt: number | null
 }
 
-export interface KeyboardShortcutInput {
+interface KeyboardShortcutInput {
   state: KeyboardShortcutState
   key: string
   metaKey: boolean
@@ -34,7 +34,7 @@ type KeyboardShortcutAction =
   | { type: 'calendar-nav'; direction: CalendarShortcutDirection }
   | { type: 'open-palette' }
 
-export interface KeyboardShortcutResolution {
+interface KeyboardShortcutResolution {
   action: KeyboardShortcutAction | null
   nextState: KeyboardShortcutState
   shouldPreventDefault: boolean

@@ -1,25 +1,19 @@
 import { toSafeHexColor } from '@/lib/color'
+import { localDateKey } from '@/lib/dates'
 import type { TimeEntry } from '@/types'
 
 const NO_PROJECT_KEY = 'no-project'
 const NO_PROJECT_COLOR = '#94a3b8'
 
-export interface DailyChartProject {
+interface DailyChartProject {
   id: string
   name: string
   color: string
 }
 
-export type DailyChartBucket = {
+type DailyChartBucket = {
   dateKey: string
   [projectId: string]: number | string
-}
-
-function localDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 function calendarDaysBetween(from: Date, to: Date): number {

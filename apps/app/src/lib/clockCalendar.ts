@@ -3,9 +3,9 @@ import { toSafeHexColor } from '@/lib/color'
 import type { NormalizedGoogleEvent, TimeEntry } from '@/types'
 
 export const MINUTES_IN_DAY = 1440
-export const CLOCK_SNAP_MINUTES = 15
+const CLOCK_SNAP_MINUTES = 15
 export const MIN_BLOCK_MINUTES = 15
-export const MAX_LANES = 3
+const MAX_LANES = 3
 
 /** All values are fractions of R (= size / 2). */
 export const DIAL = {
@@ -33,14 +33,14 @@ export function angleToMinute(angle: number): number {
 }
 
 /** Signed shortest angular difference in (-π, π]. */
-export function angleDelta(from: number, to: number): number {
+function angleDelta(from: number, to: number): number {
   let d = to - from
   while (d > Math.PI) d -= Math.PI * 2
   while (d <= -Math.PI) d += Math.PI * 2
   return d
 }
 
-export function angleDeltaToMinutes(delta: number): number {
+function angleDeltaToMinutes(delta: number): number {
   return (delta / (Math.PI * 2)) * MINUTES_IN_DAY
 }
 

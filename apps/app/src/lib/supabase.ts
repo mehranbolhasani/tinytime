@@ -20,7 +20,7 @@ export const supabaseConfigError: string | null =
     ? `Missing required environment variable(s): ${missingVariables.join(', ')}.`
     : null
 
-export const supabase: SupabaseClient<Database> | null = supabaseConfigError
+const supabase: SupabaseClient<Database> | null = supabaseConfigError
   ? null
   : createClient<Database>(supabaseUrl!, supabaseAnonKey!)
 
