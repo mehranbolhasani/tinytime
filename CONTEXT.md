@@ -81,6 +81,7 @@ tinytime is a single-user, browser-only time tracker.
 - Inline `style` is only allowed for truly dynamic values (e.g. block top/height, dynamic colors).
 - Reuse shadcn/Radix primitives for common controls.
 - Project pickers use `components/projects/ProjectSelect`. It takes `string | null`; never pass a sentinel value.
+- `App.tsx` only gates auth and mounts providers; layout lives in `components/layout/`.
 - Context menus use Radix `DropdownMenu`, anchored at the pointer (or focused block) with keyboard navigation and focus return.
 - **Controls:** buttons, inputs and select triggers follow Kumo's look — a ring instead of a border, `bg-control` / `ring-line` / `bg-tint` tokens, and a gradient on emphasis buttons via `btn-emphasis` and `--btn-accent`.
 - To hide a control's outline, use `ring-0`, not `border-0`.
@@ -133,14 +134,17 @@ apps/
         useGoogleCalendar.ts   # Google status, selections, events
         useTheme.ts            # Theme preference
         useMediaQuery.ts       # Media query helper
+        useAuth.ts             # Session, sign-in/out, Google button setup
       components/
+        auth/                  # Sign-in screen and config error view
+        layout/                # App shell, routes, side nav, nav items
         timer/                 # TimerWidget + TimerDisplay + MiniTimerPill + TodayDialCard + EntryList
         calendar/              # DayView (list escape hatch) + edit/drag/resize dialogs + context menu
           blocks/              # EntryBlock, ActiveTimerBlock, GoogleEventBlock
         clock-calendar/        # 24-hour ClockDial + ClockCalendarView + Monday-first month overview
         projects/              # Project CRUD UI
         reports/               # SummaryBar, ProjectBreakdown, FilterBar, EntryTable/Dialog, DateRangePicker
-        settings/              # GoogleCalendarSection
+        settings/              # GoogleCalendarSection, SettingsPopover, theme/notification/shortcut settings
         ui/                    # shadcn/Radix component implementations
         ErrorBoundary.tsx      # App-level and per-route crash containment
       lib/
@@ -152,6 +156,7 @@ apps/
         color.ts
         googleSignIn.ts
         googleCalendar.ts
+        scroll.ts              # Scrolls the route container and window to the top
         ticker.ts              # Shared 1-second wall-clock ticker
         timer.ts               # Pure elapsed-seconds helper
         timerActionLock.ts     # App-wide single-flight guard for start/stop
