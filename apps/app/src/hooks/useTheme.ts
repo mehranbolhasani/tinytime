@@ -6,6 +6,12 @@ const SYSTEM_THEME = 'system' as const
 const LIGHT_THEME = 'light' as const
 const DARK_THEME = 'dark' as const
 
+/**
+ * Browser/PWA chrome colours. Keep `public/theme-init.js` in sync: it is served
+ * statically and cannot import this constant.
+ */
+export const FRAME_THEME_COLORS = { light: '#1e1b4b', dark: '#f5f3f0' } as const
+
 function getSystemPreference(): 'light' | 'dark' {
   if (typeof window === 'undefined') {
     return LIGHT_THEME
@@ -35,6 +41,11 @@ function applyThemeToDocument(theme: 'light' | 'dark'): void {
   const isDark = theme === DARK_THEME
   document.documentElement.classList.toggle('dark', isDark)
   document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]')
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute('content', isDark ? FRAME_THEME_COLORS.dark : FRAME_THEME_COLORS.light)
+  }
 }
 
 interface UseThemeResult {
