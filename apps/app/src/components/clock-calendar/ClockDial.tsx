@@ -456,7 +456,9 @@ export default function ClockDial({
       aria-label={`24-hour clock for ${label}`}
       className={cn(
         'block touch-none select-none',
-        compact ? 'w-full max-w-[240px]' : 'w-full max-w-md'
+        // A full-size dial is the largest square that fits its container, so it
+        // must be rendered inside an element with `container-type: size`.
+        compact ? 'w-full max-w-[240px]' : 'aspect-square w-[min(100cqw,100cqh)]'
       )}
       onPointerDown={interactive ? onTrackPointerDown : undefined}
     >

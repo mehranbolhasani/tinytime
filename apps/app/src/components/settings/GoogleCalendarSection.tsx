@@ -21,10 +21,10 @@ export default function GoogleCalendarSection() {
   const showCalendars = connection.connected && !connection.needsReconnect
 
   return (
-    <section className="space-y-2 rounded-lg border border-border p-2">
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">Google Calendar</p>
-        <p className="text-xs text-muted-foreground">
+    <section className="space-y-2 py-5 border-t border-border/20">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium text-background">Google Calendar</p>
+        <p className="text-xs text-background/70">
           {connection.connected
             ? connection.email ?? 'Connected'
             : 'Connect to show your events on the Calendar page.'}
@@ -43,7 +43,7 @@ export default function GoogleCalendarSection() {
           size="sm"
           onClick={() => connect()}
           disabled={isConnecting || isLoadingConnection}
-          className="w-full"
+          className="w-full bg-indigo-700! text-background!"
         >
           {isConnecting ? 'Connecting...' : 'Reconnect'}
         </Button>
@@ -56,7 +56,7 @@ export default function GoogleCalendarSection() {
           size="sm"
           onClick={() => disconnect()}
           disabled={isDisconnecting || isLoadingConnection}
-          className="w-full bg-secondary"
+          className="w-full bg-indigo-700! text-background! "
         >
           {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
         </Button>
@@ -66,7 +66,7 @@ export default function GoogleCalendarSection() {
           size="sm"
           onClick={() => connect()}
           disabled={isConnecting || isLoadingConnection}
-          className="w-full"
+          className="w-full bg-indigo-700! text-background!"
         >
           {isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
         </Button>
@@ -74,13 +74,13 @@ export default function GoogleCalendarSection() {
 
       {showCalendars ? (
         <div className="space-y-1.5 pt-1">
-          <p className="text-xs font-medium text-muted-foreground">Calendars shown in day view</p>
+          <p className="text-xs font-medium text-background">Calendars shown in day view</p>
           {isLoadingCalendars ? (
-            <p className="text-xs text-muted-foreground">Loading calendars...</p>
+            <p className="text-xs text-background">Loading calendars...</p>
           ) : calendars.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No calendars found in this Google account.</p>
+            <p className="text-xs text-background">No calendars found in this Google account.</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-2">
               {calendars.map((calendar) => {
                 const isSelected = selectedCalendarIds.includes(calendar.id)
                 return (
@@ -98,10 +98,10 @@ export default function GoogleCalendarSection() {
                       })
                     }}
                     className={cn(
-                      'flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-left text-xs transition-colors',
+                      'flex w-full items-center justify-between rounded-md border px-2 py-2 text-left text-xs transition-colors',
                       isSelected
-                        ? 'border-primary/40 bg-primary/10 text-foreground'
-                        : 'border-border bg-secondary text-muted-foreground hover:text-foreground'
+                        ? 'border-primary/5 bg-primary text-background'
+                        : 'bg-indigo-900 text-background/50 hover:text-background border-indigo-900'
                     )}
                   >
                     <span className="inline-flex items-center gap-2">

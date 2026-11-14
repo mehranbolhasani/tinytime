@@ -17,6 +17,7 @@ import { timeEntriesListQueryOptions } from '@/hooks/useTimeEntries'
 import { buildReportRange } from '@/lib/reports'
 import { scrollToTop } from '@/lib/scroll'
 import { assertSupabaseClient } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
 interface AppLayoutProps {
   userEmail: string
@@ -32,7 +33,38 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
   const notification = useTimerNotification()
   const { toggleTimer, stopTimer } = useTimerControlActions({ reportErrors: 'toast' })
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+  const [isPrefsOpen, setIsPrefsOpen] = useState(false)
+  const [prevPathname, setPrevPathname] = useState(pathname)
   const contentRef = useRef<HTMLDivElement>(null)
+  const prefsButtonRef = useRef<HTMLButtonElement>(null)
+
+  const closePrefs = useCallback(() => setIsPrefsOpen(false), [])
+  const togglePrefs = useCallback(() => setIsPrefsOpen((open) => !open), [])
+
+  // Navigating always closes the panel, including nav-link clicks.
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
+    if (isPrefsOpen) setIsPrefsOpen(false)
+  }
+
+  const wasPrefsOpenRef = useRef(isPrefsOpen)
+
+  // Hand focus back to the cog when the panel closes, unless focus moved elsewhere
+  // (e.g. into a dialog opened from the panel).
+  useEffect(() => {
+    if (wasPrefsOpenRef.current && !isPrefsOpen) {
+      const active = document.activeElement
+      const panel = document.getElementById('preferences-panel')
+      const focusWasInsidePanel = Boolean(panel && active && panel.contains(active))
+      const focusWasLost = !active || active === document.body
+
+      if (focusWasInsidePanel || focusWasLost) {
+        prefsButtonRef.current?.focus({ preventScroll: true })
+      }
+    }
+
+    wasPrefsOpenRef.current = isPrefsOpen
+  }, [isPrefsOpen])
 
   const warmReports = useCallback(() => {
     const range = buildReportRange('this_week', null, null)
@@ -70,6 +102,7 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
     navigate,
     onToggleTimer: toggleTimer,
     onOpenPalette: () => setIsPaletteOpen(true),
+    onTogglePreferences: togglePrefs,
   })
 
   const handleMiniTimerClick = () => {
@@ -92,18 +125,37 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
   }, [pathname])
 
   return (
-    <div className="mx-auto flex h-screen max-h-screen w-full justify-center items-stretch gap-0 bg-foreground p-0 overflow-hidden">
+    <div className="relative mx-auto flex h-screen max-h-screen w-full justify-center items-stretch gap-0 bg-foreground p-0 overflow-hidden [--prefs-w:min(20rem,calc(100vw-5rem))]">
       <SideNav
         userEmail={userEmail}
         onSignOut={onSignOut}
         isSigningOut={isSigningOut}
         notification={notification}
+        isPrefsOpen={isPrefsOpen}
+        onTogglePrefs={togglePrefs}
+        onClosePrefs={closePrefs}
+        prefsButtonRef={prefsButtonRef}
       />
 
-      <main className="mx-auto w-full max-w-full max-h-screen flex-1 bg-background rounded-l-2xl overflow-hidden">
-        <div ref={contentRef} className="overflow-y-auto h-full">
+      <main
+        className={cn(
+          'relative z-10 mx-auto w-full max-w-full max-h-screen flex-1 overflow-hidden rounded-l-2xl bg-background',
+          'transition-[translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+          isPrefsOpen && 'translate-x-(--prefs-w)'
+        )}
+      >
+        <div ref={contentRef} className="h-full overflow-y-auto" inert={isPrefsOpen}>
           <AppRoutes />
         </div>
+        {isPrefsOpen ? (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="Close preferences"
+            className="absolute inset-0 z-50 cursor-default"
+            onClick={closePrefs}
+          />
+        ) : null}
       </main>
 
       {isRunning ? (

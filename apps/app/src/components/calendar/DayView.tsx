@@ -59,7 +59,6 @@ interface DayViewProps {
   /** Previous day's data still on screen while the selected day loads. */
   isStale?: boolean
   hourHeight?: number
-  viewportHeight?: string
   onSwitchToClock?: () => void
 }
 
@@ -71,7 +70,6 @@ export default function DayView({
   isLoadingGoogleEvents = false,
   isStale = false,
   hourHeight = 32,
-  viewportHeight = 'clamp(420px, 70dvh, 720px)',
   onSwitchToClock,
 }: DayViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -223,7 +221,7 @@ export default function DayView({
   }
 
   return (
-    <div className="relative">
+    <div className="relative flex h-full min-h-0 flex-col">
       <FloatingAlerts>
         {actions.error ? (
           <FloatingAlert onDismiss={actions.clearError} autoDismissMs={6000}>
@@ -234,8 +232,7 @@ export default function DayView({
 
       <div
         ref={scrollRef}
-        className="overflow-y-auto overflow-x-hidden bg-background h-full flex-1"
-        style={{ height: viewportHeight }}
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-background"
       >
         <AllDayEvents
           events={allDayGoogleEvents}
@@ -307,7 +304,7 @@ export default function DayView({
       </div>
 
       {isTouchViewport ? (
-        <p className="mt-2 text-center text-xs text-muted-foreground">
+        <p className="mt-2 shrink-0 text-center text-xs text-muted-foreground">
           To log time on touch, use the clock view.
           {onSwitchToClock ? (
             <>

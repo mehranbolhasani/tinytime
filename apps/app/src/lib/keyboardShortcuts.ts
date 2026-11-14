@@ -31,6 +31,7 @@ interface KeyboardShortcutInput {
 type KeyboardShortcutAction =
   | { type: 'navigate'; to: AppRoute }
   | { type: 'toggle-timer' }
+  | { type: 'toggle-preferences' }
   | { type: 'calendar-nav'; direction: CalendarShortcutDirection }
   | { type: 'open-palette' }
 
@@ -140,6 +141,14 @@ export function resolveKeyboardShortcut(input: KeyboardShortcutInput): KeyboardS
   if (modKey && input.shiftKey && !input.altKey && normalizedKey === 's') {
     return {
       action: { type: 'toggle-timer' },
+      nextState: createKeyboardShortcutState(),
+      shouldPreventDefault: true,
+    }
+  }
+
+  if (modKey && !input.shiftKey && !input.altKey && normalizedKey === ',') {
+    return {
+      action: { type: 'toggle-preferences' },
       nextState: createKeyboardShortcutState(),
       shouldPreventDefault: true,
     }

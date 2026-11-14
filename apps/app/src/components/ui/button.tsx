@@ -15,6 +15,8 @@ const buttonVariants = cva(
           "btn-emphasis [--btn-accent:var(--destructive-emphasis)] text-white bg-linear-to-b from-(--btn-from) to-(--btn-to) ring ring-(--btn-ring) shadow-[inset_0_1px_0_0_var(--btn-bg),0_1px_2px_0_rgb(0_0_0/0.05)] not-disabled:hover:from-(--btn-bg) disabled:opacity-50",
         secondary:
           "bg-card text-foreground ring ring-line shadow-xs not-disabled:hover:bg-tint data-[state=open]:bg-card disabled:bg-card/50 disabled:text-foreground/70",
+        secondarydark:
+            "bg-indigo-700 text-foreground ring ring-line shadow-xs not-disabled:hover:bg-tint data-[state=open]:bg-card disabled:bg-card/50 disabled:text-foreground/70",
         outline:
           "bg-transparent text-foreground ring ring-line shadow-none not-disabled:hover:ring-control-focus/25 disabled:text-muted-foreground",
         ghost:

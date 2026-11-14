@@ -13,10 +13,10 @@ interface NotificationSettingProps {
 
 export default function NotificationSetting({ notification }: NotificationSettingProps) {
   return (
-    <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 space-y-2">
-      <p className="text-xs font-medium text-foreground">Timer notifications</p>
+    <div className="py-5 space-y-2 border-t border-border/20">
+      <p className="text-xs font-medium text-background">Timer notifications</p>
       {notification.permissionState === 'unsupported' ? (
-        <p className="text-xs text-muted-foreground">Not supported in this browser.</p>
+        <p className="text-xs text-background/70">Not supported in this browser.</p>
       ) : (
         <div className="flex items-center gap-2">
           <Select
@@ -26,7 +26,7 @@ export default function NotificationSetting({ notification }: NotificationSettin
             <SelectTrigger
               aria-label="Notify after"
               size="sm"
-              className="w-[120px]"
+              className="w-full"
             >
               <SelectValue />
             </SelectTrigger>

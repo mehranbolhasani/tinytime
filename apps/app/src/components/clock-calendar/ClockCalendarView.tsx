@@ -423,31 +423,29 @@ export default function ClockCalendarView({
         ) : null}
       </FloatingAlerts>
 
-      <div className="relative bg-background p-3 flex-1 grid place-items-center">
-        <div className="mx-auto flex w-full justify-center">
-          <ClockDial
-            dayStart={dayStart}
-            arcs={isLoading ? [] : arcs}
-            eventArcs={isLoading ? [] : eventArcs}
-            activeEntry={activeEntry}
-            draft={activeDraft}
-            draftColor={draftColor}
-            draftDetached={gestures.isDetached}
-            hiddenEntryId={gestures.hiddenEntryId}
-            focusedArcId={focusedArcId}
-            interactive={!isLoading && !isPlaceholderData}
-            dimmed={isPlaceholderData}
-            nowMinute={maxMinute}
-            svgRef={svgRef}
-            onTrackPointerDown={gestures.onTrackPointerDown}
-            onArcPointerDown={gestures.onArcPointerDown}
-            onArcActivate={handleActivate}
-            onArcDelete={handleArcDelete}
-            onArcFocusChange={setFocusedArcId}
-            centerPrimary={isLoading ? '' : centerPrimary}
-            centerSecondary={isLoading ? undefined : centerSecondary}
-          />
-        </div>
+      <div className="relative grid min-h-0 flex-1 place-items-center bg-background p-3 [container-type:size]">
+        <ClockDial
+          dayStart={dayStart}
+          arcs={isLoading ? [] : arcs}
+          eventArcs={isLoading ? [] : eventArcs}
+          activeEntry={activeEntry}
+          draft={activeDraft}
+          draftColor={draftColor}
+          draftDetached={gestures.isDetached}
+          hiddenEntryId={gestures.hiddenEntryId}
+          focusedArcId={focusedArcId}
+          interactive={!isLoading && !isPlaceholderData}
+          dimmed={isPlaceholderData}
+          nowMinute={maxMinute}
+          svgRef={svgRef}
+          onTrackPointerDown={gestures.onTrackPointerDown}
+          onArcPointerDown={gestures.onArcPointerDown}
+          onArcActivate={handleActivate}
+          onArcDelete={handleArcDelete}
+          onArcFocusChange={setFocusedArcId}
+          centerPrimary={isLoading ? '' : centerPrimary}
+          centerSecondary={isLoading ? undefined : centerSecondary}
+        />
         {isLoadingGoogleEvents ? (
           <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-xs text-muted-foreground">
             Loading Google events…

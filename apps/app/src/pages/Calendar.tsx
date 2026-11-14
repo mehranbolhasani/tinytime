@@ -281,7 +281,7 @@ export default function Calendar() {
   }
 
   return (
-    <PageShell title="Calendar" subtitle={periodLabel} contentClassName="relative">
+    <PageShell title="Calendar" subtitle={periodLabel} contentClassName="relative flex flex-col">
       <FloatingAlerts>
         <GoogleResultBanner />
         {error ? <FloatingAlert>{error.message}</FloatingAlert> : null}
@@ -289,7 +289,7 @@ export default function Calendar() {
           <FloatingAlert tone="warning">{googleEventsError.message}</FloatingAlert>
         ) : null}
       </FloatingAlerts>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 p-3">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 p-3">
         <div className="flex items-center gap-1">
           <Button
             type="button"
@@ -331,7 +331,7 @@ export default function Calendar() {
           </Button>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
         <span className="min-w-12 text-center text-xs font-medium text-muted-foreground">
           Zoom {zoomPercent}%
         </span>
@@ -382,7 +382,7 @@ export default function Calendar() {
         </div>
       </div>
 
-      <div className="p-3">
+      <div className="min-h-0 flex-1 px-3 pb-3">
         <DayView
           selectedDate={selectedDate}
           entries={entries}
@@ -391,7 +391,6 @@ export default function Calendar() {
           isLoadingGoogleEvents={isLoadingGoogleEvents}
           isStale={isPlaceholderData}
           hourHeight={hourHeight}
-          viewportHeight="clamp(420px, 70dvh, 720px)"
           onSwitchToClock={() => changeViewMode('clock')}
         />
       </div>

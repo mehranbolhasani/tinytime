@@ -13,16 +13,16 @@ export default function ThemePreferenceToggle({
   onChange,
 }: ThemePreferenceToggleProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-1">
+    <div className="rounded-xl bg-indigo-900 p-1">
       <div className="grid grid-cols-3 gap-1">
         {options.map((option) => (
           <Button
             key={option}
             type="button"
-            variant={preference === option ? 'secondary' : 'ghost'}
+            variant={preference === option ? 'secondarydark' : 'ghost'}
             size="sm"
             onClick={() => onChange(option)}
-            className="h-auto px-2 py-2 text-xs capitalize"
+            className="h-auto px-2 py-2 text-xs capitalize text-background hover:bg-indigo-700!"
           >
             {option}
           </Button>

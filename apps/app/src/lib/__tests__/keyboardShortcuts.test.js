@@ -110,6 +110,25 @@ describe('resolveKeyboardShortcut', () => {
     expect(result.shouldPreventDefault).toBe(true)
   })
 
+  it('matches preferences with Mod+,', () => {
+    for (const input of [{ metaKey: true }, { ctrlKey: true }]) {
+      const result = resolveKeyboardShortcut(createInput({ key: ',', ...input }))
+
+      expect(result.action).toEqual({ type: 'toggle-preferences' })
+      expect(result.shouldPreventDefault).toBe(true)
+    }
+  })
+
+  it('ignores Mod+, with Alt or Shift held', () => {
+    const withAlt = resolveKeyboardShortcut(createInput({ key: ',', metaKey: true, altKey: true }))
+    const withShift = resolveKeyboardShortcut(
+      createInput({ key: ',', metaKey: true, shiftKey: true })
+    )
+
+    expect(withAlt.action).toBeNull()
+    expect(withShift.action).toBeNull()
+  })
+
   it('matches calendar navigation only on calendar route', () => {
     const inCalendar = resolveKeyboardShortcut(
       createInput({
