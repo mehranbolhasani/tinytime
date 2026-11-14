@@ -37,3 +37,6 @@ apps/app/supabase/.temp/
 supabase/.branches/
 apps/app/supabase/.branches/
 .vercel
+
+# Claude Code worktrees
+.claude/worktrees/
