@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
+import { usePendingEntryOverride } from '@/hooks/usePendingEntryOverride'
 import type { useTimeEntryMutations } from '@/hooks/useTimeEntries'
 import {
   entryDurationSeconds,
@@ -26,15 +27,6 @@ interface CreateDraft {
   currentMinutes: number
 }
 
-interface PendingMove {
-  entryId: string
-  startedAt: string
-  stoppedAt: string
-  startMs: number
-  stopMs: number
-  durationSeconds: number
-}
-
 type EntryMutations = ReturnType<typeof useTimeEntryMutations>
 
 interface UseDayViewDragOptions {
@@ -42,6 +34,8 @@ interface UseDayViewDragOptions {
   dayStart: Date
   hourHeight: number
   minEntryHeight: number
+  /** Previous day's data is on screen: no drags or creates until it lands. */
+  isStale?: boolean
   updateEntry: EntryMutations['updateEntry']
   createEntry: EntryMutations['createEntry']
   onCreated: (entry: TimeEntry) => void
@@ -68,6 +62,7 @@ export function useDayViewDrag({
   dayStart,
   hourHeight,
   minEntryHeight,
+  isStale = false,
   updateEntry,
   createEntry,
   onCreated,
@@ -77,44 +72,33 @@ export function useDayViewDrag({
   const [draggingMove, setDraggingMove] = useState<DraggingMove | null>(null)
   const [previewBlock, setPreviewBlock] = useState<PreviewBlock | null>(null)
   const [createDraft, setCreateDraft] = useState<CreateDraft | null>(null)
-  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null)
+  const [awaitingCreated, setAwaitingCreated] = useState<TimeEntry | null>(null)
+  const [prevDayStart, setPrevDayStart] = useState(dayStart)
+  const { entriesForRendering, setOverride, clearOverride } = usePendingEntryOverride(entries)
   const draggingEntryId = draggingMove?.entryId ?? null
 
-  const entriesForRendering = useMemo(() => {
-    if (!pendingMove) {
-      return entries
-    }
+  // A row created on a day the user has left will never show up in this day's
+  // `entries`, so drop the pending preview instead of blocking new drags forever.
+  if (dayStart.getTime() !== prevDayStart.getTime()) {
+    setPrevDayStart(dayStart)
+    setAwaitingCreated(null)
+    setCreateDraft(null)
+    setPreviewBlock(null)
+  }
 
-    return entries.map((entry) =>
-      entry.id === pendingMove.entryId
-        ? {
-            ...entry,
-            started_at: pendingMove.startedAt,
-            stopped_at: pendingMove.stoppedAt,
-            duration_seconds: pendingMove.durationSeconds,
-          }
-        : entry
-    )
-  }, [entries, pendingMove])
-
-  useEffect(() => {
-    if (!pendingMove) {
+  // Keep the create preview on screen until the new row is actually in the cache,
+  // then hand it over to the real block and open the edit dialog.
+  useLayoutEffect(() => {
+    if (!awaitingCreated) {
       return
     }
 
-    const matched = entries.some((entry) => {
-      if (entry.id !== pendingMove.entryId || !entry.started_at || !entry.stopped_at) {
-        return false
-      }
-      const startMs = new Date(entry.started_at).getTime()
-      const stopMs = new Date(entry.stopped_at).getTime()
-      return startMs === pendingMove.startMs && stopMs === pendingMove.stopMs
-    })
-
-    if (matched) {
-      setPendingMove(null)
+    if (entries.some((entry) => entry.id === awaitingCreated.id)) {
+      setPreviewBlock(null)
+      setAwaitingCreated(null)
+      onCreated(awaitingCreated)
     }
-  }, [entries, pendingMove])
+  }, [awaitingCreated, entries, onCreated])
 
   const updateMovePreview = useCallback(
     (clientY: number, containerRect: DOMRect): { startMinutes: number; durationMinutes: number } => {
@@ -124,11 +108,14 @@ export function useDayViewDrag({
       const adjustedClientY = clientY - (draggingMove.grabOffsetMinutes / 60) * hourHeight
       const durationMinutes = draggingMove.durationMinutes
       const startMinutes = getDropStartMinutes(adjustedClientY, containerRect, durationMinutes, hourHeight)
-      setPreviewBlock({
-        top: minutesToTop(startMinutes, hourHeight),
-        height: minutesToHeight(durationMinutes, minEntryHeight, hourHeight),
-        variant: 'move',
-      })
+      const top = minutesToTop(startMinutes, hourHeight)
+      const height = minutesToHeight(durationMinutes, minEntryHeight, hourHeight)
+      // dragover fires continuously; only touch state when the snapped cell moves.
+      setPreviewBlock((prev) =>
+        prev && prev.top === top && prev.height === height && prev.variant === 'move'
+          ? prev
+          : { top, height, variant: 'move' }
+      )
       return { startMinutes, durationMinutes }
     },
     [draggingMove, hourHeight, minEntryHeight]
@@ -140,11 +127,13 @@ export function useDayViewDrag({
       currentMinutes: number
     ): { fromMinutes: number; toMinutes: number; durationMinutes: number } => {
       const range = getDraftRange(startMinutes, currentMinutes)
-      setPreviewBlock({
-        top: minutesToTop(range.fromMinutes, hourHeight),
-        height: minutesToHeight(range.durationMinutes, minEntryHeight, hourHeight),
-        variant: 'create',
-      })
+      const top = minutesToTop(range.fromMinutes, hourHeight)
+      const height = minutesToHeight(range.durationMinutes, minEntryHeight, hourHeight)
+      setPreviewBlock((prev) =>
+        prev && prev.top === top && prev.height === height && prev.variant === 'create'
+          ? prev
+          : { top, height, variant: 'create' }
+      )
       return range
     },
     [hourHeight, minEntryHeight]
@@ -190,14 +179,14 @@ export function useDayViewDrag({
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault()
-      const entry = entries.find((item) => item.id === draggingEntryId)
+      const entry = entriesForRendering.find((item) => item.id === draggingEntryId)
       if (!entry) {
         return
       }
       const rect = event.currentTarget.getBoundingClientRect()
       updateMovePreview(event.clientY, rect)
     },
-    [draggingEntryId, entries, updateMovePreview]
+    [draggingEntryId, entriesForRendering, updateMovePreview]
   )
 
   const handleDragLeave = useCallback(
@@ -215,7 +204,7 @@ export function useDayViewDrag({
   const handleDrop = useCallback(
     async (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault()
-      const entry = entries.find((item) => item.id === draggingEntryId)
+      const entry = entriesForRendering.find((item) => item.id === draggingEntryId)
       setPreviewBlock(null)
       if (!entry) {
         setDraggingMove(null)
@@ -229,17 +218,15 @@ export function useDayViewDrag({
         const durationSeconds = Math.max(60, entryDurationSeconds(entry))
         const startedAt = new Date(dayStart.getTime() + nextStartMinutes * 60_000)
         const stoppedAt = new Date(startedAt.getTime() + durationSeconds * 1000)
-        setPendingMove({
+        setOverride({
           entryId: entry.id,
           startedAt: startedAt.toISOString(),
           stoppedAt: stoppedAt.toISOString(),
-          startMs: startedAt.getTime(),
-          stopMs: stoppedAt.getTime(),
           durationSeconds,
         })
         await moveEntryToTime(entry, nextStartMinutes)
       } catch (error) {
-        setPendingMove(null)
+        clearOverride()
         onError(error instanceof Error ? error.message : 'Unable to move this entry.')
       } finally {
         setDraggingMove(null)
@@ -247,18 +234,26 @@ export function useDayViewDrag({
     },
     [
       clearError,
+      clearOverride,
       dayStart,
       draggingEntryId,
-      entries,
+      entriesForRendering,
       moveEntryToTime,
       onError,
+      setOverride,
       updateMovePreview,
     ]
   )
 
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (event.pointerType === 'touch' || event.button !== 0 || draggingMove) {
+      if (
+        isStale ||
+        event.pointerType === 'touch' ||
+        event.button !== 0 ||
+        draggingMove ||
+        awaitingCreated
+      ) {
         return
       }
       const target = event.target
@@ -271,7 +266,7 @@ export function useDayViewDrag({
       updateCreatePreview(startMinutes, startMinutes)
       event.currentTarget.setPointerCapture(event.pointerId)
     },
-    [draggingMove, hourHeight, updateCreatePreview]
+    [awaitingCreated, draggingMove, hourHeight, isStale, updateCreatePreview]
   )
 
   const handlePointerCancel = useCallback(
@@ -314,7 +309,6 @@ export function useDayViewDrag({
       event.currentTarget.releasePointerCapture(event.pointerId)
       const range = getDraftRange(createDraft.startMinutes, createDraft.currentMinutes)
       setCreateDraft(null)
-      setPreviewBlock(null)
       try {
         clearError()
         const startedAt = new Date(dayStart.getTime() + range.fromMinutes * 60_000)
@@ -326,12 +320,14 @@ export function useDayViewDrag({
           stopped_at: stoppedAt.toISOString(),
           duration_seconds: Math.round((stoppedAt.getTime() - startedAt.getTime()) / 1000),
         })
-        onCreated(created)
+        // The preview block stays up until the effect above sees this row in the cache.
+        setAwaitingCreated(created)
       } catch (error) {
+        setPreviewBlock(null)
         onError(error instanceof Error ? error.message : 'Unable to create this entry.')
       }
     },
-    [clearError, createDraft, createEntry, dayStart, onCreated, onError]
+    [clearError, createDraft, createEntry, dayStart, onError]
   )
 
   const blockDragHandlers = useMemo(

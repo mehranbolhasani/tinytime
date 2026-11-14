@@ -38,3 +38,12 @@ export default function PageShell({
     </section>
   )
 }
+
+export function PageShellSkeleton() {
+  return (
+    <section className="flex h-full items-stretch gap-0 bg-indigo-900" aria-busy="true">
+      <div className="w-20 shrink-0" />
+      <div className="min-h-0 flex-1 rounded-l-2xl bg-background" />
+    </section>
+  )
+}

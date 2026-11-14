@@ -62,40 +62,45 @@ interface DailyBarChartProps {
 }
 
 export default function DailyBarChart({ entries, from, to }: DailyBarChartProps) {
-  if (entries.length === 0) return null
-
   const { data, projects } = buildDailyChartData(entries, { from, to })
 
-  if (data.length === 0) return null
-
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={data} barCategoryGap="20%" margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
-        <XAxis
-          dataKey="dateKey"
-          tickFormatter={formatTickLabel}
-          tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
-          axisLine={false}
-          tickLine={false}
-          interval="preserveStartEnd"
-          minTickGap={8}
-          dy={8}
-        />
-        <Tooltip
-          content={<CustomTooltip />}
-          cursor={{ fill: 'rgba(148, 163, 184, 0.06)', radius: 6 }}
-        />
-        {projects.map((project, index) => (
-          <Bar
-            key={project.id}
-            dataKey={project.id}
-            name={project.name}
-            stackId="a"
-            fill={project.color}
-            radius={index === projects.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
-          />
-        ))}
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="h-[200px]">
+      {data.length === 0 ? (
+        <div className="grid h-full place-items-center text-sm text-muted-foreground/70">
+          No time tracked in this range
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} barCategoryGap="20%" margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
+            <XAxis
+              dataKey="dateKey"
+              tickFormatter={formatTickLabel}
+              tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+              axisLine={false}
+              tickLine={false}
+              interval="preserveStartEnd"
+              minTickGap={8}
+              dy={8}
+            />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{ fill: 'rgba(148, 163, 184, 0.06)', radius: 6 }}
+            />
+            {projects.map((project, index) => (
+              <Bar
+                key={project.id}
+                dataKey={project.id}
+                name={project.name}
+                stackId="a"
+                fill={project.color}
+                radius={index === projects.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+                isAnimationActive={false}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import ActiveTimerBlock from '@/components/calendar/blocks/ActiveTimerBlock'
 import EntryBlock from '@/components/calendar/blocks/EntryBlock'
 import GoogleEventBlock from '@/components/calendar/blocks/GoogleEventBlock'
@@ -8,6 +8,7 @@ import EntryActionDialogs from '@/components/calendar/EntryActionDialogs'
 import EntryContextMenu from '@/components/calendar/EntryContextMenu'
 import HourGutter from '@/components/calendar/HourGutter'
 import NowLine from '@/components/calendar/NowLine'
+import FloatingAlerts, { FloatingAlert } from '@/components/layout/FloatingAlerts'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useDayViewDrag } from '@/hooks/useDayViewDrag'
 import { useEntryActions } from '@/hooks/useEntryActions'
@@ -55,6 +56,8 @@ interface DayViewProps {
   activeEntry: TimeEntry | null
   googleEvents?: NormalizedGoogleEvent[]
   isLoadingGoogleEvents?: boolean
+  /** Previous day's data still on screen while the selected day loads. */
+  isStale?: boolean
   hourHeight?: number
   viewportHeight?: string
   onSwitchToClock?: () => void
@@ -66,6 +69,7 @@ export default function DayView({
   activeEntry,
   googleEvents = [],
   isLoadingGoogleEvents = false,
+  isStale = false,
   hourHeight = 32,
   viewportHeight = 'clamp(420px, 70dvh, 720px)',
   onSwitchToClock,
@@ -94,6 +98,7 @@ export default function DayView({
     dayStart,
     hourHeight,
     minEntryHeight,
+    isStale,
     updateEntry: actions.updateEntry,
     createEntry: actions.createEntry,
     onCreated: actions.openEdit,
@@ -155,14 +160,22 @@ export default function DayView({
     return withLanes(blocks)
   }, [dayEnd, dayStart, minEntryHeight, timedGoogleEvents, hourHeight])
 
-  useEffect(() => {
-    const container = scrollRef.current
-    if (!container) {
+  const prevHourHeightRef = useRef<number | null>(null)
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const previous = prevHourHeightRef.current
+    prevHourHeightRef.current = hourHeight
+
+    if (previous === null) {
+      el.scrollTop = Math.max(0, new Date().getHours() - 2) * hourHeight
       return
     }
+    if (previous === hourHeight) return
 
-    const targetHour = Math.max(0, new Date().getHours() - 2)
-    container.scrollTop = targetHour * hourHeight
+    const centreMinutes = ((el.scrollTop + el.clientHeight / 2) / previous) * 60
+    el.scrollTop = Math.max(0, (centreMinutes / 60) * hourHeight - el.clientHeight / 2)
   }, [hourHeight])
 
   const handleOpenMenu = useCallback(
@@ -210,12 +223,15 @@ export default function DayView({
   }
 
   return (
-    <>
-      {actions.error ? (
-        <div role="alert" className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {actions.error}
-        </div>
-      ) : null}
+    <div className="relative">
+      <FloatingAlerts>
+        {actions.error ? (
+          <FloatingAlert onDismiss={actions.clearError} autoDismissMs={6000}>
+            {actions.error}
+          </FloatingAlert>
+        ) : null}
+      </FloatingAlerts>
+
       <div
         ref={scrollRef}
         className="overflow-y-auto overflow-x-hidden bg-background h-full flex-1"
@@ -259,6 +275,7 @@ export default function DayView({
                 key={block.entry.id}
                 block={block}
                 isDragging={draggingEntryId === block.entry.id}
+                isStale={isStale}
                 onSelect={actions.openEntry}
                 onOpenMenu={handleOpenMenu}
                 onDragStart={blockDragHandlers.onDragStart}
@@ -315,6 +332,6 @@ export default function DayView({
         onDuplicate={actions.duplicateAndReport}
         onDelete={actions.requestDelete}
       />
-    </>
+    </div>
   )
 }

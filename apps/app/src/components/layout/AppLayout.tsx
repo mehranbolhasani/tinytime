@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import CommandPalette from '@/components/CommandPalette'
 import AppRoutes from '@/components/layout/AppRoutes'
+import { preloadAllRoutesWhenIdle } from '@/components/layout/routePreload'
 import SideNav from '@/components/layout/SideNav'
 import IdleDetectionDialog from '@/components/IdleDetectionDialog'
 import MiniTimerPill from '@/components/timer/MiniTimerPill'
@@ -11,7 +13,10 @@ import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts'
 import { useIdleDetection } from '@/hooks/useIdleDetection'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTimerNotification } from '@/hooks/useTimerNotification'
+import { timeEntriesListQueryOptions } from '@/hooks/useTimeEntries'
+import { buildReportRange } from '@/lib/reports'
 import { scrollToTop } from '@/lib/scroll'
+import { assertSupabaseClient } from '@/lib/supabase'
 
 interface AppLayoutProps {
   userEmail: string
@@ -22,11 +27,23 @@ interface AppLayoutProps {
 export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLayoutProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { isRunning } = useTimerContext()
   const notification = useTimerNotification()
   const { toggleTimer, stopTimer } = useTimerControlActions({ reportErrors: 'toast' })
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
+
+  const warmReports = useCallback(() => {
+    const range = buildReportRange('this_week', null, null)
+    if (range.from && range.to) {
+      void queryClient.prefetchQuery(
+        timeEntriesListQueryOptions(assertSupabaseClient(), { from: range.from, to: range.to })
+      )
+    }
+  }, [queryClient])
+
+  useEffect(() => preloadAllRoutesWhenIdle(warmReports), [warmReports])
 
   const [idleState, setIdleState] = useState<{
     idleSeconds: number

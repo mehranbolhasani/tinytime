@@ -211,3 +211,43 @@ export function minutesToHeight(
 ): number {
   return Math.max((minutes / 60) * hourHeight, minHeight)
 }
+
+export interface EntryOverride {
+  entryId: string
+  startedAt: string
+  stoppedAt: string
+  durationSeconds: number
+}
+
+/**
+ * Draws an entry at the times the user just committed, before the mutation's
+ * cache write reaches React. Returns the same array when there is no override.
+ */
+export function applyEntryOverride(entries: TimeEntry[], override: EntryOverride | null): TimeEntry[] {
+  if (!override) return entries
+
+  return entries.map((entry) =>
+    entry.id === override.entryId
+      ? {
+          ...entry,
+          started_at: override.startedAt,
+          stopped_at: override.stoppedAt,
+          duration_seconds: override.durationSeconds,
+        }
+      : entry
+  )
+}
+
+/** True once the cached entry already sits at the override's instants. */
+export function entriesReflectOverride(entries: TimeEntry[], override: EntryOverride): boolean {
+  const start = new Date(override.startedAt).getTime()
+  const stop = new Date(override.stoppedAt).getTime()
+
+  return entries.some(
+    (entry) =>
+      entry.id === override.entryId &&
+      entry.stopped_at !== null &&
+      new Date(entry.started_at).getTime() === start &&
+      new Date(entry.stopped_at).getTime() === stop
+  )
+}

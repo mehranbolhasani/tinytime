@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import AuthView from '@/components/auth/AuthView'
 import ConfigErrorView from '@/components/auth/ConfigErrorView'
 import AppLayout from '@/components/layout/AppLayout'
+import AppShellSkeleton from '@/components/layout/AppShellSkeleton'
 import { SessionUserProvider } from '@/contexts/SessionContext'
 import { TimerProvider } from '@/contexts/TimerContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -29,6 +30,7 @@ export default function App() {
       defaultOptions: {
         queries: {
           staleTime: 30_000,
+          gcTime: 30 * 60_000,
           refetchOnWindowFocus: !isMobileViewport,
         },
       },
@@ -41,11 +43,7 @@ export default function App() {
   }
 
   if (auth.isAuthLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background p-6">
-        <p className="text-sm text-muted-foreground">Checking your session...</p>
-      </main>
-    )
+    return <AppShellSkeleton />
   }
 
   if (!auth.session) {

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '@/components/layout/navItems'
-import { prefetchReports } from '@/components/layout/prefetchReports'
+import { preloadRoute } from '@/components/layout/routePreload'
 import SettingsPopover from '@/components/settings/SettingsPopover'
 import type { useTimerNotification } from '@/hooks/useTimerNotification'
 
@@ -22,7 +22,9 @@ export default function SideNav({
       <NavLink
         to={item.to}
         end={item.to === '/'}
-        onPointerEnter={item.to === '/reports' ? prefetchReports : undefined}
+        onPointerEnter={() => preloadRoute(item.to)}
+        onFocus={() => preloadRoute(item.to)}
+        onPointerDown={() => preloadRoute(item.to)}
         className={({ isActive }) =>
           `relative inline-flex items-center rounded-lg w-10 h-10 justify-center text-sm font-normal transition-colors duration-100 ${
             isActive

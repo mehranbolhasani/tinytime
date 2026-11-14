@@ -10,9 +10,10 @@ import type { TimeEntry } from '@/types'
 
 interface TodayDialCardProps {
   entries: TimeEntry[]
+  isLoading?: boolean
 }
 
-export default function TodayDialCard({ entries }: TodayDialCardProps) {
+export default function TodayDialCard({ entries, isLoading = false }: TodayDialCardProps) {
   const navigate = useNavigate()
   const { activeEntry } = useTimerContext()
   const minuteNow = useMinuteNow()
@@ -27,7 +28,7 @@ export default function TodayDialCard({ entries }: TodayDialCardProps) {
     [completedEntries, dayStart, minuteNow]
   )
 
-  const isEmpty = entries.length === 0 && !activeEntry
+  const isEmpty = !isLoading && entries.length === 0 && !activeEntry
 
   return (
     <button
@@ -39,13 +40,15 @@ export default function TodayDialCard({ entries }: TodayDialCardProps) {
       <div className="mx-auto flex w-full justify-center">
         <ClockDial
           dayStart={dayStart}
-          arcs={arcs}
+          arcs={isLoading ? [] : arcs}
           activeEntry={activeEntry}
           interactive={false}
           size="compact"
           nowMinute={maxDrawableMinute(dayStart, minuteNow)}
           centerPrimary={
-            isEmpty ? (
+            isLoading ? (
+              ''
+            ) : isEmpty ? (
               'Nothing tracked yet today'
             ) : (
               <DialTotal entries={completedEntries} activeEntry={activeEntry} />

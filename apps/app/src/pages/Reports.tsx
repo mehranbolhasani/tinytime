@@ -11,49 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
 import { useTimeEntriesList } from '@/hooks/useTimeEntries'
-import {
-  addDays,
-  localDateInputRange,
-  startOfMonth,
-  startOfWeek,
-} from '@/lib/dates'
+import { buildReportRange } from '@/lib/reports'
 import { cn, exportToCSV } from '@/lib/utils'
 import ActivityHeatmap from '@/components/reports/ActivityHeatmap'
-
-function buildRange(
-  range: RangePreset,
-  customFrom: string | null,
-  customTo: string | null
-): { from: string | null; to: string | null } {
-  const now = new Date()
-
-  if (range === 'this_week') {
-    const from = startOfWeek(now)
-    const to = addDays(from, 7)
-    return { from: from.toISOString(), to: to.toISOString() }
-  }
-
-  if (range === 'last_week') {
-    const thisWeekStart = startOfWeek(now)
-    const from = addDays(thisWeekStart, -7)
-    const to = thisWeekStart
-    return { from: from.toISOString(), to: to.toISOString() }
-  }
-
-  if (range === 'this_month') {
-    const from = startOfMonth(now)
-    const to = new Date(from.getFullYear(), from.getMonth() + 1, 1)
-    return { from: from.toISOString(), to: to.toISOString() }
-  }
-
-  if (range === 'last_month') {
-    const thisMonthStart = startOfMonth(now)
-    const from = new Date(thisMonthStart.getFullYear(), thisMonthStart.getMonth() - 1, 1)
-    return { from: from.toISOString(), to: thisMonthStart.toISOString() }
-  }
-
-  return localDateInputRange(customFrom, customTo)
-}
 
 const RANGE_LABELS: Record<RangePreset, string> = {
   this_week: 'This week',
@@ -70,7 +30,10 @@ export default function Reports() {
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([])
   const [showHeatmap, setShowHeatmap] = useState(false)
 
-  const { from, to } = useMemo(() => buildRange(range, customFrom, customTo), [range, customFrom, customTo])
+  const { from, to } = useMemo(
+    () => buildReportRange(range, customFrom, customTo),
+    [range, customFrom, customTo]
+  )
   const { entries, isLoading, error: entriesError } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })
   const { projects, error: projectsError } = useProjects()
 

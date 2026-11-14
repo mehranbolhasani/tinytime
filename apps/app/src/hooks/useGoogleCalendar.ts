@@ -11,6 +11,9 @@ const GOOGLE_CALENDARS_QUERY_KEY = ['google_calendar', 'calendars']
 const GOOGLE_SELECTIONS_QUERY_KEY = ['google_calendar', 'selections']
 const GOOGLE_EVENTS_QUERY_KEY = ['google_calendar', 'events']
 
+/** Stable fallback so consumers can memoise against `googleEvents`. */
+const EMPTY_GOOGLE_EVENTS: NormalizedGoogleEvent[] = []
+
 function toUniqueSortedIds(ids: (string | null | undefined)[] = []): string[] {
   return [...new Set(ids.filter((id): id is string => Boolean(id)))].sort()
 }
@@ -341,7 +344,7 @@ export function useGoogleEventsForRange({
   })
 
   return {
-    googleEvents: data ?? [],
+    googleEvents: data ?? EMPTY_GOOGLE_EVENTS,
     isLoadingGoogleEvents: isLoading,
     googleEventsError: error,
   }

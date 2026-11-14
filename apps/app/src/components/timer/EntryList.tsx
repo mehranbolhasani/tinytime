@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Skeleton } from '@/components/ui/skeleton'
 import { toSafeHexColor } from '@/lib/color'
 import { formatDurationHMS, formatTime } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
@@ -55,11 +56,11 @@ export default function EntryList({ entries, deleteEntry, onContinueEntry, onPin
           <p className="text-md text-foreground">No entries yet today. Start the timer above.</p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex w-full flex-col gap-2">
           {entries.map((entry) => {
             return (
               <li key={entry.id} className="overflow-hidden">
-                <div className="group flex items-center gap-2 rounded-xl bg-card px-3 py-2 transition-shadow duration-150 hover:shadow-sm">
+                <div className="group flex h-12 items-center gap-2 rounded-xl bg-card px-3 transition-shadow duration-150 hover:shadow-sm">
                   <span
                     className="h-2 w-2 shrink-0 rounded-full"
                     style={{ backgroundColor: entry.projects ? toSafeHexColor(entry.projects.color) : '#d4d4d4' }}
@@ -135,6 +136,21 @@ export default function EntryList({ entries, deleteEntry, onContinueEntry, onPin
           }
         }}
       />
+    </section>
+  )
+}
+
+/** Same shape as the list it replaces, so the column does not resize on load. */
+export function EntryListSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <section className="flex flex-col gap-2 items-center">
+      <ul className="flex w-full flex-col gap-2" aria-hidden="true">
+        {Array.from({ length: rows }, (_, index) => (
+          <li key={`entry-skeleton-${index}`}>
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }

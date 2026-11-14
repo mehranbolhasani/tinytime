@@ -100,16 +100,16 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
   }
 
   return (
-    <section className="flex-1 h-screen">
+    <section className="flex h-full min-h-0 flex-1 flex-col">
       <div className="overflow-hidden flex flex-col justify-between h-full p-12 items-center">
         <div className="flex items-center justify-center py-6 min-h-60 flex-1">
           <TimerDisplay />
         </div>
 
-        <div className="min-h-auto max-w-4xl w-xl">
+        <div className="w-full max-w-xl">
           {timer.isRunning ? (
-            <div className="flex items-stretch">
-              <div className="flex min-w-0 flex-1 justify-center gap-2 px-4 py-3">
+            <div className="flex h-14 items-center rounded-xl p-1">
+              <div className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 px-4">
                 <input
                   type="text"
                   id="description"
@@ -129,7 +129,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                     }
                   }}
                   disabled={runningDisabled}
-                  className="w-full rounded-md border-0 bg-transparent px-1 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:bg-secondary/50 focus-visible:outline-none disabled:opacity-70"
+                  className="h-12 w-full rounded-md border-0 bg-transparent px-1 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:bg-secondary/50 focus-visible:outline-none disabled:opacity-70"
                 />
                 <ProjectSelect
                   value={selectedProject}
@@ -137,14 +137,14 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   projects={projects}
                   disabled={runningDisabled || isLoadingProjects}
                   aria-label="Running entry project"
-                  triggerClassName="h-6 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
+                  triggerClassName="h-12 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
                 />
               </div>
-              <div className="grid h-auto w-auto shrink-0 place-items-center p-1">
+              <div className="grid h-12 w-12 shrink-0 place-items-center">
                 <Button
                   type="button"
                   variant="destructive"
-                  className="h-full w-full min-w-full rounded-xl px-4 [&_svg]:size-4"
+                  className="h-full w-full rounded-xl px-4 [&_svg]:size-4"
                   onClick={handleStop}
                   disabled={isSubmitting || isEntriesLoading}
                   aria-label="Stop timer"
@@ -164,9 +164,9 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                 event.preventDefault()
                 handleStart()
               }}
-              className="flex items-center bg-card p-1 rounded-xl"
+              className="flex h-14 items-center bg-card p-1 rounded-xl"
             >
-              <div className="flex flex-1 items-center">
+              <div className="flex h-12 flex-1 items-center">
                 <div className="w-full">
                   <input
                     type="text"
@@ -185,15 +185,15 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                     onChange={setSelectedProject}
                     projects={projects}
                     disabled={isLoadingProjects || isSubmitting || isEntriesLoading}
-                    triggerClassName="h-full w-full rounded-none bg-card ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 data-[state=open]:ring-0"
+                    triggerClassName="h-12 w-full rounded-none bg-card ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 data-[state=open]:ring-0"
                   />
                 </div>
               </div>
-              <div className="grid h-12 w-12 w-auto shrink-0 place-items-center p-1">
+              <div className="grid h-12 w-12 shrink-0 place-items-center">
                 <Button
                   type="submit"
                   variant="default"
-                  className="h-full w-full min-w-full rounded-md px-3 [&_svg]:size-4"
+                  className="h-full w-full rounded-md px-3 [&_svg]:size-4"
                   disabled={isSubmitting || isEntriesLoading}
                   aria-label="Start timer"
                   aria-keyshortcuts="Meta+Shift+S Control+Shift+S"
@@ -207,14 +207,12 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
               </div>
             </form>
           )}
+
+          <p role="alert" className="min-h-5 pt-2 text-center text-sm text-destructive">
+            {error}
+          </p>
         </div>
       </div>
-
-      {isEntriesLoading ? (
-        <p className="text-xs text-muted-foreground/80">Loading your current timer state...</p>
-      ) : null}
-
-      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     </section>
   )
 }

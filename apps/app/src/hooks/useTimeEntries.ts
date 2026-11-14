@@ -1,14 +1,18 @@
 import { useCallback } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Query, QueryClient } from '@tanstack/react-query'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { assertSupabaseClient, getFriendlySupabaseError } from '@/lib/supabase'
 import { computeDuration } from '@/lib/utils'
-import type { TimeEntry, DayRange } from '@/types'
+import type { Project, TimeEntry, DayRange } from '@/types'
 
 export const TIME_ENTRIES_QUERY_KEY = ['time_entries']
 export const ACTIVE_ENTRY_QUERY_KEY = ['time_entries', 'active'] as const
 const ENTRY_SELECT = '*, projects(id, name, color)'
+
+/** Stable fallback so the dial's memos survive a render with no data yet. */
+const EMPTY_ENTRIES: TimeEntry[] = []
 
 function getEntryFromCache(queryClient: ReturnType<typeof useQueryClient>, id: string): TimeEntry | null {
   const cachedEntries = queryClient.getQueriesData<TimeEntry[] | null>({ queryKey: TIME_ENTRIES_QUERY_KEY })
@@ -74,9 +78,58 @@ function updateEntryListCaches(
   })
 }
 
+const isListQuery = (query: Query) => query.queryKey[1] !== 'active'
+
+/** Only queries that already delivered data can overwrite an optimistic row. */
+const isCancellableList = (query: Query) => isListQuery(query) && query.state.data !== undefined
+
+async function cancelEntryLists(queryClient: QueryClient) {
+  await queryClient.cancelQueries({ queryKey: TIME_ENTRIES_QUERY_KEY, predicate: isCancellableList })
+}
+
+/** Writes an updated entry into every list cache plus the active-entry cache. */
+function applyUpdatedEntry(queryClient: QueryClient, updatedEntry: TimeEntry): void {
+  updateEntryListCaches(queryClient, (cachedEntries, range) => {
+    const withoutUpdated = cachedEntries.filter((entry) => entry.id !== updatedEntry.id)
+
+    if (!isEntryInRange(updatedEntry, range)) {
+      return withoutUpdated.length === cachedEntries.length ? cachedEntries : withoutUpdated
+    }
+
+    return sortEntriesByStartedAt([...withoutUpdated, updatedEntry])
+  })
+
+  const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY)
+  if (cachedActiveEntry?.id === updatedEntry.id) {
+    queryClient.setQueryData(
+      ACTIVE_ENTRY_QUERY_KEY,
+      updatedEntry.stopped_at === null ? updatedEntry : null
+    )
+  }
+}
+
+/** Adds or replaces a created (or restored) entry in every list cache that covers it. */
+function applyCreatedEntry(queryClient: QueryClient, entry: TimeEntry): void {
+  updateEntryListCaches(queryClient, (cachedEntries, range) => {
+    if (!isEntryInRange(entry, range)) {
+      return cachedEntries
+    }
+
+    const existingIndex = cachedEntries.findIndex((cachedEntry) => cachedEntry.id === entry.id)
+    if (existingIndex >= 0) {
+      const nextEntries = [...cachedEntries]
+      nextEntries[existingIndex] = entry
+      return sortEntriesByStartedAt(nextEntries)
+    }
+
+    return sortEntriesByStartedAt([...cachedEntries, entry])
+  })
+}
+
 interface UseTimeEntriesListResult {
   entries: TimeEntry[]
   isLoading: boolean
+  isPlaceholderData: boolean
   error: Error | null
   activeEntry: TimeEntry | null
 }
@@ -104,7 +157,12 @@ export function timeEntriesListQueryOptions(supabase: SupabaseClient<Database>, 
 export function useTimeEntriesList({ from, to }: Partial<DayRange>): UseTimeEntriesListResult {
   const supabase = assertSupabaseClient()
 
-  const { data: entries = [], isLoading, error } = useQuery({
+  const {
+    data: entries = EMPTY_ENTRIES,
+    isLoading,
+    isPlaceholderData,
+    error,
+  } = useQuery({
     ...timeEntriesListQueryOptions(supabase, { from, to }),
     enabled: Boolean(from && to),
     placeholderData: (previousData) => previousData,
@@ -115,6 +173,7 @@ export function useTimeEntriesList({ from, to }: Partial<DayRange>): UseTimeEntr
   return {
     entries,
     isLoading,
+    isPlaceholderData,
     error,
     activeEntry,
   }
@@ -169,6 +228,15 @@ type TimeEntryUpdate = Partial<
   Pick<TimeEntry, 'started_at' | 'stopped_at' | 'duration_seconds' | 'description' | 'project_id'>
 >
 
+interface UpdateEntryVars {
+  id: string
+  updates: TimeEntryUpdate
+}
+
+interface MutationContext {
+  previous: TimeEntry | null
+}
+
 function buildEntryUpdatePayload(
   updates: TimeEntryUpdate
 ): Database['public']['Tables']['time_entries']['Update'] {
@@ -182,6 +250,23 @@ function buildEntryUpdatePayload(
     payload.description = trimmed ? trimmed : null
   }
   return payload
+}
+
+/**
+ * Applies the same normalisation as `buildEntryUpdatePayload` to produce the row
+ * the server will store, so the optimistic cache entry matches the real one.
+ */
+function normaliseEntryUpdates(updates: TimeEntryUpdate): Partial<TimeEntry> {
+  const normalised: Partial<TimeEntry> = {}
+  if ('started_at' in updates) normalised.started_at = updates.started_at
+  if ('stopped_at' in updates) normalised.stopped_at = updates.stopped_at
+  if ('duration_seconds' in updates) normalised.duration_seconds = updates.duration_seconds
+  if ('project_id' in updates) normalised.project_id = updates.project_id ?? null
+  if ('description' in updates) {
+    const trimmed = updates.description?.trim()
+    normalised.description = trimmed ? trimmed : null
+  }
+  return normalised
 }
 
 interface UseTimeEntryMutationsResult {
@@ -226,21 +311,7 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
         queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, createdEntry)
       }
 
-      updateEntryListCaches(queryClient, (cachedEntries, range) => {
-        if (!isEntryInRange(createdEntry, range)) {
-          return cachedEntries
-        }
-
-        const existingIndex = cachedEntries.findIndex((entry) => entry.id === createdEntry.id)
-        if (existingIndex >= 0) {
-          const nextEntries = [...cachedEntries]
-          nextEntries[existingIndex] = createdEntry
-          return sortEntriesByStartedAt(nextEntries)
-        }
-
-        return sortEntriesByStartedAt([...cachedEntries, createdEntry])
-      })
-
+      applyCreatedEntry(queryClient, createdEntry)
       revalidateInactiveEntryQueries()
     },
     onError: () => {
@@ -336,7 +407,7 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
     },
   })
 
-  const updateEntryMutation = useMutation<TimeEntry, Error, { id: string; updates: TimeEntryUpdate }>({
+  const updateEntryMutation = useMutation<TimeEntry, Error, UpdateEntryVars, MutationContext>({
     mutationFn: async ({ id, updates }) => {
       const payload = buildEntryUpdatePayload(updates)
 
@@ -357,30 +428,45 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
 
       return data
     },
-    onSuccess: (updatedEntry) => {
-      updateEntryListCaches(queryClient, (cachedEntries, range) => {
-        const withoutUpdated = cachedEntries.filter((entry) => entry.id !== updatedEntry.id)
+    onMutate: async ({ id, updates }) => {
+      await cancelEntryLists(queryClient)
 
-        if (!isEntryInRange(updatedEntry, range)) {
-          return withoutUpdated.length === cachedEntries.length ? cachedEntries : withoutUpdated
+      const previous = getEntryFromCache(queryClient, id)
+
+      if (previous) {
+        const normalised = normaliseEntryUpdates(updates)
+        const optimistic: TimeEntry = { ...previous, ...normalised }
+
+        if ('project_id' in normalised) {
+          const projectId = optimistic.project_id
+          const project = projectId
+            ? queryClient.getQueryData<Project[]>(['projects'])?.find((item) => item.id === projectId) ?? null
+            : null
+          optimistic.projects = project
+            ? { id: project.id, name: project.name, color: project.color }
+            : null
         }
 
-        return sortEntriesByStartedAt([...withoutUpdated, updatedEntry])
-      })
-
-      const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY)
-      if (cachedActiveEntry?.id === updatedEntry.id) {
-        queryClient.setQueryData(
-          ACTIVE_ENTRY_QUERY_KEY,
-          updatedEntry.stopped_at === null ? updatedEntry : null
-        )
+        applyUpdatedEntry(queryClient, optimistic)
       }
 
+      return { previous }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) {
+        // Restores this entry only; other entries touched by concurrent mutations keep their state.
+        applyUpdatedEntry(queryClient, context.previous)
+      }
+
+      void queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY, predicate: isListQuery })
+    },
+    onSuccess: (updatedEntry) => {
+      applyUpdatedEntry(queryClient, updatedEntry)
       revalidateInactiveEntryQueries()
     },
   })
 
-  const deleteEntryMutation = useMutation<string, Error, string>({
+  const deleteEntryMutation = useMutation<string, Error, string, MutationContext>({
     mutationFn: async (id) => {
       const { error } = await supabase.from('time_entries').delete().eq('id', id)
 
@@ -390,17 +476,37 @@ export function useTimeEntryMutations({ entries = [] }: { entries?: TimeEntry[] 
 
       return id
     },
-    onSuccess: (deletedId) => {
+    onMutate: async (id) => {
+      await cancelEntryLists(queryClient)
+
+      const previous = getEntryFromCache(queryClient, id)
+
       updateEntryListCaches(
         queryClient,
-        (cachedEntries) => cachedEntries.filter((entry) => entry.id !== deletedId)
+        (cachedEntries) => cachedEntries.filter((entry) => entry.id !== id)
       )
 
       const cachedActiveEntry = queryClient.getQueryData<TimeEntry | null>(ACTIVE_ENTRY_QUERY_KEY)
-      if (cachedActiveEntry?.id === deletedId) {
+      if (cachedActiveEntry?.id === id) {
         queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, null)
       }
 
+      return { previous }
+    },
+    onError: (_error, _id, context) => {
+      const previous = context?.previous
+      if (previous) {
+        applyCreatedEntry(queryClient, previous)
+        // Only put the row back in the timer slot if that slot is (still) empty.
+        if (previous.stopped_at === null && queryClient.getQueryData(ACTIVE_ENTRY_QUERY_KEY) == null) {
+          queryClient.setQueryData(ACTIVE_ENTRY_QUERY_KEY, previous)
+        }
+      }
+
+      void queryClient.invalidateQueries({ queryKey: TIME_ENTRIES_QUERY_KEY, predicate: isListQuery })
+    },
+    onSuccess: () => {
+      // The entry was already removed from every list cache in onMutate.
       revalidateInactiveEntryQueries()
     },
   })

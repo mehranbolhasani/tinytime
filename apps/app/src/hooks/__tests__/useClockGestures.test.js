@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { minuteToAngle } from '@/lib/clockCalendar'
 import { useClockGestures } from '../useClockGestures.js'
 
@@ -117,10 +117,22 @@ function makeArc(entry, startMinute = 540, endMinute = 600) {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   document.body.innerHTML = ''
 })
 
+/** Pointer moves are coalesced into one update per animation frame. */
+function nextFrame() {
+  act(() => {
+    vi.advanceTimersByTime(20)
+  })
+}
+
 describe('useClockGestures', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame'] })
+  })
+
   it('does not create anything on a tap', () => {
     const { result, svg, onCreateDraft } = setup()
     const start = pointAt(540)
@@ -246,20 +258,24 @@ describe('useClockGestures', () => {
       result.current.onArcPointerDown(arc, 'body', pointerDownEvent(svg, pointAt(570)))
     )
     act(() => firePointer('pointermove', pointAt(600)))
+    nextFrame()
     expect(result.current.draft).toEqual({ startMinute: 570, endMinute: 630 })
 
     // Outside the dial (radius fraction > 1.08), at the bottom angle (12:00).
     act(() => firePointer('pointermove', { clientX: 200, clientY: 700 }))
+    nextFrame()
     expect(result.current.isDetached).toBe(true)
     expect(result.current.draft).toEqual({ startMinute: 570, endMinute: 630 })
 
     // Back inside at the same angle: no jump.
     act(() => firePointer('pointermove', { clientX: 200, clientY: 350 }))
+    nextFrame()
     expect(result.current.isDetached).toBe(false)
     expect(result.current.draft).toEqual({ startMinute: 570, endMinute: 630 })
 
     // Continuing clockwise adds to the frozen sweep.
     act(() => firePointer('pointermove', pointAt(750)))
+    nextFrame()
     expect(result.current.draft).toEqual({ startMinute: 600, endMinute: 660 })
   })
 
@@ -295,13 +311,17 @@ describe('useClockGestures', () => {
     expect(onRequestDelete).toHaveBeenCalledWith(entry)
   })
 
-  it('reports the pointer position on every move', () => {
+  it('reports one pointer position per frame', () => {
     const { result, svg, onPointerPosition } = setup()
 
     act(() => result.current.onTrackPointerDown(pointerDownEvent(svg, pointAt(540))))
     act(() => firePointer('pointermove', pointAt(545)))
+    nextFrame()
     act(() => firePointer('pointermove', pointAt(600)))
+    nextFrame()
+    act(() => firePointer('pointermove', pointAt(620)))
     act(() => firePointer('pointermove', pointAt(630)))
+    nextFrame()
 
     expect(onPointerPosition).toHaveBeenCalledTimes(3)
     expect(onPointerPosition).toHaveBeenLastCalledWith(
@@ -310,11 +330,44 @@ describe('useClockGestures', () => {
     )
   })
 
+  it('reads the dial rect once per gesture', () => {
+    const { result, svg } = setup()
+    const originalGetRect = svg.getBoundingClientRect.bind(svg)
+    const getRect = vi.fn(() => originalGetRect())
+    svg.getBoundingClientRect = getRect
+
+    act(() => result.current.onTrackPointerDown(pointerDownEvent(svg, pointAt(540))))
+    act(() => firePointer('pointermove', pointAt(600)))
+    nextFrame()
+    act(() => firePointer('pointermove', pointAt(630)))
+    nextFrame()
+    act(() => firePointer('pointerup', pointAt(660)))
+
+    expect(getRect).toHaveBeenCalledTimes(1)
+  })
+
+  it('lands where the pointer is released even when moves are coalesced', () => {
+    const { result, svg, onCommitMove } = setup()
+    const arc = makeArc({ id: 'entry-fast' })
+
+    act(() =>
+      result.current.onArcPointerDown(arc, 'body', pointerDownEvent(svg, pointAt(570)))
+    )
+    act(() => {
+      firePointer('pointermove', pointAt(600))
+      firePointer('pointermove', pointAt(630))
+      firePointer('pointerup', pointAt(660))
+    })
+
+    expect(onCommitMove).toHaveBeenCalledWith(arc.entry, 630, 690)
+  })
+
   it('reverts on pointercancel', () => {
     const { result, svg, onCreateDraft } = setup()
 
     act(() => result.current.onTrackPointerDown(pointerDownEvent(svg, pointAt(540))))
     act(() => firePointer('pointermove', pointAt(630)))
+    nextFrame()
     expect(result.current.draft).not.toBeNull()
 
     act(() => firePointer('pointercancel', pointAt(630)))

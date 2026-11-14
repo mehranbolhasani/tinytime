@@ -20,26 +20,20 @@ interface MinuteRange {
   endMinute: number
 }
 
+interface GestureBase {
+  /** Captured at pointerdown; the dial no longer moves during a gesture. */
+  rect: DOMRect
+  sweep: SweepState
+  moved: boolean
+  startX: number
+  startY: number
+}
+
 type Gesture =
-  | { kind: 'create'; sweep: SweepState; moved: boolean; startX: number; startY: number }
-  | {
-      kind: 'move'
-      arc: DialArc
-      sweep: SweepState
-      duration: number
-      moved: boolean
-      startX: number
-      startY: number
-    }
-  | {
-      kind: 'resize'
-      arc: DialArc
-      edge: 'start' | 'end'
-      sweep: SweepState
-      moved: boolean
-      startX: number
-      startY: number
-    }
+  | (GestureBase & { kind: 'create' })
+  | (GestureBase & { kind: 'move'; arc: DialArc; duration: number })
+  | (GestureBase & { kind: 'resize'; arc: DialArc; edge: 'start' | 'end' })
+
 
 type ArcPart = 'body' | 'start' | 'end'
 
@@ -114,6 +108,12 @@ export function useClockGestures({
 }: UseClockGesturesOptions): UseClockGesturesResult {
   const gestureRef = useRef<Gesture | null>(null)
   const detachedRef = useRef(false)
+  const movingRef = useRef(false)
+  const overBinRef = useRef(false)
+  const hiddenRef = useRef<string | null>(null)
+  const colorRef = useRef('#eab308')
+  const frameRef = useRef<number | null>(null)
+  const latestRef = useRef<PointerEvent | null>(null)
   const [draft, setDraft] = useState<MinuteRange | null>(null)
   const [draftColor, setDraftColor] = useState('#eab308')
   const [hiddenEntryId, setHiddenEntryId] = useState<string | null>(null)
@@ -121,9 +121,46 @@ export function useClockGestures({
   const [isOverBin, setIsOverBin] = useState(false)
   const [isDetached, setIsDetached] = useState(false)
 
+  // Only touch state when the value actually changes: pointer moves fire far more
+  // often than the derived flags change, and each setState re-renders the dial.
+  const syncDetached = (next: boolean) => {
+    if (detachedRef.current === next) return
+    detachedRef.current = next
+    setIsDetached(next)
+  }
+  const syncMoving = (next: boolean) => {
+    if (movingRef.current === next) return
+    movingRef.current = next
+    setIsMoving(next)
+  }
+  const syncOverBin = (next: boolean) => {
+    if (overBinRef.current === next) return
+    overBinRef.current = next
+    setIsOverBin(next)
+  }
+  const syncHidden = (next: string | null) => {
+    if (hiddenRef.current === next) return
+    hiddenRef.current = next
+    setHiddenEntryId(next)
+  }
+  const syncColor = (next: string) => {
+    if (colorRef.current === next) return
+    colorRef.current = next
+    setDraftColor(next)
+  }
+
   const reset = useCallback(() => {
     gestureRef.current = null
     detachedRef.current = false
+    movingRef.current = false
+    overBinRef.current = false
+    hiddenRef.current = null
+    colorRef.current = '#eab308'
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current)
+      frameRef.current = null
+    }
+    latestRef.current = null
     setDraft(null)
     setHiddenEntryId(null)
     setIsMoving(false)
@@ -155,11 +192,7 @@ export function useClockGestures({
       return
     }
 
-    const svg = svgRef.current
-    if (!svg) {
-      return
-    }
-    const rect = svg.getBoundingClientRect()
+    const rect = gesture.rect
     if (!rect.width) {
       return
     }
@@ -167,24 +200,22 @@ export function useClockGestures({
     const angle = pointerAngle(event.clientX, event.clientY, rect)
 
     if (gesture.kind === 'create') {
-      detachedRef.current = false
-      setIsDetached(false)
+      syncDetached(false)
       const sweep = advanceSweep(gesture.sweep, angle)
       gestureRef.current = { ...gesture, sweep, moved: true }
       const position = clamp(sweep.originMinute + sweep.accumulated, 0, maxMinute)
       const range = normalizeRange(sweep.originMinute, position, maxMinute)
       setDraft((previous) => (sameRange(previous, range) ? previous : range))
-      setDraftColor('#eab308')
+      syncColor('#eab308')
       return
     }
 
     if (gesture.kind === 'resize') {
-      detachedRef.current = false
-      setIsDetached(false)
+      syncDetached(false)
       const sweep = advanceSweep(gesture.sweep, angle)
       gestureRef.current = { ...gesture, sweep, moved: true }
-      setHiddenEntryId(gesture.arc.entry.id)
-      setDraftColor(gesture.arc.color)
+      syncHidden(gesture.arc.entry.id)
+      syncColor(gesture.arc.color)
       const range = resizeRange(gesture.arc, gesture.edge, sweep.accumulated, maxMinute)
       setDraft((previous) => (sameRange(previous, range) ? previous : range))
       return
@@ -192,12 +223,11 @@ export function useClockGestures({
 
     const fraction = pointerRadiusFraction(event.clientX, event.clientY, rect)
     const detached = fraction > 1.08
-    detachedRef.current = detached
-    setIsDetached(detached)
-    setIsMoving(true)
-    setIsOverBin(pointOverBin(event.clientX, event.clientY))
-    setHiddenEntryId(gesture.arc.entry.id)
-    setDraftColor(gesture.arc.color)
+    syncDetached(detached)
+    syncMoving(true)
+    syncOverBin(pointOverBin(event.clientX, event.clientY))
+    syncHidden(gesture.arc.entry.id)
+    syncColor(gesture.arc.color)
 
     if (detached) {
       // Freeze the sweep: keep the accumulated minutes, but follow the pointer's angle
@@ -225,10 +255,10 @@ export function useClockGestures({
     const wasDetached = detachedRef.current
     gestureRef.current = null
     detachedRef.current = false
-    setHiddenEntryId(null)
-    setIsMoving(false)
-    setIsOverBin(false)
-    setIsDetached(false)
+    syncHidden(null)
+    syncMoving(false)
+    syncOverBin(false)
+    syncDetached(false)
 
     if (!gesture.moved) {
       setDraft(null)
@@ -280,8 +310,36 @@ export function useClockGestures({
   })
 
   useEffect(() => {
-    const onPointerMove = (event: PointerEvent) => handleMove(event)
-    const onPointerUp = (event: PointerEvent) => handleUp(event)
+    // One move per frame: pointermove can fire well above the refresh rate on
+    // trackpads and pen displays, and each move costs a dial re-render.
+    const flush = () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
+      const event = latestRef.current
+      latestRef.current = null
+      if (event) {
+        handleMove(event)
+      }
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!gestureRef.current) {
+        return
+      }
+      latestRef.current = event
+      if (frameRef.current === null) {
+        frameRef.current = requestAnimationFrame(flush)
+      }
+    }
+    const onPointerUp = (event: PointerEvent) => {
+      // Settle on the release position: apply it as the last move so a fast drag
+      // that ends between frames still lands where the pointer was let go.
+      latestRef.current = event
+      flush()
+      handleUp(event)
+    }
     const onPointerCancel = () => reset()
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -299,6 +357,11 @@ export function useClockGestures({
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('keydown', onKeyDown)
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
+      latestRef.current = null
     }
   }, [reset])
 
@@ -330,6 +393,7 @@ export function useClockGestures({
 
       gestureRef.current = {
         kind: 'create',
+        rect,
         sweep: startSweep(pointerAngle(event.clientX, event.clientY, rect)),
         moved: false,
         startX: event.clientX,
@@ -368,13 +432,14 @@ export function useClockGestures({
           ? {
               kind: 'move',
               arc,
+              rect,
               sweep,
               duration: Math.max(MIN_BLOCK_MINUTES, arc.endMinute - arc.startMinute),
               moved: false,
               startX,
               startY,
             }
-          : { kind: 'resize', arc, edge: part, sweep, moved: false, startX, startY }
+          : { kind: 'resize', arc, edge: part, rect, sweep, moved: false, startX, startY }
 
       svg.setPointerCapture?.(event.pointerId)
     },

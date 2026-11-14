@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
+import FloatingAlerts, { FloatingAlert } from '@/components/layout/FloatingAlerts'
 import PageShell from '@/components/layout/PageShell'
-import EntryList from '@/components/timer/EntryList'
+import EntryList, { EntryListSkeleton } from '@/components/timer/EntryList'
 import FavouriteChips from '@/components/timer/FavouriteChips'
 import TimerWidget from '@/components/timer/TimerWidget'
 import TodayDialCard from '@/components/timer/TodayDialCard'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useFavouriteEntries } from '@/hooks/useFavouriteEntries'
 import { useLocalDay } from '@/hooks/useLocalDay'
 import { useProjects } from '@/hooks/useProjects'
@@ -70,37 +70,27 @@ export default function Today() {
         month: 'long',
         day: 'numeric'
       })}
-      contentClassName="flex rounded-r-none"
+      contentClassName="relative flex rounded-r-none"
       beforeContent={
-        <>
-          {error ? (
-            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-              {error.message}
-            </div>
-          ) : null}
-
-          <FavouriteChips
-            favourites={resolvedFavourites}
-            onSelect={handleSelectFavourite}
-            onRemove={removeFavourite}
-          />
-        </>
+        <FavouriteChips
+          favourites={resolvedFavourites}
+          onSelect={handleSelectFavourite}
+          onRemove={removeFavourite}
+        />
       }
     >
+      <FloatingAlerts>
+        {error ? <FloatingAlert>{error.message}</FloatingAlert> : null}
+      </FloatingAlerts>
+
       <TimerWidget isEntriesLoading={isLoading} />
 
       <div className="flex flex-col justify-between rounded-l-2xl bg-indigo-100 p-4">
-        {!isLoading ? <TodayDialCard entries={entries} /> : null}
+        <TodayDialCard entries={entries} isLoading={isLoading} />
 
         {isLoading ? (
-          <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : null}
-
-        {!isLoading ? (
+          <EntryListSkeleton />
+        ) : (
           <EntryList
             entries={completedEntries}
             deleteEntry={deleteEntry}
@@ -109,7 +99,7 @@ export default function Today() {
             onUnpinEntry={removeFavourite}
             isFavourite={isFavourite}
           />
-        ) : null}
+        )}
       </div>
     </PageShell>
   )

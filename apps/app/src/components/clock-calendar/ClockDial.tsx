@@ -39,6 +39,8 @@ interface ClockDialProps {
   focusedArcId?: string | null
   size?: 'full' | 'compact'
   interactive?: boolean
+  /** Shows the arcs as a faded, non-interactive hint (e.g. while the next day loads). */
+  dimmed?: boolean
   nowMinute?: number
   onArcPointerDown?: (arc: DialArc, part: ArcPart, event: React.PointerEvent) => void
   onArcActivate?: (arc: DialArc) => void
@@ -75,48 +77,13 @@ function timeLabel(dayStart: Date, minute: number): string {
   return formatTime(dateFromDayMinute(dayStart, minute).toISOString())
 }
 
-interface ClockDialStaticProps {
-  dayStart: Date
-  arcs: DialArc[]
-  eventArcs: DialEventArc[]
-  draft: DialDraft | null
-  draftColor: string
-  draftDetached: boolean
-  hiddenEntryId: string | null
-  focusedArcId: string | null
+interface DialFaceProps {
   compact: boolean
-  interactive: boolean
   nowMinute: number
-  onArcPointerDown?: ClockDialProps['onArcPointerDown']
-  onArcActivate?: ClockDialProps['onArcActivate']
-  onArcDelete?: ClockDialProps['onArcDelete']
-  onArcFocusChange?: ClockDialProps['onArcFocusChange']
-  centerPrimary: React.ReactNode
-  centerSecondary?: React.ReactNode
 }
 
-const ClockDialStatic = memo(function ClockDialStatic({
-  dayStart,
-  arcs,
-  eventArcs,
-  draft,
-  draftColor,
-  draftDetached,
-  hiddenEntryId,
-  focusedArcId,
-  compact,
-  interactive,
-  nowMinute,
-  onArcPointerDown,
-  onArcActivate,
-  onArcDelete,
-  onArcFocusChange,
-  centerPrimary,
-  centerSecondary,
-}: ClockDialStaticProps) {
-  const arcStrokeWidth = R * DIAL.arcStroke
-  const fontSize = compact ? 8 : 10
-
+/** Static dial furniture: ring, future shade, ticks and numerals. */
+const DialFace = memo(function DialFace({ compact, nowMinute }: DialFaceProps) {
   const majors = [0, 6, 12, 18]
 
   return (
@@ -200,7 +167,45 @@ const ClockDialStatic = memo(function ClockDialStatic({
             )
           })
         : null}
+    </g>
+  )
+})
 
+interface DialArcsProps {
+  dayStart: Date
+  arcs: DialArc[]
+  eventArcs: DialEventArc[]
+  hiddenEntryId: string | null
+  focusedArcId: string | null
+  compact: boolean
+  interactive: boolean
+  dimmed: boolean
+  onArcPointerDown?: ClockDialProps['onArcPointerDown']
+  onArcActivate?: ClockDialProps['onArcActivate']
+  onArcDelete?: ClockDialProps['onArcDelete']
+  onArcFocusChange?: ClockDialProps['onArcFocusChange']
+}
+
+/** Google events plus the time-entry arcs, their labels and gesture handles. */
+const DialArcs = memo(function DialArcs({
+  dayStart,
+  arcs,
+  eventArcs,
+  hiddenEntryId,
+  focusedArcId,
+  compact,
+  interactive,
+  dimmed,
+  onArcPointerDown,
+  onArcActivate,
+  onArcDelete,
+  onArcFocusChange,
+}: DialArcsProps) {
+  const arcStrokeWidth = R * DIAL.arcStroke
+  const fontSize = compact ? 8 : 10
+
+  return (
+    <g opacity={dimmed ? 0.4 : 1}>
       {eventArcs.map((arc) => (
         <g key={`google-${arc.event.id}`} aria-hidden="true" opacity={0.55}>
           <path
@@ -319,44 +324,6 @@ const ClockDialStatic = memo(function ClockDialStatic({
           </g>
         )
       })}
-
-      {draft ? (
-        <path
-          d={describeArc(CX, CY, R * DIAL.laneRadius[0], draft.startMinute, draft.endMinute)}
-          fill="none"
-          stroke={draftColor}
-          strokeWidth={arcStrokeWidth}
-          strokeLinecap="round"
-          strokeOpacity={draftDetached ? 0.35 : 0.75}
-          strokeDasharray={draftDetached ? '10 6' : undefined}
-          aria-hidden="true"
-        />
-      ) : null}
-
-      <text
-        x={CX}
-        y={CY - (centerSecondary ? 6 : 0)}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        aria-live="polite"
-        className="fill-foreground font-medium"
-        style={{ fontSize: compact ? 13 : 20 }}
-      >
-        {centerPrimary}
-      </text>
-      {centerSecondary ? (
-        <text
-          x={CX}
-          y={CY + 18}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className="fill-muted-foreground"
-          style={{ fontSize: compact ? 8 : 11 }}
-          aria-hidden="true"
-        >
-          {centerSecondary}
-        </text>
-      ) : null}
     </g>
   )
 })
@@ -462,6 +429,7 @@ export default function ClockDial({
   focusedArcId = null,
   size = 'full',
   interactive = false,
+  dimmed = false,
   nowMinute = MINUTES_IN_DAY,
   onArcPointerDown,
   onArcActivate,
@@ -478,6 +446,7 @@ export default function ClockDial({
     month: 'long',
     day: 'numeric',
   })
+  const arcStrokeWidth = R * DIAL.arcStroke
 
   return (
     <svg
@@ -491,25 +460,61 @@ export default function ClockDial({
       )}
       onPointerDown={interactive ? onTrackPointerDown : undefined}
     >
-      <ClockDialStatic
+      <DialFace compact={compact} nowMinute={nowMinute} />
+
+      <DialArcs
         dayStart={dayStart}
         arcs={arcs}
         eventArcs={eventArcs}
-        draft={draft}
-        draftColor={draftColor}
-        draftDetached={draftDetached}
         hiddenEntryId={hiddenEntryId}
         focusedArcId={focusedArcId}
         compact={compact}
         interactive={interactive}
-        nowMinute={nowMinute}
+        dimmed={dimmed}
         onArcPointerDown={onArcPointerDown}
         onArcActivate={onArcActivate}
         onArcDelete={onArcDelete}
         onArcFocusChange={onArcFocusChange}
-        centerPrimary={centerPrimary}
-        centerSecondary={centerSecondary}
       />
+
+      {draft ? (
+        <path
+          d={describeArc(CX, CY, R * DIAL.laneRadius[0], draft.startMinute, draft.endMinute)}
+          fill="none"
+          stroke={draftColor}
+          strokeWidth={arcStrokeWidth}
+          strokeLinecap="round"
+          strokeOpacity={draftDetached ? 0.35 : 0.75}
+          strokeDasharray={draftDetached ? '10 6' : undefined}
+          aria-hidden="true"
+        />
+      ) : null}
+
+      <text
+        x={CX}
+        y={CY - (centerSecondary ? 6 : 0)}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        aria-live="polite"
+        className="fill-foreground font-medium"
+        style={{ fontSize: compact ? 13 : 20 }}
+      >
+        {centerPrimary}
+      </text>
+      {centerSecondary ? (
+        <text
+          x={CX}
+          y={CY + 18}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-muted-foreground"
+          style={{ fontSize: compact ? 8 : 11 }}
+          aria-hidden="true"
+        >
+          {centerSecondary}
+        </text>
+      ) : null}
+
       <ClockDialLive
         activeEntry={activeEntry}
         dayStart={dayStart}

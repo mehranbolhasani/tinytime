@@ -15,6 +15,8 @@ interface EntryBlockProps {
   onDragStart?: (event: React.DragEvent, entry: TimeEntry) => void
   onDragEnd?: () => void
   isDragging?: boolean
+  /** Shown while the selected day is still loading: faded and not interactive. */
+  isStale?: boolean
 }
 
 function EntryBlock({
@@ -24,6 +26,7 @@ function EntryBlock({
   onDragStart,
   onDragEnd,
   isDragging = false,
+  isStale = false,
 }: EntryBlockProps) {
   const laneCount = Math.max(1, block.laneCount)
   const width = `calc((100% - 24px) / ${laneCount} - 4px)`
@@ -37,7 +40,10 @@ function EntryBlock({
       data-entry-block
       type="button"
       aria-label={label}
-      onClick={() => onSelect(block.entry)}
+      onClick={() => {
+        if (isStale) return
+        onSelect(block.entry)
+      }}
       onContextMenu={(event) => {
         event.preventDefault()
         onOpenMenu(block.entry, event.clientX, event.clientY, event.currentTarget)
@@ -51,10 +57,11 @@ function EntryBlock({
       }}
       onDragStart={(event) => onDragStart?.(event, block.entry)}
       onDragEnd={onDragEnd}
-      draggable
+      draggable={!isStale}
       className={cn(
         'absolute cursor-grab overflow-hidden rounded-lg px-2 py-2 text-left text-[12px] transition-shadow duration-150 hover:shadow-sm active:cursor-grabbing flex flex-col gap-0',
-        isDragging ? 'opacity-0 ring-0' : null
+        isDragging ? 'opacity-0 ring-0' : null,
+        isStale ? 'opacity-50' : null
       )}
       style={{
         top: block.top,

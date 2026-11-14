@@ -1,9 +1,52 @@
+import type { RangePreset } from '@/components/reports/DateRangePicker'
 import { toSafeHexColor } from '@/lib/color'
-import { localDateKey } from '@/lib/dates'
+import {
+  addDays,
+  localDateInputRange,
+  localDateKey,
+  startOfMonth,
+  startOfWeek,
+} from '@/lib/dates'
 import type { TimeEntry } from '@/types'
 
 const NO_PROJECT_KEY = 'no-project'
 const NO_PROJECT_COLOR = '#94a3b8'
+
+/** Resolves a report range preset (or custom range) into an ISO [from, to) range. */
+export function buildReportRange(
+  range: RangePreset,
+  customFrom: string | null,
+  customTo: string | null
+): { from: string | null; to: string | null } {
+  const now = new Date()
+
+  if (range === 'this_week') {
+    const from = startOfWeek(now)
+    const to = addDays(from, 7)
+    return { from: from.toISOString(), to: to.toISOString() }
+  }
+
+  if (range === 'last_week') {
+    const thisWeekStart = startOfWeek(now)
+    const from = addDays(thisWeekStart, -7)
+    const to = thisWeekStart
+    return { from: from.toISOString(), to: to.toISOString() }
+  }
+
+  if (range === 'this_month') {
+    const from = startOfMonth(now)
+    const to = new Date(from.getFullYear(), from.getMonth() + 1, 1)
+    return { from: from.toISOString(), to: to.toISOString() }
+  }
+
+  if (range === 'last_month') {
+    const thisMonthStart = startOfMonth(now)
+    const from = new Date(thisMonthStart.getFullYear(), thisMonthStart.getMonth() - 1, 1)
+    return { from: from.toISOString(), to: thisMonthStart.toISOString() }
+  }
+
+  return localDateInputRange(customFrom, customTo)
+}
 
 interface DailyChartProject {
   id: string

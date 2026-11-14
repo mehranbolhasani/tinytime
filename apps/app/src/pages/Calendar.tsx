@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw } from 'lucide-react'
 import ClockCalendarView from '@/components/clock-calendar/ClockCalendarView'
 import DayView from '@/components/calendar/DayView'
+import FloatingAlerts, { FloatingAlert } from '@/components/layout/FloatingAlerts'
 import PageShell from '@/components/layout/PageShell'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { googleEventsQueryOptions, useGoogleCalendar, useGoogleEventsForRange } from '@/hooks/useGoogleCalendar'
 import { timeEntriesListQueryOptions, useTimeEntriesList } from '@/hooks/useTimeEntries'
@@ -111,31 +111,18 @@ function GoogleResultBanner() {
     : 'Google Calendar connected.'
 
   return (
-    <div
+    <FloatingAlert
       role={isError ? 'alert' : 'status'}
-      className={
-        isError
-          ? 'flex items-start justify-between gap-2 rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300'
-          : 'flex items-start justify-between gap-2 rounded-lg border border-emerald-300/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300'
-      }
+      tone={isError ? 'warning' : 'success'}
+      onDismiss={() => {
+        const params = new URLSearchParams(searchParams)
+        params.delete('google')
+        params.delete('reason')
+        setSearchParams(params, { replace: true })
+      }}
     >
       <p>{message}</p>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label="Dismiss"
-        className="h-5 w-5 shrink-0"
-        onClick={() => {
-          const params = new URLSearchParams(searchParams)
-          params.delete('google')
-          params.delete('reason')
-          setSearchParams(params, { replace: true })
-        }}
-      >
-        <X className="h-4 w-4" aria-hidden="true" />
-      </Button>
-    </div>
+    </FloatingAlert>
   )
 }
 
@@ -191,7 +178,7 @@ export default function Calendar() {
   const queryClient = useQueryClient()
   const supabase = assertSupabaseClient()
   const { activeEntry } = useTimerContext()
-  const { entries, isLoading, error } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })
+  const { entries, isPlaceholderData, error } = useTimeEntriesList({ from: from ?? undefined, to: to ?? undefined })
   const { connection, calendars, selectedCalendarIds } = useGoogleCalendar()
   const {
     googleEvents,
@@ -273,15 +260,13 @@ export default function Calendar() {
 
   if (viewMode === 'clock') {
     return (
-      <PageShell title="Calendar" contentClassName="flex flex-col">
-        <div className="shrink-0 space-y-3 p-3 empty:hidden">
+      <PageShell title="Calendar" subtitle={periodLabel} contentClassName="relative flex flex-col">
+        <FloatingAlerts>
           <GoogleResultBanner />
           {googleEventsError ? (
-            <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-              {googleEventsError.message}
-            </div>
+            <FloatingAlert tone="warning">{googleEventsError.message}</FloatingAlert>
           ) : null}
-        </div>
+        </FloatingAlerts>
         <div className="min-h-0 flex-1">
           <ClockCalendarView
             selectedDate={selectedDate}
@@ -296,7 +281,14 @@ export default function Calendar() {
   }
 
   return (
-    <PageShell title="Calendar" subtitle={periodLabel}>
+    <PageShell title="Calendar" subtitle={periodLabel} contentClassName="relative">
+      <FloatingAlerts>
+        <GoogleResultBanner />
+        {error ? <FloatingAlert>{error.message}</FloatingAlert> : null}
+        {googleEventsError ? (
+          <FloatingAlert tone="warning">{googleEventsError.message}</FloatingAlert>
+        ) : null}
+      </FloatingAlerts>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 p-3">
         <div className="flex items-center gap-1">
           <Button
@@ -390,39 +382,18 @@ export default function Calendar() {
         </div>
       </div>
 
-      <div className="space-y-3 p-3">
-        <GoogleResultBanner />
-
-        {error ? (
-          <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-            {error.message}
-          </div>
-        ) : null}
-        {googleEventsError ? (
-          <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-            {googleEventsError.message}
-          </div>
-        ) : null}
-
-        {isLoading ? (
-          <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-56 w-full" />
-          </div>
-        ) : null}
-
-        {!isLoading ? (
-          <DayView
-            selectedDate={selectedDate}
-            entries={entries}
-            activeEntry={activeEntry}
-            googleEvents={googleEvents}
-            isLoadingGoogleEvents={isLoadingGoogleEvents}
-            hourHeight={hourHeight}
-            viewportHeight="clamp(420px, 70dvh, 720px)"
-            onSwitchToClock={() => changeViewMode('clock')}
-          />
-        ) : null}
+      <div className="p-3">
+        <DayView
+          selectedDate={selectedDate}
+          entries={entries}
+          activeEntry={activeEntry}
+          googleEvents={googleEvents}
+          isLoadingGoogleEvents={isLoadingGoogleEvents}
+          isStale={isPlaceholderData}
+          hourHeight={hourHeight}
+          viewportHeight="clamp(420px, 70dvh, 720px)"
+          onSwitchToClock={() => changeViewMode('clock')}
+        />
       </div>
     </PageShell>
   )

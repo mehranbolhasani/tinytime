@@ -28,7 +28,7 @@ export default function ClockCreateBar({
   onCancel,
 }: ClockCreateBarProps) {
   return (
-    <div className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
+    <div className="flex w-full max-w-xl items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
       <Button
         type="button"
         variant="ghost"
