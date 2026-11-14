@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ interface DateRangePickerProps {
   customTo: string | null
   onRangeChange: (range: RangePreset) => void
   onApplyCustom: (from: string | null, to: string | null) => void
+  actions?: ReactNode
 }
 
 export default function DateRangePicker({
@@ -27,6 +29,7 @@ export default function DateRangePicker({
   customTo,
   onRangeChange,
   onApplyCustom,
+  actions,
 }: DateRangePickerProps) {
   const [draftFrom, setDraftFrom] = useState(customFrom ?? '')
   const [draftTo, setDraftTo] = useState(customTo ?? '')
@@ -34,34 +37,38 @@ export default function DateRangePicker({
 
   return (
     <section className="space-y-3 rounded-xl bg-card p-3">
-      <div className="flex items-center gap-1">
-        {PRESET_RANGES.map((preset) => (
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          {PRESET_RANGES.map((preset) => (
+            <Button
+              key={preset.id}
+              type="button"
+              variant={range === preset.id ? 'default' : 'secondary'}
+              size="sm"
+              className={cn(
+                'font-normal',
+                range === preset.id ? null : 'text-muted-foreground'
+              )}
+              onClick={() => onRangeChange(preset.id)}
+            >
+              {preset.label}
+            </Button>
+          ))}
           <Button
-            key={preset.id}
             type="button"
-            variant={range === preset.id ? 'default' : 'secondary'}
+            variant={range === 'custom' ? 'default' : 'secondary'}
             size="sm"
             className={cn(
-              'font-normal',
-              range === preset.id ? null : 'text-muted-foreground'
+              'px-3 font-normal',
+              range === 'custom' ? null : 'text-muted-foreground'
             )}
-            onClick={() => onRangeChange(preset.id)}
+            onClick={() => onRangeChange('custom')}
           >
-            {preset.label}
+            <CalendarDays className="h-4 w-4" />
           </Button>
-        ))}
-        <Button
-          type="button"
-          variant={range === 'custom' ? 'default' : 'secondary'}
-          size="sm"
-          className={cn(
-            'px-3 font-normal',
-            range === 'custom' ? null : 'text-muted-foreground'
-          )}
-          onClick={() => onRangeChange('custom')}
-        >
-          <CalendarDays className="h-4 w-4" />
-        </Button>
+        </div>
+
+        {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
       </div>
 
       {range === 'custom' ? (

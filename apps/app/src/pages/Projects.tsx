@@ -1,3 +1,4 @@
+import PageShell from '@/components/layout/PageShell'
 import ProjectsSection from '@/components/projects/ProjectsSection'
 import { useProjects } from '@/hooks/useProjects'
 
@@ -6,12 +7,13 @@ export default function Projects() {
     useProjects()
 
   return (
-    <section className="space-y-3">
-      <header className="flex flex-wrap items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground tracking-tighter">Projects</h1>
-        <p className="text-sm text-muted-foreground tracking-tight">{projects.length}</p>
-      </header>
-
+    <PageShell
+      title="Projects"
+      subtitle={
+        isLoading ? undefined : `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`
+      }
+      contentClassName="p-3"
+    >
       <ProjectsSection
         projects={projects}
         isLoading={isLoading}
@@ -20,6 +22,6 @@ export default function Projects() {
         updateProject={updateProject}
         deleteProject={deleteProject}
       />
-    </section>
+    </PageShell>
   )
 }

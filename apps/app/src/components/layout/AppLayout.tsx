@@ -75,7 +75,7 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
   }, [pathname])
 
   return (
-    <div className="mx-auto flex h-screen max-h-screen w-full justify-center items-stretch gap-2 bg-background p-2 overflow-hidden">
+    <div className="mx-auto flex h-screen max-h-screen w-full justify-center items-stretch gap-0 bg-foreground p-0 overflow-hidden">
       <SideNav
         userEmail={userEmail}
         onSignOut={onSignOut}
@@ -83,8 +83,8 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
         notification={notification}
       />
 
-      <main className="mx-auto flex w-full max-w-full max-h-screen flex-col justify-start flex-1 bg-card rounded-lg overflow-hidden">
-        <div ref={contentRef} className="overflow-y-auto">
+      <main className="mx-auto w-full max-w-full max-h-screen flex-1 bg-background rounded-l-2xl overflow-hidden">
+        <div ref={contentRef} className="overflow-y-auto h-full">
           <AppRoutes />
         </div>
       </main>

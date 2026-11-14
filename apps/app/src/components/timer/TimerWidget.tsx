@@ -100,13 +100,13 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="overflow-hidden min-h-[80svh] flex flex-col justify-between">
+    <section className="flex-1 h-screen">
+      <div className="overflow-hidden flex flex-col justify-between h-full p-12 items-center">
         <div className="flex items-center justify-center py-6 min-h-60 flex-1">
           <TimerDisplay />
         </div>
 
-        <div className="min-h-auto">
+        <div className="min-h-auto max-w-4xl w-xl">
           {timer.isRunning ? (
             <div className="flex items-stretch">
               <div className="flex min-w-0 flex-1 justify-center gap-2 px-4 py-3">

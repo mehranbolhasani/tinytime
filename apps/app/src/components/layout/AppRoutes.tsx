@@ -19,7 +19,7 @@ const ROUTES = [
 
 function RouteLoadingFallback() {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground/70">
+    <div className="rp-6 text-sm text-muted-foreground/70 w-full h-full grid place-items-center">
       Loading view...
     </div>
   )

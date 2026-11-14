@@ -124,10 +124,12 @@ const ClockDialStatic = memo(function ClockDialStatic({
       <circle
         cx={CX}
         cy={CY}
-        r={R * 0.86}
+        r={R * 0.82}
         fill="none"
-        strokeWidth={R * 0.28}
-        className="stroke-secondary"
+        strokeWidth={R * 0.02}
+        strokeDasharray={16}
+        strokeLinecap='round'
+        className="stroke-indigo-900/30"
         aria-hidden="true"
       />
 
@@ -265,8 +267,8 @@ const ClockDialStatic = memo(function ClockDialStatic({
             />
             {label ? (
               <text
-                className="pointer-events-none select-none fill-foreground"
-                style={{ fontSize, fontWeight: 600 }}
+                className="pointer-events-none select-none fill-background"
+                style={{ fontSize, fontWeight: 800 }}
                 aria-hidden="true"
               >
                 <textPath href={`#${pathId}`} startOffset="50%" textAnchor="middle">
@@ -438,8 +440,8 @@ function ClockDialLive({ activeEntry, dayStart, onArcActivate }: ClockDialLivePr
           y1={CY}
           x2={CX + R * DIAL.handLength * Math.cos(minuteToAngle(nowMinute))}
           y2={CY + R * DIAL.handLength * Math.sin(minuteToAngle(nowMinute))}
-          className="stroke-destructive"
-          strokeWidth={2}
+          className="stroke-primary/50"
+          strokeWidth={5}
           strokeLinecap="round"
           aria-hidden="true"
         />

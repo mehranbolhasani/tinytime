@@ -26,15 +26,15 @@ export default function SideNav({
         className={({ isActive }) =>
           `relative inline-flex items-center rounded-lg w-10 h-10 justify-center text-sm font-normal transition-colors duration-100 ${
             isActive
-              ? 'text-primary'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'text-background'
+              : 'text-background/60 hover:text-background'
           }`
         }
       >
         {({ isActive }) => (
           <>
             {isActive ? (
-              <span className="absolute inset-0 rounded-md bg-primary/10" />
+              <span className="absolute inset-0 rounded-md bg-primary/100" />
             ) : null}
             <item.icon className="relative z-10 h-5 w-5" />
           </>
@@ -44,9 +44,9 @@ export default function SideNav({
   ))
 
   return (
-    <header className="h-full bg-card z-1 flex flex-col gap-4 w-16 items-center justify-between px-2 py-2 rounded-lg">
-      <div className="inline-flex items-center gap-0 w-10 h-10 justify-center bg-primary/10 rounded-lg aspect-square">
-        <span className="relative h-1.5 w-6 rounded-sm bg-primary" />
+    <header className="h-full bg-foreground z-1 flex flex-col gap-4 w-20 items-center justify-between px-0 py-6 rounded-lg">
+      <div className="inline-flex items-center gap-0 w-10 h-10 justify-center bg-primary/80 rounded-lg aspect-square">
+        <span className="relative h-1.5 w-6 rounded-sm bg-background" />
       </div>
 
       <nav className="">

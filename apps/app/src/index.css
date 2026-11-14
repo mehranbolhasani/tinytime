@@ -77,7 +77,7 @@
 
     /* shadcn variable overrides — warm palette */
     --background: var(--color-indigo-50);
-    --foreground: #0a0a0a;
+    --foreground: var(--color-indigo-950);
     --card: #ffffff;
     --card-foreground: #1c1917;
     --popover: #ffffff;

@@ -53,7 +53,7 @@ function EntryBlock({
       onDragEnd={onDragEnd}
       draggable
       className={cn(
-        'absolute cursor-grab overflow-hidden rounded-r-lg border-l-2 px-2 py-2 text-left text-[11px] transition-shadow duration-150 hover:shadow-sm active:cursor-grabbing flex flex-col gap-0',
+        'absolute cursor-grab overflow-hidden rounded-lg px-2 py-2 text-left text-[12px] transition-shadow duration-150 hover:shadow-sm active:cursor-grabbing flex flex-col gap-0',
         isDragging ? 'opacity-0 ring-0' : null
       )}
       style={{
@@ -65,11 +65,11 @@ function EntryBlock({
         borderLeftColor: projectColor,
       }}
     >
-      <p className="truncate text-xs font-semibold" style={{ color: projectColor }}>
+      <p className="truncate text-sm font-semibold" style={{ color: projectColor }}>
         {block.entry.projects?.name ?? 'No project'}
       </p>
-      <p className="truncate text-[11px] text-muted-foreground">{block.entry.description || 'No description'}</p>
-      <p className="truncate text-[11px] text-muted-foreground">
+      <p className="truncate text-[12px] text-muted-foreground">{block.entry.description || 'No description'}</p>
+      <p className="truncate text-[12px] text-muted-foreground">
         {formatDuration(block.entry.duration_seconds ?? 0)}
       </p>
     </button>

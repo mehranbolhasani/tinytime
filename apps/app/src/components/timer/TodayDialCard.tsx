@@ -34,7 +34,7 @@ export default function TodayDialCard({ entries }: TodayDialCardProps) {
       type="button"
       aria-label="Open today in clock view"
       onClick={() => navigate('/calendar?view=clock')}
-      className="w-full rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-secondary/40"
+      className="w-full p-4 text-left transition-colors hover:bg-secondary/40"
     >
       <div className="mx-auto flex w-full justify-center">
         <ClockDial

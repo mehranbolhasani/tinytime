@@ -48,11 +48,11 @@ export default function EntryList({ entries, deleteEntry, onContinueEntry, onPin
   }
 
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2 items-center">
       {entries.length === 0 ? (
-        <div className="flex flex-col items-center rounded-xl bg-card py-12 text-center">
-          <Clock className="mb-2 h-8 w-8 text-muted-foreground/70" />
-          <p className="text-sm text-muted-foreground/70">No entries yet today. Start the timer above.</p>
+        <div className="flex flex-col items-center p-4 text-center w-2/3">
+          <Clock className="mb-4 h-8 w-8 text-foreground" />
+          <p className="text-md text-foreground">No entries yet today. Start the timer above.</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-2">

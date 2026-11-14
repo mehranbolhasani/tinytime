@@ -113,7 +113,7 @@ export default function MonthOverview({
         })}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-1 text-center">
+      <div className="grid grid-cols-7 gap-y-2 text-center">
         {WEEKDAYS.map((day, index) => (
           <div key={`${day}-${index}`} className="py-1 text-[10px] font-medium text-muted-foreground">
             {day}
@@ -144,9 +144,9 @@ export default function MonthOverview({
               aria-current={selected ? 'date' : undefined}
               className={
                 selected
-                  ? 'relative mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground ring-2 ring-foreground transition-colors'
+                  ? 'relative mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground ring-2 ring-foreground transition-colors'
                   : inMonth
-                    ? 'relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm text-foreground transition-colors hover:bg-secondary'
+                    ? 'relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm text-foreground transition-colors hover:bg-secondary'
                     : 'relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm text-muted-foreground/35 transition-colors hover:bg-secondary'
               }
               onClick={() => onSelectDate(date)}

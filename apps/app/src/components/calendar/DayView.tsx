@@ -218,7 +218,7 @@ export default function DayView({
       ) : null}
       <div
         ref={scrollRef}
-        className="overflow-y-auto overflow-x-hidden rounded-xl bg-card"
+        className="overflow-y-auto overflow-x-hidden bg-background h-full flex-1"
         style={{ height: viewportHeight }}
       >
         <AllDayEvents
@@ -226,7 +226,7 @@ export default function DayView({
           onStart={handleStartFromGoogleEvent}
           disabled={isRunning}
         />
-        <div className="grid grid-cols-[56px_1fr]">
+        <div className="grid grid-cols-[56px_1fr] h-full">
           <HourGutter hourHeight={hourHeight} gridHeight={gridHeight} />
 
           <div

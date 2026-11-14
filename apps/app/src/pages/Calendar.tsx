@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Clock3, List, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import ClockCalendarView from '@/components/clock-calendar/ClockCalendarView'
 import DayView from '@/components/calendar/DayView'
+import PageShell from '@/components/layout/PageShell'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTimerContext } from '@/contexts/TimerContext'
@@ -272,73 +273,73 @@ export default function Calendar() {
 
   if (viewMode === 'clock') {
     return (
-      <div className="space-y-3">
-        <GoogleResultBanner />
-        {googleEventsError ? (
-          <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-            {googleEventsError.message}
-          </div>
-        ) : null}
-        <ClockCalendarView
-          selectedDate={selectedDate}
-          onSelectedDateChange={setSelectedDate}
-          googleEvents={googleEvents}
-          isLoadingGoogleEvents={isLoadingGoogleEvents}
-          onSwitchToList={() => changeViewMode('list')}
-        />
-      </div>
+      <PageShell title="Calendar" contentClassName="flex flex-col">
+        <div className="shrink-0 space-y-3 p-3 empty:hidden">
+          <GoogleResultBanner />
+          {googleEventsError ? (
+            <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+              {googleEventsError.message}
+            </div>
+          ) : null}
+        </div>
+        <div className="min-h-0 flex-1">
+          <ClockCalendarView
+            selectedDate={selectedDate}
+            onSelectedDateChange={setSelectedDate}
+            googleEvents={googleEvents}
+            isLoadingGoogleEvents={isLoadingGoogleEvents}
+            onSwitchToList={() => changeViewMode('list')}
+          />
+        </div>
+      </PageShell>
     )
   }
 
   return (
-    <section className="space-y-3">
-      <GoogleResultBanner />
-      <header className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-card p-3">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Previous day"
-              className="text-muted-foreground hover:bg-secondary hover:text-foreground"
-              onClick={() => setSelectedDate((prev) => addDays(prev, -1))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-center text-sm font-medium text-foreground">{periodLabel}</h1>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Next day"
-              className="text-muted-foreground hover:bg-secondary hover:text-foreground"
-              onClick={() => setSelectedDate((prev) => addDays(prev, 1))}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedDate(new Date())}
-            >
-              Today
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Switch to clock calendar view"
-              onClick={() => changeViewMode('clock')}
-            >
-              <Clock3 className="h-4 w-4" aria-hidden="true" />
-            </Button>
-          </div>
+    <PageShell title="Calendar" subtitle={periodLabel}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 p-3">
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Previous day"
+            className="text-muted-foreground hover:bg-secondary hover:text-foreground"
+            onClick={() => setSelectedDate((prev) => addDays(prev, -1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Next day"
+            className="text-muted-foreground hover:bg-secondary hover:text-foreground"
+            onClick={() => setSelectedDate((prev) => addDays(prev, 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-      </header>
-      <div className="flex items-center justify-between w-full bg-card p-3 rounded-xl">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedDate(new Date())}
+          >
+            Today
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Switch to clock calendar view"
+            onClick={() => changeViewMode('clock')}
+          >
+            <Clock3 className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2 px-3 py-2">
         <span className="min-w-12 text-center text-xs font-medium text-muted-foreground">
           Zoom {zoomPercent}%
         </span>
@@ -389,36 +390,40 @@ export default function Calendar() {
         </div>
       </div>
 
-      {error ? (
-        <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {error.message}
-        </div>
-      ) : null}
-      {googleEventsError ? (
-        <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-          {googleEventsError.message}
-        </div>
-      ) : null}
+      <div className="space-y-3 p-3">
+        <GoogleResultBanner />
 
-      {isLoading ? (
-        <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-56 w-full" />
-        </div>
-      ) : null}
+        {error ? (
+          <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            {error.message}
+          </div>
+        ) : null}
+        {googleEventsError ? (
+          <div role="alert" className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            {googleEventsError.message}
+          </div>
+        ) : null}
 
-      {!isLoading ? (
-        <DayView
-          selectedDate={selectedDate}
-          entries={entries}
-          activeEntry={activeEntry}
-          googleEvents={googleEvents}
-          isLoadingGoogleEvents={isLoadingGoogleEvents}
-          hourHeight={hourHeight}
-          viewportHeight="clamp(420px, 70dvh, 720px)"
-          onSwitchToClock={() => changeViewMode('clock')}
-        />
-      ) : null}
-    </section>
+        {isLoading ? (
+          <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-[0px_1px_0px_rgba(0,0,0,0.05)]">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-56 w-full" />
+          </div>
+        ) : null}
+
+        {!isLoading ? (
+          <DayView
+            selectedDate={selectedDate}
+            entries={entries}
+            activeEntry={activeEntry}
+            googleEvents={googleEvents}
+            isLoadingGoogleEvents={isLoadingGoogleEvents}
+            hourHeight={hourHeight}
+            viewportHeight="clamp(420px, 70dvh, 720px)"
+            onSwitchToClock={() => changeViewMode('clock')}
+          />
+        ) : null}
+      </div>
+    </PageShell>
   )
 }

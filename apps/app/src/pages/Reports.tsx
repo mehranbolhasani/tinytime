@@ -6,6 +6,7 @@ import FilterBar from '@/components/reports/FilterBar'
 import ProjectBreakdown from '@/components/reports/ProjectBreakdown'
 import DailyBarChart from '@/components/reports/DailyBarChart'
 import SummaryBar from '@/components/reports/SummaryBar'
+import PageShell from '@/components/layout/PageShell'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/useProjects'
@@ -54,6 +55,14 @@ function buildRange(
   return localDateInputRange(customFrom, customTo)
 }
 
+const RANGE_LABELS: Record<RangePreset, string> = {
+  this_week: 'This week',
+  last_week: 'Last week',
+  this_month: 'This month',
+  last_month: 'Last month',
+  custom: 'Custom range',
+}
+
 export default function Reports() {
   const [range, setRange] = useState<RangePreset>('this_week')
   const [customFrom, setCustomFrom] = useState<string | null>(null)
@@ -100,26 +109,24 @@ export default function Reports() {
   const canExport = filteredEntries.length > 0 && Boolean(from && to)
 
   return (
-    <section className="space-y-3">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-foreground tracking-tighter">Reports</h1>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => exportToCSV(filteredEntries, from ?? '', to ? new Date(new Date(to).getTime() - 1) : '')}
-          disabled={!canExport}
-        >
-          Export CSV
-        </Button>
-      </header>
-
+    <PageShell title="Reports" subtitle={RANGE_LABELS[range]} contentClassName="space-y-3 p-3">
       <DateRangePicker
         range={range}
         customFrom={customFrom}
         customTo={customTo}
         onRangeChange={setRange}
         onApplyCustom={handleApplyCustom}
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => exportToCSV(filteredEntries, from ?? '', to ? new Date(new Date(to).getTime() - 1) : '')}
+            disabled={!canExport}
+          >
+            Export CSV
+          </Button>
+        }
       />
 
       {entriesError || projectsError ? (
@@ -193,6 +200,6 @@ export default function Reports() {
           </section>
         </div>
       )}
-    </section>
+    </PageShell>
   )
 }

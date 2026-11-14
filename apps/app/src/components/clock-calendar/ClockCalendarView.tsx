@@ -254,8 +254,8 @@ export default function ClockCalendarView({
   )
 
   return (
-    <section className="space-y-3">
-      <header className="flex items-center justify-between gap-2 rounded-xl bg-card p-3">
+    <section className="relative space-y-0 flex flex-col h-full">
+      <header className="flex items-center justify-between gap-2 bg-background p-3">
         <div className="flex items-center gap-1">
           <Button
             type="button"
@@ -314,7 +314,7 @@ export default function ClockCalendarView({
       </header>
 
       {monthOpen ? (
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className="absolute top-14 left-4 rounded-xl bg-card/50 backdrop-blur-2xl p-3 max-w-xl">
           <MonthOverview
             selectedDate={selectedDate}
             viewYear={viewYear}
@@ -344,12 +344,12 @@ export default function ClockCalendarView({
       ) : null}
 
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-10 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground flex-1 grid place-items-center">
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
           Loading schedule…
         </div>
       ) : (
-        <div className="rounded-xl bg-card p-3">
+        <div className="bg-background p-3 flex-1 grid place-items-center">
           <div className="mx-auto flex w-full justify-center">
             <ClockDial
               dayStart={dayStart}
@@ -422,24 +422,26 @@ export default function ClockCalendarView({
         />
       ) : null}
 
-      <p className="text-center text-xs text-muted-foreground">
+      <div className="h-24">
+        <p className="text-center text-xs text-muted-foreground">
         {maxMinute > 0
           ? 'Sweep around the ring to log time. Drag a block to move it, or onto the bin to delete it.'
           : 'Future days are read-only. Track time as it happens.'}
-      </p>
-      {onSwitchToList ? (
-        <div className="text-center">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-xs text-muted-foreground"
-            onClick={onSwitchToList}
-          >
-            Prefer typing? Use the list view
-          </Button>
-        </div>
-      ) : null}
+        </p>
+        {onSwitchToList ? (
+          <div className="text-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={onSwitchToList}
+            >
+              Prefer typing? Use the list view
+            </Button>
+          </div>
+          ) : null}
+      </div>
 
       <EntryActionDialogs actions={actions} />
 
