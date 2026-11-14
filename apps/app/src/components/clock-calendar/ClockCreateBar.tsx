@@ -45,7 +45,7 @@ export default function ClockCreateBar({
         onChange={(event) => onDescriptionChange(event.target.value)}
         placeholder="Description"
         aria-label="Entry description"
-        className="h-10 flex-1 rounded-xl"
+        className="h-10 min-w-0 flex-1 rounded-xl"
         autoFocus
       />
 
@@ -55,7 +55,7 @@ export default function ClockCreateBar({
         projects={projects}
         aria-label="Project"
         placeholder="Project"
-        triggerClassName="h-10 w-[7.5rem] shrink-0 rounded-xl"
+        triggerClassName="h-10 w-24 shrink-0 rounded-xl md:w-[7.5rem]"
       />
 
       <Button

@@ -12,6 +12,7 @@ import FloatingAlerts, { FloatingAlert } from '@/components/layout/FloatingAlert
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useDayViewDrag } from '@/hooks/useDayViewDrag'
 import { useEntryActions } from '@/hooks/useEntryActions'
+import { useFitHourHeight } from '@/hooks/useFitHourHeight'
 import { useLocalDay } from '@/hooks/useLocalDay'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
@@ -19,7 +20,9 @@ import {
   assignIntervalLanes,
   getGridHeight,
   HOURS,
+  HOUR_HEIGHT,
   MIN_ENTRY_HEIGHT,
+  MIN_HOUR_HEIGHT,
   toBlock,
   toBlockGeometry,
   type BlockGeometry,
@@ -58,7 +61,8 @@ interface DayViewProps {
   isLoadingGoogleEvents?: boolean
   /** Previous day's data still on screen while the selected day loads. */
   isStale?: boolean
-  hourHeight?: number
+  /** Multiplier on the height that fits all 24 hours in the grid area. */
+  zoom?: number
   onSwitchToClock?: () => void
 }
 
@@ -69,16 +73,19 @@ export default function DayView({
   googleEvents = [],
   isLoadingGoogleEvents = false,
   isStale = false,
-  hourHeight = 32,
+  zoom = 1,
   onSwitchToClock,
 }: DayViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const allDayRef = useRef<HTMLDivElement>(null)
   const [menuState, setMenuState] = useState<MenuState | null>(null)
   const { isRunning } = useTimerContext()
   const actions = useEntryActions({ entries })
   const { startTimer } = useTimerControlActions()
   const isTouchViewport = useMediaQuery('(hover: none)')
   const minEntryHeight = isTouchViewport ? 28 : MIN_ENTRY_HEIGHT
+  const fitHourHeight = useFitHourHeight(scrollRef, allDayRef)
+  const hourHeight = Math.max(MIN_HOUR_HEIGHT, (fitHourHeight ?? HOUR_HEIGHT) * zoom)
   const gridHeight = getGridHeight(hourHeight)
   const dayStart = useMemo(() => startOfDay(selectedDate), [selectedDate])
   const dayEnd = useMemo(() => addDays(dayStart, 1), [dayStart])
@@ -161,6 +168,10 @@ export default function DayView({
   const prevHourHeightRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
+    // Wait for the fit measurement: anchoring from the 32px fallback would land
+    // in the wrong place at zoom levels above Fit.
+    if (fitHourHeight === null) return
+
     const el = scrollRef.current
     if (!el) return
     const previous = prevHourHeightRef.current
@@ -174,7 +185,7 @@ export default function DayView({
 
     const centreMinutes = ((el.scrollTop + el.clientHeight / 2) / previous) * 60
     el.scrollTop = Math.max(0, (centreMinutes / 60) * hourHeight - el.clientHeight / 2)
-  }, [hourHeight])
+  }, [fitHourHeight, hourHeight])
 
   const handleOpenMenu = useCallback(
     (entry: TimeEntry, x: number, y: number, returnFocusTo?: HTMLElement | null) => {
@@ -234,12 +245,14 @@ export default function DayView({
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-background"
       >
-        <AllDayEvents
-          events={allDayGoogleEvents}
-          onStart={handleStartFromGoogleEvent}
-          disabled={isRunning}
-        />
-        <div className="grid grid-cols-[56px_1fr] h-full">
+        <div ref={allDayRef}>
+          <AllDayEvents
+            events={allDayGoogleEvents}
+            onStart={handleStartFromGoogleEvent}
+            disabled={isRunning}
+          />
+        </div>
+        <div className="grid grid-cols-[56px_1fr]">
           <HourGutter hourHeight={hourHeight} gridHeight={gridHeight} />
 
           <div

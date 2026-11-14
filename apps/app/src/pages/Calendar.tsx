@@ -10,24 +10,21 @@ import { Button } from '@/components/ui/button'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { googleEventsQueryOptions, useGoogleCalendar, useGoogleEventsForRange } from '@/hooks/useGoogleCalendar'
 import { timeEntriesListQueryOptions, useTimeEntriesList } from '@/hooks/useTimeEntries'
-import { HOUR_HEIGHT } from '@/lib/calendar'
 import { addDays, localDayRange } from '@/lib/dates'
 import { CALENDAR_SHORTCUT_EVENT, type CalendarShortcutDirection } from '@/lib/keyboardShortcuts'
 import { assertSupabaseClient } from '@/lib/supabase'
 
-const ZOOM_STORAGE_KEY = 'tinytime:calendar.zoom-index'
-const LEGACY_ZOOM_STORAGE_KEY = 'tinytime.calendar.zoom-index'
+const ZOOM_STORAGE_KEY = 'tinytime:calendar.zoom-v2'
 const VIEW_STORAGE_KEY = 'tinytime:calendar.view'
-const DEFAULT_ZOOM_INDEX = 2
+const DEFAULT_ZOOM_INDEX = 0
 
 type CalendarViewMode = 'clock' | 'list'
 
-const ZOOM_STEPS = [
-  { hourHeight: 22 },
-  { hourHeight: 28 },
-  { hourHeight: HOUR_HEIGHT },
-  { hourHeight: 44 },
-]
+/** Multiples of the height that fits all 24 hours in the grid area. */
+const ZOOM_STEPS = [1, 1.5, 2, 3] as const
+
+const zoomLabel = (index: number) =>
+  index === 0 ? 'Fit' : `${Math.round((ZOOM_STEPS[index] ?? 1) * 100)}%`
 
 function formatDayLabel(date: Date): string {
   return date.toLocaleDateString([], {
@@ -85,7 +82,11 @@ function readViewMode(): CalendarViewMode {
     return 'list'
   }
   const raw = window.localStorage.getItem(VIEW_STORAGE_KEY)
-  return raw === 'clock' ? 'clock' : 'list'
+  if (raw === 'clock' || raw === 'list') {
+    return raw
+  }
+  // Touch devices cannot create entries in the list view, so default to the clock.
+  return window.matchMedia('(hover: none)').matches ? 'clock' : 'list'
 }
 
 const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
@@ -154,24 +155,16 @@ export default function Calendar() {
       return DEFAULT_ZOOM_INDEX
     }
 
-    let stored = window.localStorage.getItem(ZOOM_STORAGE_KEY)
-    if (stored === null) {
-      const legacy = window.localStorage.getItem(LEGACY_ZOOM_STORAGE_KEY)
-      if (legacy !== null) {
-        window.localStorage.setItem(ZOOM_STORAGE_KEY, legacy)
-        window.localStorage.removeItem(LEGACY_ZOOM_STORAGE_KEY)
-        stored = legacy
-      }
-    }
+    // The pre-9b.1 key held pixel heights; drop it so it cannot read as a step.
+    window.localStorage.removeItem('tinytime:calendar.zoom-index')
 
-    const raw = Number(stored)
+    const raw = Number(window.localStorage.getItem(ZOOM_STORAGE_KEY))
     if (!Number.isInteger(raw) || raw < 0 || raw >= ZOOM_STEPS.length) {
       return DEFAULT_ZOOM_INDEX
     }
     return raw
   })
-  const zoomConfig = ZOOM_STEPS[zoomIndex] ?? ZOOM_STEPS[DEFAULT_ZOOM_INDEX]
-  const hourHeight = zoomConfig.hourHeight
+  const zoom = ZOOM_STEPS[zoomIndex] ?? ZOOM_STEPS[DEFAULT_ZOOM_INDEX]
 
   const { from, to } = useMemo(() => localDayRange(selectedDate), [selectedDate])
 
@@ -193,7 +186,6 @@ export default function Calendar() {
   })
 
   const periodLabel = useMemo(() => formatDayLabel(selectedDate), [selectedDate])
-  const zoomPercent = Math.round((hourHeight / HOUR_HEIGHT) * 100)
 
   const changeZoom = (nextIndex: number) => {
     setZoomIndex(nextIndex)
@@ -331,9 +323,9 @@ export default function Calendar() {
           </Button>
         </div>
       </div>
-      <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-3 py-2">
         <span className="min-w-12 text-center text-xs font-medium text-muted-foreground">
-          Zoom {zoomPercent}%
+          Zoom: {zoomLabel(zoomIndex)}
         </span>
         <div className="flex items-center gap-2">
           <Button
@@ -365,7 +357,7 @@ export default function Calendar() {
             className="h-6 w-6 text-muted-foreground hover:bg-secondary hover:text-foreground"
             onClick={() => changeZoom(DEFAULT_ZOOM_INDEX)}
             disabled={zoomIndex === DEFAULT_ZOOM_INDEX}
-            aria-label="Reset calendar zoom"
+            aria-label="Fit day to screen"
           >
             <RotateCcw className="h-3 w-3" />
           </Button>
@@ -390,7 +382,7 @@ export default function Calendar() {
           googleEvents={googleEvents}
           isLoadingGoogleEvents={isLoadingGoogleEvents}
           isStale={isPlaceholderData}
-          hourHeight={hourHeight}
+          zoom={zoom}
           onSwitchToClock={() => changeViewMode('clock')}
         />
       </div>

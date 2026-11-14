@@ -1,7 +1,7 @@
 import { toBlock } from '@/lib/calendar'
 import { useElapsedSeconds } from '@/hooks/useElapsedSeconds'
 import { hexToRgba, toSafeHexColor } from '@/lib/color'
-import { formatDurationHMS } from '@/lib/utils'
+import { cn, formatDurationHMS } from '@/lib/utils'
 import type { TimeEntry } from '@/types'
 
 interface ActiveTimerBlockProps {
@@ -33,6 +33,8 @@ export default function ActiveTimerBlock({
   const description = block.entry.description || 'Untitled'
   const projectName = block.entry.projects?.name ?? 'No project'
   const label = `Active timer: ${description} — ${projectName}`
+  // Same rule as EntryBlock: short blocks get a single row.
+  const isCompact = block.height < 56
 
   return (
     <button
@@ -40,7 +42,10 @@ export default function ActiveTimerBlock({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="absolute left-0 overflow-hidden rounded-lg border border-dashed p-2 text-left text-[11px] shadow-sm"
+      className={cn(
+        'absolute left-0 overflow-hidden rounded-lg border border-dashed text-left text-[11px] shadow-sm',
+        isCompact ? 'flex items-center px-2 py-1' : 'p-2'
+      )}
       style={{
         top: block.top,
         left: 0,
@@ -50,13 +55,31 @@ export default function ActiveTimerBlock({
         backgroundColor: hexToRgba(accentColor, 0.1),
       }}
     >
-      <p className="truncate text-xs font-semibold text-foreground">
-        {block.entry.projects?.name ?? 'Active timer'}
-      </p>
-      <p className="truncate text-[11px] text-muted-foreground">
-        {block.entry.description || 'No description'}
-      </p>
-      <p className="truncate text-[11px] font-medium tabular-nums text-foreground">{formatDurationHMS(elapsed)}</p>
+      {isCompact ? (
+        <div className="flex min-w-0 w-full items-center gap-1.5">
+          <span className="truncate text-xs font-semibold text-foreground">
+            {block.entry.projects?.name ?? 'Active timer'}
+          </span>
+          <span className="truncate text-[11px] text-muted-foreground">
+            {block.entry.description || 'No description'}
+          </span>
+          <span className="ml-auto shrink-0 text-[11px] font-medium tabular-nums text-foreground">
+            {formatDurationHMS(elapsed)}
+          </span>
+        </div>
+      ) : (
+        <>
+          <p className="truncate text-xs font-semibold text-foreground">
+            {block.entry.projects?.name ?? 'Active timer'}
+          </p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {block.entry.description || 'No description'}
+          </p>
+          <p className="truncate text-[11px] font-medium tabular-nums text-foreground">
+            {formatDurationHMS(elapsed)}
+          </p>
+        </>
+      )}
     </button>
   )
 }

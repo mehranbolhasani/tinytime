@@ -11,9 +11,11 @@ import Toaster from '@/components/ui/sonner'
 import { useTimerContext } from '@/contexts/TimerContext'
 import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts'
 import { useIdleDetection } from '@/hooks/useIdleDetection'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useTimerControlActions } from '@/hooks/useTimerControlActions'
 import { useTimerNotification } from '@/hooks/useTimerNotification'
 import { timeEntriesListQueryOptions } from '@/hooks/useTimeEntries'
+import { DESKTOP_MEDIA_QUERY } from '@/lib/breakpoints'
 import { buildReportRange } from '@/lib/reports'
 import { scrollToTop } from '@/lib/scroll'
 import { assertSupabaseClient } from '@/lib/supabase'
@@ -37,6 +39,8 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
   const [prevPathname, setPrevPathname] = useState(pathname)
   const contentRef = useRef<HTMLDivElement>(null)
   const prefsButtonRef = useRef<HTMLButtonElement>(null)
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
+  const [prevIsDesktop, setPrevIsDesktop] = useState(isDesktop)
 
   const closePrefs = useCallback(() => setIsPrefsOpen(false), [])
   const togglePrefs = useCallback(() => setIsPrefsOpen((open) => !open), [])
@@ -44,6 +48,12 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
   // Navigating always closes the panel, including nav-link clicks.
   if (pathname !== prevPathname) {
     setPrevPathname(pathname)
+    if (isPrefsOpen) setIsPrefsOpen(false)
+  }
+
+  // Crossing the breakpoint swaps the panel and the sheet; close so neither is orphaned.
+  if (isDesktop !== prevIsDesktop) {
+    setPrevIsDesktop(isDesktop)
     if (isPrefsOpen) setIsPrefsOpen(false)
   }
 
@@ -125,12 +135,13 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
   }, [pathname])
 
   return (
-    <div className="relative mx-auto flex h-screen max-h-screen w-full justify-center items-stretch gap-0 bg-foreground p-0 overflow-hidden [--prefs-w:min(20rem,calc(100vw-5rem))]">
+    <div className="relative mx-auto flex h-dvh w-full flex-col justify-center items-stretch gap-0 bg-foreground p-0 overflow-hidden md:flex-row [--prefs-w:min(20rem,calc(100vw-5rem))]">
       <SideNav
         userEmail={userEmail}
         onSignOut={onSignOut}
         isSigningOut={isSigningOut}
         notification={notification}
+        isDesktop={isDesktop}
         isPrefsOpen={isPrefsOpen}
         onTogglePrefs={togglePrefs}
         onClosePrefs={closePrefs}
@@ -139,15 +150,19 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
 
       <main
         className={cn(
-          'relative z-10 mx-auto w-full max-w-full max-h-screen flex-1 overflow-hidden rounded-l-2xl bg-background',
+          'relative z-10 mx-auto w-full max-w-full min-h-0 flex-1 overflow-hidden bg-background rounded-b-2xl md:rounded-br-none md:rounded-tl-2xl',
           'transition-[translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
-          isPrefsOpen && 'translate-x-(--prefs-w)'
+          isPrefsOpen && 'md:translate-x-(--prefs-w)'
         )}
       >
-        <div ref={contentRef} className="h-full overflow-y-auto" inert={isPrefsOpen}>
+        <div
+          ref={contentRef}
+          className="h-full overflow-y-auto"
+          inert={isPrefsOpen && isDesktop}
+        >
           <AppRoutes />
         </div>
-        {isPrefsOpen ? (
+        {isPrefsOpen && isDesktop ? (
           <button
             type="button"
             tabIndex={-1}
@@ -158,7 +173,7 @@ export default function AppLayout({ userEmail, onSignOut, isSigningOut }: AppLay
         ) : null}
       </main>
 
-      {isRunning ? (
+      {isRunning && isDesktop && pathname !== '/' ? (
         <div className="fixed left-1/2 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 -translate-x-1/2">
           <MiniTimerPill onClick={handleMiniTimerClick} />
         </div>

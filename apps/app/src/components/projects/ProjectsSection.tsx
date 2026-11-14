@@ -180,7 +180,7 @@ export default function ProjectsSection({
           projects.map((project) => (
             <div
               key={project.id}
-              className="group flex items-center gap-2 border-b border-border/80 px-2 py-1 last-of-type:border-b-0 hover:bg-secondary"
+              className="group flex min-h-11 items-center gap-2 border-b border-border/80 px-2 py-1 last-of-type:border-b-0 hover:bg-secondary"
             >
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"

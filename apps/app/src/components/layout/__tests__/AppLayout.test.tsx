@@ -30,11 +30,11 @@ vi.mock('@/hooks/useTimerControlActions', () => ({
 vi.mock('@/hooks/useIdleDetection', () => ({ useIdleDetection: vi.fn() }))
 vi.mock('@/hooks/useAppKeyboardShortcuts', () => ({ useAppKeyboardShortcuts: vi.fn() }))
 
-function stubMatchMedia() {
+function stubMatchMedia({ desktop }: { desktop: boolean }) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: (query: string) => ({
-      matches: false,
+      matches: desktop,
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
@@ -64,13 +64,13 @@ function mainElement(container: HTMLElement): HTMLElement {
   return main
 }
 
-function contentRegion(): HTMLElement {
+function panelRegion(): HTMLElement {
   return screen.getByRole('region', { name: 'Preferences' })
 }
 
-describe('AppLayout preferences panel', () => {
+describe('AppLayout preferences panel (desktop)', () => {
   beforeEach(() => {
-    stubMatchMedia()
+    stubMatchMedia({ desktop: true })
     window.localStorage.clear()
   })
 
@@ -79,7 +79,7 @@ describe('AppLayout preferences panel', () => {
 
     const main = mainElement(container)
     expect(main.className).not.toMatch(/(^|\s)-?translate-[xy]-/)
-    expect(contentRegion()).toHaveAttribute('inert')
+    expect(panelRegion()).toHaveAttribute('inert')
   })
 
   it('pushes main with a translate class and traps focus away from the page when open', () => {
@@ -88,12 +88,12 @@ describe('AppLayout preferences panel', () => {
     act(() => screen.getByRole('button', { name: 'Preferences' }).click())
 
     const main = mainElement(container)
-    expect(main.className).toContain('translate-x-(--prefs-w)')
+    expect(main.className).toContain('md:translate-x-(--prefs-w)')
     expect(screen.getByRole('button', { name: 'Preferences' })).toHaveAttribute(
       'aria-expanded',
       'true'
     )
-    expect(contentRegion()).not.toHaveAttribute('inert')
+    expect(panelRegion()).not.toHaveAttribute('inert')
 
     const pageContent = screen.getByText('page content').parentElement
     expect(pageContent).toHaveAttribute('inert')
@@ -110,7 +110,7 @@ describe('AppLayout preferences panel', () => {
 
     act(() => cog.click())
 
-    expect(contentRegion()).toHaveAttribute('inert')
+    expect(panelRegion()).toHaveAttribute('inert')
     await waitFor(() => expect(cog).toHaveFocus())
   })
 
@@ -126,7 +126,7 @@ describe('AppLayout preferences panel', () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     })
 
-    expect(contentRegion()).toHaveAttribute('inert')
+    expect(panelRegion()).toHaveAttribute('inert')
   })
 
   it('closes when the pushed main card is clicked', () => {
@@ -135,7 +135,44 @@ describe('AppLayout preferences panel', () => {
     act(() => screen.getByRole('button', { name: 'Preferences' }).click())
     act(() => screen.getByRole('button', { name: 'Close preferences' }).click())
 
-    expect(contentRegion()).toHaveAttribute('inert')
+    expect(panelRegion()).toHaveAttribute('inert')
     expect(mainElement(container).className).not.toMatch(/(^|\s)-?translate-[xy]-/)
+  })
+})
+
+describe('AppLayout preferences sheet (mobile)', () => {
+  beforeEach(() => {
+    stubMatchMedia({ desktop: false })
+    window.localStorage.clear()
+  })
+
+  it('opens a sheet without translating main', () => {
+    const { container } = renderLayout()
+
+    act(() => screen.getByRole('button', { name: 'Preferences' }).click())
+
+    expect(screen.getByRole('dialog', { name: 'Preferences' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Preferences' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Close preferences' })).toBeNull()
+
+    const main = mainElement(container)
+    expect(main.className).toContain('md:translate-x-(--prefs-w)')
+    expect(main.className).not.toMatch(/(^|\s)translate-x-/)
+
+    const pageContent = screen.getByText('page content').parentElement
+    expect(pageContent).not.toHaveAttribute('inert')
+  })
+
+  it('closes the sheet on Escape', async () => {
+    renderLayout()
+
+    act(() => screen.getByRole('button', { name: 'Preferences' }).click())
+    expect(screen.getByRole('dialog', { name: 'Preferences' })).toBeTruthy()
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })

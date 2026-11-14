@@ -3,6 +3,8 @@ import type { CalendarBlock, TimeEntry } from '@/types'
 
 export const HOURS: number[] = Array.from({ length: 24 }, (_, hour) => hour)
 export const HOUR_HEIGHT = 32
+/** Hour height floor, so Fit never crushes the grid on very short screens. */
+export const MIN_HOUR_HEIGHT = 20
 export const MIN_ENTRY_HEIGHT = 20
 export const MINUTES_IN_DAY = 24 * 60
 const DRAG_SNAP_MINUTES = 15

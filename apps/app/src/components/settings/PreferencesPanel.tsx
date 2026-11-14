@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
-import NotificationSetting from '@/components/settings/NotificationSetting'
-import ShortcutsList from '@/components/settings/ShortcutsList'
-import ThemePreferenceToggle from '@/components/settings/ThemePreferenceToggle'
-import { Button } from '@/components/ui/button'
-import { useTheme } from '@/hooks/useTheme'
+import PreferencesContent from '@/components/settings/PreferencesContent'
 import { isBlockingOverlayOpen } from '@/lib/keyboardShortcuts'
 import { cn } from '@/lib/utils'
 import type { useTimerNotification } from '@/hooks/useTimerNotification'
@@ -19,8 +14,8 @@ interface PreferencesPanelProps {
 }
 
 /**
- * Light card that slides in from behind the main card. Hidden panels stay
- * mounted (inert) so Google Calendar does not re-query on every app load.
+ * Desktop side panel that slides in from behind the main card. Hidden panels
+ * stay mounted (inert) so Google Calendar does not re-query on every app load.
  */
 export default function PreferencesPanel({
   open,
@@ -34,7 +29,6 @@ export default function PreferencesPanel({
   if (open && !hasOpened) setHasOpened(true)
 
   const headingRef = useRef<HTMLHeadingElement>(null)
-  const { preference, setThemePreference, options } = useTheme()
 
   useEffect(() => {
     if (!open) return
@@ -77,36 +71,12 @@ export default function PreferencesPanel({
         </h2>
 
         {hasOpened ? (
-          <>
-            <div className="space-y-2 py-5">
-              <p className="text-xs font-medium uppercase tracking-wide text-background">
-                Theme
-              </p>
-              <ThemePreferenceToggle
-                preference={preference}
-                options={options}
-                onChange={setThemePreference}
-              />
-            </div>
-
-            <GoogleCalendarSection />
-            <NotificationSetting notification={notification} />
-            <ShortcutsList />
-
-            <div className="mt-auto space-y-2">
-              <p className="truncate text-xs text-background/70">{userEmail}</p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onSignOut}
-                disabled={isSigningOut}
-                className="w-full bg-indigo-900 text-background"
-              >
-                {isSigningOut ? 'Signing out...' : 'Sign out'}
-              </Button>
-            </div>
-          </>
+          <PreferencesContent
+            userEmail={userEmail}
+            onSignOut={onSignOut}
+            isSigningOut={isSigningOut}
+            notification={notification}
+          />
         ) : null}
       </div>
     </div>

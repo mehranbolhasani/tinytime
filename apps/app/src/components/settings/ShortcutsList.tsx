@@ -8,7 +8,7 @@ const SHORTCUTS = [
 
 export default function ShortcutsList() {
   return (
-    <div className="py-5 border-t border-border/20">
+    <div className="py-5 border-t border-border/20 [@media(hover:none)]:hidden">
       <p className="text-xs font-medium text-background">Keyboard shortcuts</p>
       <ul className="mt-1 space-y-1 text-xs text-background/70">
         {SHORTCUTS.map((shortcut) => (

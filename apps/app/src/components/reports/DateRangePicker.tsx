@@ -38,7 +38,7 @@ export default function DateRangePicker({
   return (
     <section className="space-y-3 rounded-xl bg-card p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PRESET_RANGES.map((preset) => (
             <Button
               key={preset.id}
@@ -46,7 +46,7 @@ export default function DateRangePicker({
               variant={range === preset.id ? 'default' : 'secondary'}
               size="sm"
               className={cn(
-                'font-normal',
+                'shrink-0 font-normal',
                 range === preset.id ? null : 'text-muted-foreground'
               )}
               onClick={() => onRangeChange(preset.id)}
@@ -59,7 +59,7 @@ export default function DateRangePicker({
             variant={range === 'custom' ? 'default' : 'secondary'}
             size="sm"
             className={cn(
-              'px-3 font-normal',
+              'shrink-0 px-3 font-normal',
               range === 'custom' ? null : 'text-muted-foreground'
             )}
             onClick={() => onRangeChange('custom')}
@@ -68,7 +68,7 @@ export default function DateRangePicker({
           </Button>
         </div>
 
-        {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
       </div>
 
       {range === 'custom' ? (

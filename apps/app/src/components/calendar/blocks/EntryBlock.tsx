@@ -34,6 +34,11 @@ function EntryBlock({
   const projectColor = toSafeHexColor(block.entry?.projects?.color, '#a8a29e')
 
   const label = `${block.entry.description || 'Untitled'} — ${block.entry.projects?.name ?? 'No project'}`
+  const projectName = block.entry.projects?.name ?? 'No project'
+  const description = block.entry.description || 'No description'
+  const duration = formatDuration(block.entry.duration_seconds ?? 0)
+  // Below ~56px the three stacked lines do not fit; show one row instead.
+  const isCompact = block.height < 56
 
   return (
     <button
@@ -59,7 +64,8 @@ function EntryBlock({
       onDragEnd={onDragEnd}
       draggable={!isStale}
       className={cn(
-        'absolute cursor-grab overflow-hidden rounded-lg px-2 py-2 text-left text-[12px] transition-shadow duration-150 hover:shadow-sm active:cursor-grabbing flex flex-col gap-0',
+        'absolute cursor-grab overflow-hidden text-left text-[12px] transition-shadow duration-150 hover:shadow-sm active:cursor-grabbing flex flex-col gap-0 rounded-lg',
+        isCompact ? 'justify-center px-2 py-1' : 'px-2 py-2',
         isDragging ? 'opacity-0 ring-0' : null,
         isStale ? 'opacity-50' : null
       )}
@@ -72,13 +78,25 @@ function EntryBlock({
         borderLeftColor: projectColor,
       }}
     >
-      <p className="truncate text-sm font-semibold" style={{ color: projectColor }}>
-        {block.entry.projects?.name ?? 'No project'}
-      </p>
-      <p className="truncate text-[12px] text-muted-foreground">{block.entry.description || 'No description'}</p>
-      <p className="truncate text-[12px] text-muted-foreground">
-        {formatDuration(block.entry.duration_seconds ?? 0)}
-      </p>
+      {isCompact ? (
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-xs font-semibold" style={{ color: projectColor }}>
+            {projectName}
+          </span>
+          <span className="truncate text-xs text-muted-foreground">{description}</span>
+          <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
+            {duration}
+          </span>
+        </div>
+      ) : (
+        <>
+          <p className="truncate text-sm font-semibold" style={{ color: projectColor }}>
+            {projectName}
+          </p>
+          <p className="truncate text-[12px] text-muted-foreground">{description}</p>
+          <p className="truncate text-[12px] text-muted-foreground">{duration}</p>
+        </>
+      )}
     </button>
   )
 }

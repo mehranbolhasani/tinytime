@@ -338,7 +338,7 @@ export default function ClockCalendarView({
   return (
     <section className="relative space-y-0 flex flex-col h-full">
       <header className="flex items-center justify-between gap-2 bg-background p-3">
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 items-center gap-1">
           <Button
             type="button"
             variant="ghost"
@@ -350,14 +350,14 @@ export default function ClockCalendarView({
           </Button>
           <button
             type="button"
-            className="flex items-center gap-1.5 text-sm font-medium text-foreground"
+            className="flex min-w-0 items-center gap-1.5 truncate text-sm font-medium text-foreground"
             aria-expanded={monthOpen}
             aria-label={monthOpen ? 'Collapse month overview' : 'Expand month overview'}
             onClick={() => setMonthOpen((open) => !open)}
           >
             {headerLabel}
             <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform ${monthOpen ? 'rotate-180' : ''}`}
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${monthOpen ? 'rotate-180' : ''}`}
               aria-hidden="true"
             />
           </button>
@@ -372,7 +372,7 @@ export default function ClockCalendarView({
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -396,7 +396,7 @@ export default function ClockCalendarView({
       </header>
 
       {monthOpen ? (
-        <div className="absolute top-14 left-4 z-40 rounded-xl bg-card/50 backdrop-blur-2xl p-3 max-w-xl">
+        <div className="absolute inset-x-3 top-14 z-40 rounded-xl bg-card/50 backdrop-blur-2xl p-3 md:inset-x-auto md:left-4 md:max-w-xl">
           <MonthOverview
             selectedDate={selectedDate}
             viewYear={viewYear}

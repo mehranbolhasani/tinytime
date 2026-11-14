@@ -100,9 +100,9 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
   }
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col">
-      <div className="overflow-hidden flex flex-col justify-between h-full p-12 items-center">
-        <div className="flex items-center justify-center py-6 min-h-60 flex-1">
+    <section className="flex flex-col md:h-full md:min-h-0 md:flex-1">
+      <div className="flex flex-col items-center justify-between overflow-hidden p-4 md:h-full md:p-12">
+        <div className="flex min-h-40 items-center justify-center py-6 md:min-h-60 md:flex-1">
           <TimerDisplay />
         </div>
 
@@ -137,7 +137,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   projects={projects}
                   disabled={runningDisabled || isLoadingProjects}
                   aria-label="Running entry project"
-                  triggerClassName="h-12 w-auto gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
+                  triggerClassName="h-12 w-auto max-w-28 gap-1 rounded-md bg-transparent p-0 text-sm text-muted-foreground md:max-w-none ring-0 shadow-none focus:ring-0 focus-visible:bg-tint focus-visible:outline-none focus-visible:ring-0 [&>span]:line-clamp-1"
                 />
               </div>
               <div className="grid h-12 w-12 shrink-0 place-items-center">
@@ -167,7 +167,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
               className="flex h-14 items-center bg-card p-1 rounded-xl"
             >
               <div className="flex h-12 flex-1 items-center">
-                <div className="w-full">
+                <div className="min-w-0 flex-1">
                   <input
                     type="text"
                     id="description"
@@ -179,7 +179,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                     className="h-12 w-full px-4 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none"
                   />
                 </div>
-                <div className="flex h-12 w-full min-w-0 items-stretch">
+                <div className="flex h-12 w-32 shrink-0 items-stretch md:w-full md:shrink">
                   <ProjectSelect
                     value={selectedProject}
                     onChange={setSelectedProject}

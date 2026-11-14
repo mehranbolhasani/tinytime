@@ -70,7 +70,7 @@ export default function Today() {
         month: 'long',
         day: 'numeric'
       })}
-      contentClassName="relative flex rounded-r-none"
+      contentClassName="relative flex flex-col md:flex-row md:rounded-r-none"
       beforeContent={
         <FavouriteChips
           favourites={resolvedFavourites}
@@ -85,7 +85,7 @@ export default function Today() {
 
       <TimerWidget isEntriesLoading={isLoading} />
 
-      <div className="flex flex-col justify-between rounded-l-2xl bg-indigo-100 p-4">
+      <div className="flex flex-col gap-4 rounded-t-2xl bg-indigo-100 p-4 md:justify-between md:gap-0 md:rounded-none md:rounded-l-2xl">
         <TodayDialCard entries={entries} isLoading={isLoading} />
 
         {isLoading ? (
