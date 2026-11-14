@@ -66,7 +66,7 @@ export default function SideNav({
           <>
             {isActive ? (
               <>
-                <span className="absolute top-1.5 h-8 w-12 rounded-full bg-primary md:hidden" />
+                <span className="absolute top-1 h-12 w-12 rounded-full bg-primary md:hidden" />
                 <span className="absolute inset-0 hidden rounded-md bg-primary md:block" />
               </>
             ) : null}
@@ -77,7 +77,7 @@ export default function SideNav({
                 <TodayTabLabel className="relative z-10 md:hidden" />
               </>
             ) : (
-              <span className="relative z-10 md:sr-only">{item.label}</span>
+              <span className="relative z-10 sr-only">{item.label}</span>
             )}
           </>
         )}
@@ -123,7 +123,7 @@ export default function SideNav({
             )}
             aria-hidden="true"
           />
-          <span className="relative z-10 md:sr-only">Settings</span>
+          <span className="relative z-10 sr-only">Settings</span>
         </Button>
       </div>
 

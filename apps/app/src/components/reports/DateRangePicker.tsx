@@ -36,9 +36,9 @@ export default function DateRangePicker({
   const isInvalidRange = Boolean(draftFrom && draftTo && draftFrom > draftTo)
 
   return (
-    <section className="space-y-3 rounded-xl bg-card p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <section className="space-y-3 rounded-xl bg-card p-3 overflow-x-hidden">
+      <div className="flex flex-col md:flex-row md:flex-wrap items-center justify-between gap-2">
+        <div className="flex w-full py-1 min-w-0 md:flex-1 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PRESET_RANGES.map((preset) => (
             <Button
               key={preset.id}
@@ -68,7 +68,7 @@ export default function DateRangePicker({
           </Button>
         </div>
 
-        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+        {actions ? <div className="flex shrink-0 items-center gap-2 w-full">{actions}</div> : null}
       </div>
 
       {range === 'custom' ? (

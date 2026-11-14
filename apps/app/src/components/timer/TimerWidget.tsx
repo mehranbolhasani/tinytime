@@ -164,10 +164,10 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                 event.preventDefault()
                 handleStart()
               }}
-              className="flex h-14 items-center bg-card p-1 rounded-xl"
+              className="flex flex-col md:flex-row md:h-14 items-center bg-card p-1 rounded-xl "
             >
-              <div className="flex h-12 flex-1 items-center">
-                <div className="min-w-0 flex-1">
+              <div className="flex flex-col md:flow-row h-auto md:h-12 flex-1 items-center w-full">
+                <div className="min-w-0 flex-1 w-full">
                   <input
                     type="text"
                     id="description"
@@ -179,7 +179,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                     className="h-12 w-full px-4 text-base text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none"
                   />
                 </div>
-                <div className="flex h-12 w-32 shrink-0 items-stretch md:w-full md:shrink">
+                <div className="flex h-16 md:h-12 w-full shrink-0 items-stretch md:w-full md:shrink [&_button]:h-full! [&_button]:pl-0">
                   <ProjectSelect
                     value={selectedProject}
                     onChange={setSelectedProject}
@@ -189,7 +189,7 @@ export default function TimerWidget({ isEntriesLoading = false }: TimerWidgetPro
                   />
                 </div>
               </div>
-              <div className="grid h-12 w-12 shrink-0 place-items-center">
+              <div className="grid h-12 w-full md:w-12 shrink-0 place-items-center">
                 <Button
                   type="submit"
                   variant="default"
